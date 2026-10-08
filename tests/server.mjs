@@ -88,8 +88,13 @@ await step('full export contains synced records', async () => {
 })
 
 console.log('Files')
-await step('upload, download and delete a file in R2', async () => {
+await step('upload, download and delete a file in R2 (or a clear message when R2 is off)', async () => {
   const up = await req('/api/files?name=brief.txt', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: 'client brief' })
+  if (up.status === 503) {
+    assert.match((await up.json()).error, /not enabled/)
+    assert.equal((await api('/session')).body.features.files, false)
+    return
+  }
   const { key } = await up.json()
   const down = await req(`/api/files/${encodeURIComponent(key)}`)
   assert.equal(await down.text(), 'client brief')

@@ -1,14 +1,14 @@
 import * as Popover from '@radix-ui/react-popover'
-import { CalendarDays, Check, CheckSquare, ChevronsUpDown, LayoutDashboard, Plus, Search, Settings } from 'lucide-react'
+import { CalendarDays, Check, CheckSquare, ChevronsUpDown, LayoutDashboard, LayoutGrid, Plus, Search, Settings } from 'lucide-react'
 import { useState } from 'react'
-import { Kbd } from '@/components/ui'
+import { Kbd, Sheet } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useSync } from '@/lib/sync'
 import { DockBar } from '@/features/dock/DockBar'
 import { isAccountMode } from '@/store/mode'
 import { useUI, type Space } from '@/store/ui'
-import { PAGES, SPACE_DEFS, spaceDef } from './nav'
+import { PAGES, spaceDef, visibleSpaces } from './nav'
 
 function SpaceMark({ space, size = 28 }: { space: Space; size?: number }) {
   const d = spaceDef(space === 'settings' ? 'home' : space)
@@ -28,6 +28,7 @@ export function WorkspaceSwitcher({ compact = false }: { compact?: boolean }) {
   // Local state: desktop and mobile each render a switcher, so they must not share open state.
   const [open, setOpen] = useState(false)
   const goSpace = useUI((s) => s.goSpace)
+  const hiddenSpaces = useApp((s) => s.settings.hiddenSpaces)
   const current = loc.space === 'settings' ? 'home' : loc.space
   const d = spaceDef(current)
   return (
@@ -55,7 +56,7 @@ export function WorkspaceSwitcher({ compact = false }: { compact?: boolean }) {
           className="z-50 w-[248px] rounded-xl border border-line bg-elevated p-1.5 shadow-pop data-[state=open]:animate-pop"
         >
           <div className="px-2 pt-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-faint">Workspaces</div>
-          {SPACE_DEFS.map((s) => (
+          {visibleSpaces(hiddenSpaces).map((s) => (
             <button
               key={s.id}
               onClick={() => {
@@ -226,35 +227,71 @@ export function MobileTopBar() {
 export function MobileNav() {
   const loc = useUI((s) => s.loc)
   const go = useUI((s) => s.go)
+  const hiddenSpaces = useApp((s) => s.settings.hiddenSpaces)
+  const [spaces, setSpaces] = useState(false)
+  const tpsVisible = !hiddenSpaces?.includes('tps')
   const items: { label: string; icon: typeof Plus; path?: string; active: boolean; action?: () => void }[] = [
-    { label: 'Home', icon: spaceDef('home').icon, path: '/home', active: loc.space === 'home' },
+    { label: 'Mission', icon: spaceDef('home').icon, path: '/home', active: loc.space === 'home' },
     { label: 'Today', icon: LayoutDashboard, path: '/personal/overview', active: loc.space === 'personal' },
     { label: 'Capture', icon: Plus, active: false, action: () => useUI.getState().setPalette(true) },
-    { label: 'TPS', icon: spaceDef('tps').icon, path: '/tps/overview', active: loc.space === 'tps' },
-    { label: 'Lab', icon: spaceDef('lab').icon, path: '/lab/overview', active: loc.space === 'lab' },
+    ...(tpsVisible ? [{ label: 'TPS', icon: spaceDef('tps').icon, path: '/tps/overview', active: loc.space === 'tps' }] : []),
+    { label: 'Spaces', icon: LayoutGrid, active: spaces || (loc.space !== 'home' && loc.space !== 'personal' && loc.space !== 'tps'), action: () => setSpaces(true) },
   ]
   return (
-    <nav
-      aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-bg/90 px-1 pb-[max(env(safe-area-inset-bottom),4px)] pt-1 backdrop-blur-xl md:hidden"
-    >
-      {items.map(({ label, icon: Icon, path, active, action }) => (
-        <button
-          key={label}
-          onClick={() => (action ? action() : path && (loc.space === path.split('/')[1] ? go(path) : useUI.getState().goSpace(path.split('/')[1] as Space)))}
-          aria-current={active ? 'page' : undefined}
-          className={cn('flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium', active ? 'text-fg' : 'text-faint')}
-        >
-          {label === 'Capture' ? (
-            <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-fg text-bg">
-              <Icon className="h-4 w-4" strokeWidth={2.5} />
+    <>
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-bg/90 px-1 pb-[max(env(safe-area-inset-bottom),4px)] pt-1 backdrop-blur-xl md:hidden"
+      >
+        {items.map(({ label, icon: Icon, path, active, action }) => (
+          <button
+            key={label}
+            onClick={() => (action ? action() : path && (loc.space === path.split('/')[1] ? go(path) : useUI.getState().goSpace(path.split('/')[1] as Space)))}
+            aria-current={active ? 'page' : undefined}
+            className={cn('flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium', active ? 'text-fg' : 'text-faint')}
+          >
+            {label === 'Capture' ? (
+              <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-fg text-bg">
+                <Icon className="h-4 w-4" strokeWidth={2.5} />
+              </span>
+            ) : (
+              <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.2 : 1.8} />
+            )}
+            {label}
+          </button>
+        ))}
+      </nav>
+      <Sheet open={spaces} onOpenChange={setSpaces} title="Spaces">
+        <div className="flex flex-col gap-1 p-2">
+          {visibleSpaces(hiddenSpaces).map((d) => (
+            <button
+              key={d.id}
+              onClick={() => {
+                setSpaces(false)
+                useUI.getState().goSpace(d.id)
+              }}
+              className={cn('flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-hover', loc.space === d.id && 'bg-hover')}
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-lg" style={{ background: `color-mix(in srgb, ${d.color} 16%, transparent)`, color: d.color }}>
+                <d.icon className="h-[18px] w-[18px]" />
+              </span>
+              <span className="text-[15px] font-medium">{d.label}</span>
+            </button>
+          ))}
+          <button
+            onClick={() => {
+              setSpaces(false)
+              go('/settings')
+            }}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-hover"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-panel-2 text-muted">
+              <Settings className="h-[18px] w-[18px]" />
             </span>
-          ) : (
-            <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.2 : 1.8} />
-          )}
-          {label}
-        </button>
-      ))}
-    </nav>
+            <span className="text-[15px] font-medium">Settings</span>
+          </button>
+        </div>
+      </Sheet>
+    </>
   )
 }

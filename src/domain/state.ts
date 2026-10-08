@@ -11,6 +11,7 @@ import type {
   Client,
   Concept,
   ContentPost,
+  Countdown,
   DayPlan,
   Deliverable,
   FeedbackEntry,
@@ -18,6 +19,7 @@ import type {
   Insight,
   Metric,
   Opportunity,
+  Proposal,
   PerformanceEntry,
   PracticePlan,
   PracticeTemplate,
@@ -66,6 +68,9 @@ export interface Data {
   aiOutputs: AiOutput[]
   workflows: AiWorkflow[]
   posts: ContentPost[]
+  /* V4 */
+  countdowns: Countdown[]
+  proposals: Proposal[]
   /* Shared */
   metrics: Metric[]
   scorecards: Record<string, WeekScore>

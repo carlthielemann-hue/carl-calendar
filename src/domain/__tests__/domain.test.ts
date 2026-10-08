@@ -164,3 +164,38 @@ describe('sync hashing', () => {
     expect(hash(null)).toBe('null')
   })
 })
+
+describe('mission', () => {
+  const wi = (p: Partial<import('../workItems').WorkItem>) => ({ ref: 'task:x', kind: 'task', title: 'T', category: 'personal', done: false, ...p }) as import('../workItems').WorkItem
+  it('flags overdue work and client deadlines within two days, high first', async () => {
+    const { atRisk } = await import('../mission')
+    const items = [
+      wi({ ref: 'task:a', title: 'Old task', due: '2026-10-05' }),
+      wi({ ref: 'deliverable:d', kind: 'deliverable', title: 'Hooks', due: '2026-10-10' }),
+      wi({ ref: 'deliverable:e', kind: 'deliverable', title: 'Far', due: '2026-10-20' }),
+      wi({ ref: 'task:b', title: 'Done', due: '2026-10-01', done: true }),
+    ]
+    const proposals = [{ id: 'p', kind: 'planner', source: 'planner', title: 'x', createdAt: '', status: 'pending', items: [{ id: 'i', action: { type: 'delete-event', eventId: 'e' }, label: 'l', selected: true }] }] as never
+    const r = atRisk({ items, today: '2026-10-08', proposals })
+    expect(r.map((x) => x.id)).toEqual(['task:a', 'deliverable:d', 'proposals'])
+    expect(r[0].level).toBe('high')
+    expect(r[1].detail).toMatch(/in 2 days/)
+  })
+  it('lists countdowns and near client deadlines, soonest first', async () => {
+    const { countdownRows } = await import('../mission')
+    const rows = countdownRows({
+      countdowns: [{ id: 'c1', title: 'Abitur', date: '2027-04-20', createdAt: '' }, { id: 'c0', title: 'Past', date: '2026-10-01', createdAt: '' }],
+      items: [wi({ ref: 'deliverable:d', kind: 'deliverable', title: 'Hooks', due: '2026-10-11' })],
+      today: '2026-10-08',
+    })
+    expect(rows.map((r) => [r.title, r.daysLeft])).toEqual([['Hooks', 3], ['Abitur', 194]])
+  })
+  it('briefs mention planner changes waiting', async () => {
+    const { buildEveningReminder, buildMorningBrief } = await import('../brief')
+    expect(buildEveningReminder({ tomorrowConfirmed: true, shutdown: '20:30' })).toBeNull()
+    expect(buildEveningReminder({ tomorrowConfirmed: true, shutdown: '20:30', pendingChanges: 2 })!.body).toMatch(/2 planner changes/)
+    const m = buildMorningBrief({ date: new Date('2026-10-08T07:00'), top: [], occurrences: [], dueToday: [], shutdown: '20:30', items: [wi({ due: '2026-10-01' })], today: '2026-10-08', pendingChanges: 1 })
+    expect(m.body).toMatch(/At risk: 1 overdue/)
+    expect(m.body).toMatch(/1 planner change to review/)
+  })
+})

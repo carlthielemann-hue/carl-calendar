@@ -1,5 +1,6 @@
 import {
   Briefcase,
+  Crosshair,
   CalendarCheck,
   CalendarDays,
   CalendarRange,
@@ -34,7 +35,7 @@ export interface SpaceDef {
 }
 
 export const SPACE_DEFS: SpaceDef[] = [
-  { id: 'home', label: 'Home', short: 'Home', icon: House, color: '#ededef', key: 'H' },
+  { id: 'home', label: 'Mission', short: 'Mission', icon: Crosshair, color: '#ededef', key: 'H' },
   { id: 'personal', label: 'Personal', short: 'Personal', icon: User, color: '#5b8def', key: 'P' },
   { id: 'tps', label: 'TPS Business', short: 'TPS', icon: Briefcase, color: '#9d84f7', key: 'B' },
   { id: 'lab', label: 'Creative Lab', short: 'Lab', icon: FlaskConical, color: '#3fb5c4', key: 'L' },
@@ -73,5 +74,8 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'history', label: 'Practice history', icon: History },
   ],
 }
+
+/** Workspaces you haven't hidden (Mission is always shown). */
+export const visibleSpaces = (hidden: string[] | undefined) => SPACE_DEFS.filter((d) => d.id === 'home' || !hidden?.includes(d.id))
 
 export const spaceDef = (s: Space) => SPACE_DEFS.find((d) => d.id === s) ?? SPACE_DEFS[0]

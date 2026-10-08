@@ -18,6 +18,7 @@ import { useApp } from '@/store/app'
 import { TimeGrid } from '@/features/calendar/TimeGrid'
 import { TopThree, useTop } from '@/features/overview/TopThree'
 import { WorkItemRow } from '@/features/work/WorkItemRow'
+import { PendingProposals } from '@/features/proposals/ProposalReview'
 
 function Step({ n, title, sub, children, action }: { n: number; title: string; sub?: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -43,6 +44,7 @@ function moveTo(item: WorkItem, dk: string) {
 }
 
 export default function PlanTomorrow() {
+  const pendingCount = useApp((s) => s.proposals.filter((p) => p.status === 'pending').length)
   const now = useNow(60_000)
   const tomorrow = startOfDay(addDays(now, 1))
   const tk = dateKey(tomorrow)
@@ -120,6 +122,11 @@ export default function PlanTomorrow() {
       />
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="flex min-w-0 flex-col gap-6">
+          {pendingCount > 0 && (
+            <Step n={0} title="Planner changes" sub="Suggested moves and new blocks — nothing changes until you approve.">
+              <PendingProposals />
+            </Step>
+          )}
           <Step n={1} title="Clear what’s left from today" sub="Move it, finish it, or let it go.">
             <Card className="p-1.5">
               {unfinished.length === 0 ? (

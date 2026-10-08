@@ -1,15 +1,17 @@
-import { differenceInMinutes, format } from 'date-fns'
+import { format } from 'date-fns'
 import { ArrowUpRight, FlaskConical, Gauge, Layers } from 'lucide-react'
 import { Card, CardHeader, Checkbox, Empty } from '@/components/ui'
 import { DemoBanner } from '@/components/DemoBanner'
-import { atTime, dateKey, formatDuration, fromDateKey } from '@/lib/dates'
+import { dateKey, fromDateKey } from '@/lib/dates'
 import { useDayOccurrences } from '@/lib/hooks'
 import { useNow } from '@/lib/useNow'
 import { cn } from '@/lib/utils'
 import { toggleWorkItem } from '@/lib/work'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { OverviewHeader } from '@/features/overview/Header'
+import { AtRiskCard, CountdownsCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
+import { startFocus } from '@/features/mission/focus'
+import type { Occurrence } from '@/lib/types'
 import { NowNext } from '@/features/overview/NowNext'
 import { TopThree, useTop } from '@/features/overview/TopThree'
 import { attentionRows, HEALTH_COLOR, useDeliverableRows } from '@/features/tps/hooks'
@@ -138,43 +140,64 @@ function Targets({ now }: { now: Date }) {
   )
 }
 
+/** The Mission screen: what matters right now, across every workspace. */
 export default function Home() {
   const now = useNow(30_000)
   const occs = useDayOccurrences(now)
   const top = useTop(dateKey(now))
-  const shutdown = useApp((s) => s.settings.shutdownTime)
-  const next = occs.find((o) => !o.event.allDay && o.start > now)
-  const toShutdown = differenceInMinutes(atTime(now, shutdown), now)
-  const parts = [
-    top.length ? `${top.filter((t) => !t.done).length} of ${top.length} priorities open` : 'No priorities set yet',
-    next ? `next: ${next.event.title} at ${format(next.start, 'HH:mm')}` : 'nothing else scheduled',
-    toShutdown > 0 ? `${formatDuration(toShutdown)} until shutdown` : 'past shutdown',
-  ]
+  const risks = useRisks(now)
+  const show = useMissionVisible()
+  const open = top.filter((t) => !t.done).length
+
+  const focusOn = (current: Occurrence | undefined) => {
+    if (current) {
+      startFocus({ title: current.event.title, category: current.event.category, link: current.event.link, occurrenceKey: current.key, endsAt: current.end.getTime() })
+      return
+    }
+    const first = top.find((t) => !t.done)
+    startFocus({ title: first?.title ?? 'Deep work', category: first?.category ?? 'personal', link: first?.ref, endsAt: Date.now() + 50 * 60000 })
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1320px]">
       <DemoBanner />
-      <OverviewHeader summary={parts.join(' · ')} />
+      <MissionHeader now={now} open={open} risks={risks} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* On phones the column wrappers dissolve (contents) so cards can be re-ordered: Now → Top three → … */}
-        <div className="contents lg:col-span-7 lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
-          <div className="order-1 min-w-0">
-            <NowNext occs={occs} now={now} />
+        {show('now') && (
+          <div className="order-1 min-w-0 lg:col-span-8">
+            <NowNext occs={occs} now={now} onFocus={focusOn} />
           </div>
-          <div className="order-3 min-w-0">
+        )}
+        {show('countdowns') && (
+          <div className="order-4 min-w-0 lg:order-2 lg:col-span-4">
+            <CountdownsCard now={now} />
+          </div>
+        )}
+        {show('mission') && (
+          <div className="order-3 min-w-0 lg:col-span-5">
+            <TopThree now={now} title="Today’s mission" />
+          </div>
+        )}
+        {show('risk') && (
+          <div className={cn('min-w-0 lg:order-4 lg:col-span-7', risks.some((r) => r.level === 'high') ? 'order-2' : 'order-5')}>
+            <AtRiskCard risks={risks} />
+          </div>
+        )}
+        {show('week') && (
+          <div className="order-6 min-w-0 lg:col-span-12">
+            <Targets now={now} />
+          </div>
+        )}
+        {show('clients') && (
+          <div className="order-7 min-w-0 lg:col-span-7">
             <ClientAttention now={now} />
           </div>
-        </div>
-        <div className="contents lg:col-span-5 lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
-          <div className="order-2 min-w-0">
-            <TopThree now={now} />
-          </div>
-          <div className="order-4 min-w-0">
+        )}
+        {show('practice') && (
+          <div className="order-8 min-w-0 lg:col-span-5">
             <PracticeCard now={now} />
           </div>
-        </div>
-        <div className="order-5 min-w-0 lg:col-span-12">
-          <Targets now={now} />
-        </div>
+        )}
       </div>
     </div>
   )

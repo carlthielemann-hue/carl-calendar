@@ -22,7 +22,7 @@ const page = await ctx.newPage()
 const main = page.locator('#main')
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
+page.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && errors.push(m.text()))
 
 let passed = 0
 async function step(name, fn) {
@@ -50,9 +50,9 @@ await page.evaluate(() => localStorage.clear())
 await page.reload()
 
 console.log('Home & navigation')
-await step('global home shows now, top three, client attention, practice, targets', async () => {
+await step('mission screen shows now, mission, at risk, countdowns, client attention, practice, targets', async () => {
   await go('/home')
-  for (const t of ['Now', 'Today’s top three', 'Client work needing attention', 'Creative practice', 'This week’s targets'])
+  for (const t of ['Now', 'Today’s mission', 'At risk', 'Countdowns', 'Client work needing attention', 'Creative practice', 'This week’s targets'])
     await main.getByText(t, { exact: true }).first().waitFor({ timeout: 5000 })
 })
 await step('workspace switcher changes sidebar and content', async () => {

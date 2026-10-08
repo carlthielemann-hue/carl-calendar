@@ -13,7 +13,7 @@ import { DEFAULT_PREFS, morningBrief, scheduled, type NotifyPrefs } from './cron
 import type { Env } from './env'
 import * as google from './google'
 import { createManusTask, getManusTask } from './manus'
-import { DEFAULT_MCP_PERMISSIONS, mcpFetch, toolList, type McpPermissions } from './mcp'
+import { DEFAULT_MCP_AREAS, DEFAULT_MCP_PERMISSIONS, mcpFetch, toolList, type McpAreas, type McpPermissions } from './mcp'
 import { consentPage, HTML_HEADERS, loginPage, messagePage } from './pages'
 import { notify, pendingNotification, pushConfigured } from './push'
 import { applyChange, currentRev, type PushChange } from './records'
@@ -278,7 +278,10 @@ app.get('/api/brief', async (c) => json(await morningBrief(c.env)))
 
 /* ---------------- MCP settings ---------------- */
 
-app.get('/api/mcp/permissions', async (c) => json({ ...DEFAULT_MCP_PERMISSIONS, ...((await getMeta<McpPermissions>(c.env, 'mcp_permissions')) ?? {}) }))
+app.get('/api/mcp/permissions', async (c) => {
+  const cur = (await getMeta<McpPermissions>(c.env, 'mcp_permissions')) ?? ({} as Partial<McpPermissions>)
+  return json({ ...DEFAULT_MCP_PERMISSIONS, ...cur, areas: { ...DEFAULT_MCP_AREAS, ...cur.areas } })
+})
 app.put('/api/mcp/permissions', async (c) => {
   const b = (await c.req.json().catch(() => ({}))) as Partial<McpPermissions>
   const cur = { ...DEFAULT_MCP_PERMISSIONS, ...((await getMeta<McpPermissions>(c.env, 'mcp_permissions')) ?? {}) }
@@ -286,6 +289,9 @@ app.put('/api/mcp/permissions', async (c) => {
     write: typeof b.write === 'boolean' ? b.write : cur.write,
     consequential: typeof b.consequential === 'boolean' ? b.consequential : cur.consequential,
     hiddenClients: Array.isArray(b.hiddenClients) ? b.hiddenClients.filter((x) => typeof x === 'string').slice(0, 200) : cur.hiddenClients,
+    areas: Object.fromEntries(
+      (Object.keys(DEFAULT_MCP_AREAS) as (keyof McpAreas)[]).map((k) => [k, typeof b.areas?.[k] === 'boolean' ? b.areas[k] : ({ ...DEFAULT_MCP_AREAS, ...cur.areas })[k]]),
+    ) as unknown as McpAreas,
   }
   await setMeta(c.env, 'mcp_permissions', next)
   return json(next)

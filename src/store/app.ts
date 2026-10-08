@@ -18,6 +18,8 @@ import type {
   Asset,
   Concept,
   ContentPost,
+  Countdown,
+  Proposal,
   EntityType,
   FeedbackEntry,
   PerformanceEntry,
@@ -61,6 +63,8 @@ export const DEFAULT_SETTINGS: Settings = {
   dayEndHour: 24,
   showDemoEvents: true,
   googleClientId: '',
+  hiddenSpaces: [],
+  hiddenMissionModules: [],
 }
 
 
@@ -75,6 +79,8 @@ export interface Collections {
   aiOutputs: AiOutput
   workflows: AiWorkflow
   posts: ContentPost
+  countdowns: Countdown
+  proposals: Proposal
 }
 export type CollKey = keyof Collections
 export const COLL_REF: Record<CollKey, EntityType> = {
@@ -86,6 +92,8 @@ export const COLL_REF: Record<CollKey, EntityType> = {
   aiOutputs: 'aiOutput',
   workflows: 'aiOutput',
   posts: 'post',
+  countdowns: 'countdown',
+  proposals: 'proposal',
 }
 
 interface Actions {
@@ -200,6 +208,8 @@ function initialData(): Data {
     aiOutputs: [],
     workflows: BUILTIN_WORKFLOWS,
     posts: [],
+    countdowns: [],
+    proposals: [],
     settings: DEFAULT_SETTINGS,
     google: { connected: false, calendarId: 'primary', events: [] },
     hasDemoData: true,
@@ -669,7 +679,7 @@ export const useApp = create<AppState>()(
           set({
             events: [], tasks: [], topThree: {}, weekly: {}, dayPlans: {}, clients: [], projects: [], deliverables: [], opportunities: [],
             ads: [], analyses: [], plans: [], insights: [], scorecards: {}, focusLogs: [], activity: [], hasDemoData: false,
-            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [],
+            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [],
           }),
       }
     },
@@ -745,6 +755,8 @@ function migrateV2(p: Record<string, unknown>): Record<string, unknown> {
     aiOutputs: [],
     workflows: BUILTIN_WORKFLOWS,
     posts: [],
+    countdowns: [],
+    proposals: [],
   }
 }
 

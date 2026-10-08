@@ -1,5 +1,5 @@
 import { differenceInMinutes } from 'date-fns'
-import { ArrowRight, Moon, Sparkles } from 'lucide-react'
+import { ArrowRight, Moon, Play, Sparkles } from 'lucide-react'
 import { CategoryBadge } from '@/components/Category'
 import { Card, Checkbox } from '@/components/ui'
 import { atTime, formatDuration, formatTime } from '@/lib/dates'
@@ -25,7 +25,7 @@ function LinkedItem({ link }: { link: string }) {
   )
 }
 
-export function NowNext({ occs, now }: { occs: Occurrence[]; now: Date }) {
+export function NowNext({ occs, now, onFocus }: { occs: Occurrence[]; now: Date; onFocus?: (current: Occurrence | undefined) => void }) {
   const fmt = useApp((s) => s.settings.timeFormat)
   const shutdown = useApp((s) => s.settings.shutdownTime)
   const colors = useApp((s) => s.settings.categoryColors)
@@ -84,6 +84,14 @@ export function NowNext({ occs, now }: { occs: Occurrence[]; now: Date }) {
             </div>
           )}
           {current?.event.link && <LinkedItem link={current.event.link} />}
+          {onFocus && !afterShutdown && (
+            <button
+              onClick={() => onFocus(current)}
+              className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg bg-fg px-3.5 text-[13px] font-medium text-bg transition-opacity hover:opacity-90"
+            >
+              <Play className="h-3.5 w-3.5" fill="currentColor" /> {current ? 'Focus on this' : 'Start focus'}
+            </button>
+          )}
         </div>
 
         {/* NEXT */}

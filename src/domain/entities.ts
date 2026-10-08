@@ -30,6 +30,8 @@ export type EntityType =
   | 'concept'
   | 'aiOutput'
   | 'post'
+  | 'countdown'
+  | 'proposal'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -505,4 +507,44 @@ export interface ContentPost {
   postedUrl?: string
   notes?: string
   createdAt: string
+}
+
+/* ---------------- V4 foundations ---------------- */
+
+/** A date that matters (Abitur, a launch, a trip). Shown on the Mission screen. */
+export interface Countdown {
+  id: string
+  title: string
+  /** yyyy-MM-dd */
+  date: string
+  createdAt: string
+}
+
+/** One change a proposal would make. Nothing happens until the proposal is approved. */
+export type ProposalAction =
+  | { type: 'create-event'; event: { title: string; start: string; end: string; category: import('@/lib/types').CategoryId; link?: string; description?: string } }
+  | { type: 'move-event'; eventId: string; start: string; end: string }
+  | { type: 'delete-event'; eventId: string }
+  | { type: 'create-task'; task: { title: string; due?: string; dueTime?: string; category: import('@/lib/types').CategoryId; link?: string; notes?: string } }
+
+export interface ProposalItem {
+  id: string
+  action: ProposalAction
+  /** Human summary, e.g. "Mathe review · Tue 16:00–17:00" */
+  label: string
+  /** Why, e.g. "basketball moved to 15:30" */
+  reason?: string
+  selected: boolean
+}
+
+/** A batch of suggested changes (planner, study plan, AI) waiting for your approval. */
+export interface Proposal {
+  id: string
+  kind: 'planner' | 'study-plan' | 'ai-suggestion'
+  source: 'planner' | 'mcp' | 'ai' | 'manual'
+  title: string
+  createdAt: string
+  status: 'pending' | 'approved' | 'partly' | 'rejected'
+  resolvedAt?: string
+  items: ProposalItem[]
 }

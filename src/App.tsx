@@ -14,6 +14,7 @@ import Overview from '@/pages/personal/Overview'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { ConfirmHost } from '@/components/ConfirmHost'
+import { FocusMode } from '@/features/mission/FocusMode'
 import { boot } from '@/lib/boot'
 
 const page = <T,>(f: () => Promise<{ default: T }>) => lazy(f as never)
@@ -146,7 +147,7 @@ export default function App() {
   const Page = loc.id && DETAIL[key] ? DETAIL[key] : ROUTES[key]
   useEffect(() => {
     const d = spaceDef(loc.space === 'settings' ? 'home' : loc.space)
-    document.title = loc.space === 'home' ? 'Command Center' : `${d.short} · Command Center`
+    document.title = loc.space === 'home' ? 'Mission · Command Center' : `${d.short} · Command Center`
   }, [loc.space])
 
   return (
@@ -167,6 +168,7 @@ export default function App() {
       <CommandPalette />
       <Shortcuts />
       <ConfirmHost />
+      <FocusMode />
       <Toaster
         theme={theme === 'system' ? 'system' : theme}
         position="bottom-right"

@@ -187,3 +187,34 @@ describe('V2 → account import', () => {
     expect(withDemo.clients.length).toBeGreaterThan(1)
   })
 })
+
+describe('proposals', () => {
+  it('only apply after approval and never move your own or pinned events', async () => {
+    const { newProposal, applyProposal } = await import('@/lib/proposals')
+    const st = useApp.getState()
+    const mine = st.addEvent({ title: 'Basketball', start: '2026-10-09T18:00', end: '2026-10-09T19:30', category: 'basketball' })
+    const plannerEv = st.addEvent({ title: 'Study', start: '2026-10-09T16:00', end: '2026-10-09T17:00', category: 'school', origin: 'planner' })
+    const pinned = st.addEvent({ title: 'Study 2', start: '2026-10-09T17:00', end: '2026-10-09T17:30', category: 'school', origin: 'planner', locked: true })
+    const before = useApp.getState().events.length
+    const p = newProposal({
+      kind: 'planner', source: 'planner', title: 'Tomorrow',
+      items: [
+        { id: 'a', label: 'move mine', selected: true, action: { type: 'move-event', eventId: mine.id, start: '2026-10-09T20:00', end: '2026-10-09T21:00' } },
+        { id: 'b', label: 'move planner', selected: true, action: { type: 'move-event', eventId: plannerEv.id, start: '2026-10-09T15:00', end: '2026-10-09T16:00' } },
+        { id: 'c', label: 'delete pinned', selected: true, action: { type: 'delete-event', eventId: pinned.id } },
+        { id: 'd', label: 'new block', selected: true, action: { type: 'create-event', event: { title: 'Review', start: '2026-10-10T16:00', end: '2026-10-10T17:00', category: 'school' } } },
+      ],
+    })
+    expect(useApp.getState().events.length).toBe(before) // nothing until approved
+    const r = applyProposal(p.id)
+    expect(r.applied).toBe(2)
+    expect(r.skipped.map((x) => x.item.id).sort()).toEqual(['a', 'c'])
+    const ev = (id: string) => useApp.getState().events.find((e) => e.id === id)
+    expect(ev(mine.id)!.start).toBe('2026-10-09T18:00')
+    expect(ev(plannerEv.id)!.start).toBe('2026-10-09T15:00')
+    expect(ev(pinned.id)).toBeTruthy()
+    expect(useApp.getState().events.some((e) => e.title === 'Review' && e.origin === 'planner')).toBe(true)
+    expect(useApp.getState().proposals.find((x) => x.id === p.id)!.status).toBe('partly')
+    expect(applyProposal(p.id).applied).toBe(0) // can't be applied twice
+  })
+})

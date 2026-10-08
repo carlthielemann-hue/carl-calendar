@@ -30,7 +30,8 @@ export async function morningBrief(env: Env, now = new Date()) {
   const { results } = await env.DB.prepare('SELECT data FROM gcal_events WHERE start >= ? AND start < ?').bind(today, dateKey(addDays(day, 1))).all<{ data: string }>()
   const google = results.map((r) => JSON.parse(r.data) as { title: string; start: string; allDay?: boolean }).map((e) => ({ start: new Date(e.start), event: { title: e.title, allDay: e.allDay } as never }))
   const shutdown = (s.settings as { shutdownTime?: string }).shutdownTime ?? '20:30'
-  return buildMorningBrief({ date: day, top, occurrences: [...local, ...google], dueToday: items.filter((i) => i.due === today), shutdown, items, today })
+  const pendingChanges = (s.proposals ?? []).filter((p) => p.status === 'pending').reduce((n, p) => n + p.items.length, 0)
+  return buildMorningBrief({ date: day, top, occurrences: [...local, ...google], dueToday: items.filter((i) => i.due === today), shutdown, items, today, pendingChanges })
 }
 
 /** Runs every 15 minutes. Sends at most one morning and one evening notification per day. */
@@ -55,12 +56,13 @@ export async function scheduled(env: Env) {
     sent.morning = today
   }
   if (prefs.evening && sent.evening !== today && nowMin >= mins(prefs.eveningTime) && nowMin < mins(prefs.eveningTime) + 60) {
-    const s = await loadState(env, ['dayPlans', 'config'])
+    const s = await loadState(env, ['dayPlans', 'config', 'proposals'])
     const shutdown = (s.settings as { shutdownTime?: string }).shutdownTime ?? '20:30'
     // Respect the shutdown: a late cron tick never nudges after work has ended.
     if (nowMin < mins(shutdown)) {
       const tomorrow = dateKey(addDays(fromDateKey(today), 1))
-      const n = buildEveningReminder({ tomorrowConfirmed: !!s.dayPlans[tomorrow]?.confirmedAt, shutdown })
+      const pendingChanges = (s.proposals ?? []).filter((p) => p.status === 'pending').reduce((n, p) => n + p.items.length, 0)
+      const n = buildEveningReminder({ tomorrowConfirmed: !!s.dayPlans[tomorrow]?.confirmedAt, shutdown, pendingChanges })
       if (n) await notify(env, 'evening', n)
     }
     sent.evening = today

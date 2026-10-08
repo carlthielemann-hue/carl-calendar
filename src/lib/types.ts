@@ -35,6 +35,10 @@ export interface CalEvent {
   allDay?: boolean
   /** Google: link to open the event in Google Calendar */
   htmlLink?: string
+  /** Created by the planner — only these can be moved by planner proposals */
+  origin?: 'planner'
+  /** Pinned: the planner never moves it */
+  locked?: boolean
 }
 
 export interface Task {
@@ -79,6 +83,10 @@ export interface Settings {
   dayEndHour: number
   showDemoEvents: boolean
   googleClientId: string
+  /** Workspaces hidden from navigation and the Mission screen */
+  hiddenSpaces: string[]
+  /** Mission screen modules you've hidden */
+  hiddenMissionModules: string[]
 }
 
 /** A concrete, dated instance of an event (recurring events expand into many). */

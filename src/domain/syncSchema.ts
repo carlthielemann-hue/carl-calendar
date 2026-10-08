@@ -9,7 +9,7 @@
 export const ARRAY_COLLS = [
   'events', 'tasks', 'clients', 'projects', 'deliverables', 'opportunities', 'ads', 'analyses', 'templates', 'plans',
   'practiceTemplates', 'insights', 'metrics', 'focusLogs', 'activity', 'research', 'assets', 'feedback', 'performance',
-  'concepts', 'aiOutputs', 'workflows', 'posts',
+  'concepts', 'aiOutputs', 'workflows', 'posts', 'countdowns', 'proposals',
 ] as const
 export const MAP_COLLS = ['topThree', 'weekly', 'dayPlans', 'scorecards'] as const
 export const CONFIG_KEYS = ['stages', 'settings'] as const

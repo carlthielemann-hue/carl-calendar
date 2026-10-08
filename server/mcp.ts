@@ -25,8 +25,19 @@ export interface McpPermissions {
   consequential: boolean
   /** client ids hidden from all AI tools */
   hiddenClients: string[]
+  /** Which areas AI tools may read. Sensitive areas (money, grades) are off by default. */
+  areas: McpAreas
 }
-export const DEFAULT_MCP_PERMISSIONS: McpPermissions = { write: true, consequential: false, hiddenClients: [] }
+export interface McpAreas {
+  school: boolean
+  grades: boolean
+  fitness: boolean
+  money: boolean
+}
+export const DEFAULT_MCP_AREAS: McpAreas = { school: true, grades: false, fitness: true, money: false }
+export const DEFAULT_MCP_PERMISSIONS: McpPermissions = { write: true, consequential: false, hiddenClients: [], areas: DEFAULT_MCP_AREAS }
+/** Tools for an area check this before returning data (school/fitness/money tools arrive in V4.1+). */
+export const areaAllowed = (p: McpPermissions, area: keyof McpAreas) => !!{ ...DEFAULT_MCP_AREAS, ...p.areas }[area]
 
 const PROTOCOLS = ['2026-07-28', '2025-11-25', '2025-06-18', '2025-03-26']
 

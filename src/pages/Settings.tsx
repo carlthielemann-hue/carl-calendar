@@ -4,6 +4,7 @@ import {
   Bell,
   CalendarDays,
   Layers,
+  LayoutGrid,
   Check,
   Database,
   Download,
@@ -19,6 +20,7 @@ import {
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { SPACE_DEFS } from '@/components/layout/nav'
 import { Button, ConfirmButton, Input, Segmented, Select } from '@/components/ui'
 import { Row, Section, Toggle } from '@/features/settings/ui'
 import { AccountSection } from '@/features/settings/Account'
@@ -335,6 +337,18 @@ export default function SettingsPage() {
           <Row label="Work shutdown time" hint="When work ends for the day. Used on Overview and in planning.">
             <Input type="time" className="w-[130px]" value={s.shutdownTime} onChange={(e) => e.target.value && update({ shutdownTime: e.target.value })} />
           </Row>
+        </Section>
+
+        <Section icon={<LayoutGrid />} title="Workspaces" sub="Hide spaces you don’t use. Mission is always on.">
+          {SPACE_DEFS.filter((d) => d.id !== 'home').map((d) => (
+            <Row key={d.id} label={d.label}>
+              <Toggle
+                checked={!s.hiddenSpaces?.includes(d.id)}
+                onChange={(v) => update({ hiddenSpaces: v ? (s.hiddenSpaces ?? []).filter((x) => x !== d.id) : [...(s.hiddenSpaces ?? []), d.id] })}
+                label={`Show ${d.label}`}
+              />
+            </Row>
+          ))}
         </Section>
 
         <Section icon={<CalendarDays />} title="Calendar">

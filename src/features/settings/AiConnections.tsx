@@ -12,7 +12,14 @@ interface Perms {
   write: boolean
   consequential: boolean
   hiddenClients: string[]
+  areas: { school: boolean; grades: boolean; fitness: boolean; money: boolean }
 }
+const AREAS: { key: keyof Perms['areas']; label: string; hint: string }[] = [
+  { key: 'school', label: 'School', hint: 'Subjects, exams, assignments, study plans' },
+  { key: 'grades', label: 'Grades', hint: 'Your marks and averages' },
+  { key: 'fitness', label: 'Fitness', hint: 'Routines, workouts, PRs, bodyweight' },
+  { key: 'money', label: 'Money', hint: 'Anything financial — off unless you turn it on' },
+]
 interface Grant {
   id: string
   client: string
@@ -135,6 +142,21 @@ export function AiConnectionsSection() {
           <Row label="Allow status changes" hint="Moving a deliverable’s stage. Even when on, the AI must show you a preview and call again with confirmation.">
             <Toggle checked={perms.consequential} onChange={(v) => save({ consequential: v })} label="Allow consequential actions" />
           </Row>
+          <div className="px-5 py-3.5">
+            <div className="text-[13px] font-medium">What AI can see</div>
+            <p className="mb-2 text-[12px] text-muted">Checked on your server for every request. Grades and money are off by default. (These areas fill up as School, Fitness and Money are added.)</p>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {AREAS.map((a) => (
+                <div key={a.key} className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="text-[12.5px] font-medium">{a.label}</div>
+                    <div className="truncate text-[11.5px] text-faint">{a.hint}</div>
+                  </div>
+                  <Toggle checked={!!perms.areas?.[a.key]} onChange={(v) => save({ areas: { ...perms.areas, [a.key]: v } })} label={`AI can see ${a.label}`} />
+                </div>
+              ))}
+            </div>
+          </div>
           {clients.length > 0 && (
             <div className="px-5 py-3.5">
               <div className="text-[13px] font-medium">Hidden from AI</div>
