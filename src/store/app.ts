@@ -10,7 +10,7 @@ import type { CalEvent, Settings, Task, WeeklyPlan } from '@/lib/types'
 import { BUILTIN_TEMPLATES, DEFAULT_PRACTICE_TEMPLATES, STARTER_METRICS } from '@/domain/defaults'
 import { buildWorkspaceDemo } from '@/domain/demo'
 import { BUILTIN_WORKFLOWS } from '@/domain/aiWorkflows'
-import { DEFAULT_STUDY_PREFS } from '@/domain/entities'
+import { DEFAULT_MONEY_SETTINGS, DEFAULT_STUDY_PREFS } from '@/domain/entities'
 import { BUILTIN_EXERCISES } from '@/domain/fitness'
 import { isAccountMode, storeKey } from './mode'
 import type {
@@ -30,6 +30,11 @@ import type {
   Routine,
   WorkoutSession,
   BodyweightEntry,
+  Transaction,
+  MoneyAccount,
+  Subscription,
+  SavingsGoal,
+  AllocationMove,
   EntityType,
   FeedbackEntry,
   PerformanceEntry,
@@ -76,6 +81,8 @@ export const DEFAULT_SETTINGS: Settings = {
   hiddenSpaces: [],
   hiddenMissionModules: [],
   study: DEFAULT_STUDY_PREFS,
+  money: DEFAULT_MONEY_SETTINGS,
+  hideAmounts: false,
 }
 
 
@@ -100,6 +107,11 @@ export interface Collections {
   routines: Routine
   workouts: WorkoutSession
   bodyweight: BodyweightEntry
+  transactions: Transaction
+  accounts: MoneyAccount
+  subscriptions: Subscription
+  savingsGoals: SavingsGoal
+  moves: AllocationMove
 }
 export type CollKey = keyof Collections
 export const COLL_REF: Record<CollKey, EntityType> = {
@@ -121,6 +133,11 @@ export const COLL_REF: Record<CollKey, EntityType> = {
   routines: 'routine',
   workouts: 'workout',
   bodyweight: 'weighin',
+  transactions: 'transaction',
+  accounts: 'transaction',
+  subscriptions: 'subscription',
+  savingsGoals: 'savingsgoal',
+  moves: 'transaction',
 }
 
 interface Actions {
@@ -245,6 +262,11 @@ function initialData(): Data {
     routines: [],
     workouts: [],
     bodyweight: [],
+    transactions: [],
+    accounts: [],
+    subscriptions: [],
+    savingsGoals: [],
+    moves: [],
     settings: DEFAULT_SETTINGS,
     google: { connected: false, calendarId: 'primary', events: [] },
     hasDemoData: true,
@@ -714,7 +736,7 @@ export const useApp = create<AppState>()(
           set({
             events: [], tasks: [], topThree: {}, weekly: {}, dayPlans: {}, clients: [], projects: [], deliverables: [], opportunities: [],
             ads: [], analyses: [], plans: [], insights: [], scorecards: {}, focusLogs: [], activity: [], hasDemoData: false,
-            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [],
+            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [], transactions: [], accounts: [], subscriptions: [], savingsGoals: [], moves: [],
           }),
       }
     },
@@ -733,6 +755,7 @@ export const useApp = create<AppState>()(
             ...p.settings,
             categoryColors: { ...DEFAULT_CATEGORY_COLORS, ...p.settings?.categoryColors },
             study: { ...DEFAULT_STUDY_PREFS, ...p.settings?.study },
+            money: { ...DEFAULT_MONEY_SETTINGS, ...p.settings?.money },
           },
           google: { ...current.google, ...p.google },
         }
@@ -801,6 +824,11 @@ function migrateV2(p: Record<string, unknown>): Record<string, unknown> {
     routines: [],
     workouts: [],
     bodyweight: [],
+    transactions: [],
+    accounts: [],
+    subscriptions: [],
+    savingsGoals: [],
+    moves: [],
   }
 }
 

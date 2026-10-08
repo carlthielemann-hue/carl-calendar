@@ -20,6 +20,11 @@ import type {
   Routine,
   WorkoutSession,
   BodyweightEntry,
+  Transaction,
+  MoneyAccount,
+  Subscription,
+  SavingsGoal,
+  AllocationMove,
   DayPlan,
   Deliverable,
   FeedbackEntry,
@@ -87,6 +92,11 @@ export interface Data {
   routines: Routine[]
   workouts: WorkoutSession[]
   bodyweight: BodyweightEntry[]
+  transactions: Transaction[]
+  accounts: MoneyAccount[]
+  subscriptions: Subscription[]
+  savingsGoals: SavingsGoal[]
+  moves: AllocationMove[]
   /* Shared */
   metrics: Metric[]
   scorecards: Record<string, WeekScore>

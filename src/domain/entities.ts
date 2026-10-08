@@ -40,6 +40,9 @@ export type EntityType =
   | 'routine'
   | 'workout'
   | 'weighin'
+  | 'transaction'
+  | 'subscription'
+  | 'savingsgoal'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -283,6 +286,7 @@ export type AutoMetricKey =
   | 'study_hours'
   | 'homework_done'
   | 'workouts_completed'
+  | 'business_revenue'
 
 export interface MetricSource {
   type: 'manual' | 'auto'
@@ -297,7 +301,7 @@ export interface Metric {
   workspace: WorkspaceId
   /** Output = results produced; effort = time/attempts invested. */
   kind: 'output' | 'effort'
-  unit: 'count' | 'hours'
+  unit: 'count' | 'hours' | 'eur'
   source: MetricSource
   defaultTarget: number
   /** Unmet amount carries into next week's target */
@@ -700,4 +704,108 @@ export interface BodyweightEntry {
   kg: number
   note?: string
   createdAt: string
+}
+
+/* ---------------- Money (V4.3) — a private planner, not accounting ---------------- */
+
+export type Currency = 'EUR' | 'USD' | 'GBP' | 'CHF'
+export type MoneyScope = 'business' | 'personal'
+
+export interface Transaction {
+  id: string
+  date: string
+  /** Positive amount in `currency` */
+  amount: number
+  currency: Currency
+  /** Amount in EUR at the time (= amount for EUR) */
+  eur: number
+  direction: 'in' | 'out'
+  scope: MoneyScope
+  category: string
+  note?: string
+  clientId?: string
+  accountId?: string
+  /** Set when created from a subscription renewal */
+  subscriptionId?: string
+  createdAt: string
+}
+
+export interface MoneyAccount {
+  id: string
+  name: string
+  kind: 'checking' | 'savings' | 'investment' | 'cash' | 'platform'
+  startBalance: number
+  createdAt: string
+}
+
+export interface Subscription {
+  id: string
+  name: string
+  amount: number
+  currency: Currency
+  cycle: 'monthly' | 'yearly'
+  /** yyyy-MM-dd of the next charge */
+  nextRenewal: string
+  scope: MoneyScope
+  category: string
+  active: boolean
+  createdAt: string
+}
+
+export interface SavingsGoal {
+  id: string
+  name: string
+  target: number
+  targetDate?: string
+  /** What's saved so far (manual) */
+  saved: number
+  createdAt: string
+}
+
+/** A transfer you made to honour a set-aside bucket (e.g. moved €300 to reserves). */
+export interface AllocationMove {
+  id: string
+  date: string
+  bucketId: string
+  amount: number
+  note?: string
+  createdAt: string
+}
+
+export interface MoneyBucket {
+  id: string
+  name: string
+  pct: number
+  /** set-aside = money to move away (reserves, investing); spend = a budget you can use */
+  kind: 'set-aside' | 'spend'
+}
+
+export interface MoneySettings {
+  buckets: MoneyBucket[]
+  appliesTo: 'business' | 'all'
+  /** EUR per 1 unit of currency, used to pre-fill conversions */
+  rates: Partial<Record<Currency, number>>
+  budgets: Record<string, number>
+}
+
+export const DEFAULT_MONEY_SETTINGS: MoneySettings = {
+  buckets: [
+    { id: 'reserves', name: 'Reserves', pct: 30, kind: 'set-aside' },
+    { id: 'invest', name: 'Investable capital', pct: 50, kind: 'set-aside' },
+    { id: 'spend', name: 'Personal spend', pct: 20, kind: 'spend' },
+  ],
+  appliesTo: 'business',
+  rates: { USD: 0.92, GBP: 1.17, CHF: 1.05 },
+  budgets: {},
+}
+
+export const MONEY_CATEGORIES: Record<MoneyScope, Record<'in' | 'out', string[]>> = {
+  business: {
+    in: ['Client payment', 'Upwork', 'Other income'],
+    out: ['Software & tools', 'Ads & marketing', 'Contractors', 'Equipment', 'Education', 'Fees', 'Taxes', 'Other'],
+  },
+  personal: {
+    in: ['Allowance', 'Job', 'Gift', 'Refund', 'Other'],
+    out: ['Food', 'Eating out', 'Transport', 'Going out', 'Clothes', 'Gym & health', 'Phone & internet', 'Subscriptions', 'Gifts', 'Travel', 'Other'],
+  },
 }

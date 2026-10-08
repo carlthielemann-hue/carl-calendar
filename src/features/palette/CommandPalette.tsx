@@ -1,5 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { CalendarPlus, CheckSquare, CornerDownLeft, Keyboard, Lightbulb, Moon, PanelRight, Plus, Search, Settings, UserPlus } from 'lucide-react'
+import { CalendarPlus, CheckSquare, CornerDownLeft, Keyboard, Lightbulb, Moon, PanelRight, Plus, Wallet, Search, Settings, UserPlus } from 'lucide-react'
 import { dock, dockAvailable, getDockPrefs } from '@/lib/dock'
 import { openAiWithHint } from '@/features/dock/DockBar'
 import { useMemo, useState, type ReactNode } from 'react'
@@ -12,6 +12,9 @@ import { describeRef } from '@/lib/work'
 import { useApp, type AppState } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { PAGES, SPACE_DEFS } from '@/components/layout/nav'
+import { parseQuickTx } from '@/domain/money'
+import { dateKey } from '@/lib/dates'
+import { addTransaction, announce } from '@/features/money/ui'
 import { dueLabel } from '@/features/tasks/TaskRow'
 import { nextHalfHour } from '@/features/overview/Timeline'
 import type { Ref } from '@/domain/entities'
@@ -114,6 +117,24 @@ function PaletteBody({ close }: { close: () => void }) {
     const list: Item[] = []
     const space = ui.loc.space
     const defaultCat = space === 'tps' ? 'tps' : space === 'lab' ? 'lab' : 'personal'
+    const money = /^[+-]\s*[$€]?\s*\d/.test(q.trim()) ? parseQuickTx(q, state.clients) : null
+    if (money) {
+      list.push({
+        id: 'add-money',
+        group: 'Create',
+        icon: <Wallet />,
+        label: (
+          <span>
+            {money.direction === 'in' ? 'Income' : 'Expense'} <span className="text-fg">{money.amount} {money.currency}</span> {money.note && `· ${money.note}`}
+          </span>
+        ),
+        hint: <span className="text-muted">{money.scope} · {money.category}</span>,
+        run: () => {
+          announce(addTransaction({ ...money, date: dateKey(new Date()), note: money.note || undefined }))
+          close()
+        },
+      })
+    }
     if (query) {
       const title = parsed.title || q.trim()
       list.push({

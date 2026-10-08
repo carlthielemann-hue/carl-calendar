@@ -90,6 +90,9 @@ export interface Settings {
   /** Mission screen modules you've hidden */
   hiddenMissionModules: string[]
   study: import('@/domain/entities').StudyPrefs
+  money: import('@/domain/entities').MoneySettings
+  /** This device only: blur amounts (screen sharing, people around) */
+  hideAmounts: boolean
 }
 
 /** A concrete, dated instance of an event (recurring events expand into many). */

@@ -6,7 +6,8 @@
  */
 import { addDays } from 'date-fns'
 import { buildContextPack } from '@/domain/context'
-import { DEFAULT_STUDY_PREFS } from '@/domain/entities'
+import { DEFAULT_MONEY_SETTINGS, DEFAULT_STUDY_PREFS } from '@/domain/entities'
+import { bucketStatus, monthSummary, savingsRate, subscriptionTotals } from '@/domain/money'
 import { examStatus, gradeAverage } from '@/domain/school'
 import { bodyweightSeries, personalRecords } from '@/domain/fitness'
 import type { Concept, Insight, Ref } from '@/domain/entities'
@@ -88,6 +89,11 @@ function visible(s0: AppStateLike, perms: McpPermissions): AppStateLike {
     routines: areas.fitness ? (s0.routines ?? []) : [],
     workouts: areas.fitness ? (s0.workouts ?? []) : [],
     bodyweight: areas.fitness ? (s0.bodyweight ?? []) : [],
+    transactions: areas.money ? (s0.transactions ?? []) : [],
+    accounts: areas.money ? (s0.accounts ?? []) : [],
+    subscriptions: areas.money ? (s0.subscriptions ?? []) : [],
+    savingsGoals: areas.money ? (s0.savingsGoals ?? []) : [],
+    moves: areas.money ? (s0.moves ?? []) : [],
   }
   if (!perms.hiddenClients.length) return s
   const hidden = new Set(perms.hiddenClients)
@@ -345,6 +351,35 @@ const TOOLS: Tool[] = [
           .map((w) => ({ date: w.date, title: w.title, exercises: w.entries.map((e) => ({ exercise: name.get(e.exerciseId), sets: e.sets.map((x) => `${x.weight}kg×${x.reps}`) })) })),
         personal_records: [...prs].map(([id, r]) => ({ exercise: name.get(id), heaviest: r.weight?.detail ?? null, best_e1rm_kg: r.e1rm?.value ?? null })),
         bodyweight: { latest_avg_kg: bw.at(-1)?.avg ?? null, last_14: bw.slice(-14) },
+      }
+    },
+  },
+  {
+    name: 'get_money_summary',
+    title: 'Money summary',
+    description: 'Private: monthly income, spending, business profit, revenue by client, set-aside buckets (owed / moved / still to move), subscriptions and savings goals. Only available if you allowed Money for AI.',
+    inputSchema: { type: 'object', properties: { month: { type: 'string', description: 'yyyy-MM (default: this month)' } }, additionalProperties: false },
+    level: 'read',
+    run: async (a, ctx) => {
+      if (!areaAllowed(ctx.perms, 'money')) throw new ToolError('Money is private — turn on “Money” in Command Center → Settings → AI connections to share it.')
+      const s = await ctx.state()
+      const month = str(a, 'month') ?? todayKey(ctx.env).slice(0, 7)
+      if (!/^\d{4}-\d{2}$/.test(month)) throw new ToolError('month must be yyyy-MM')
+      const settings = { ...DEFAULT_MONEY_SETTINGS, ...(s.settings as { money?: Partial<typeof DEFAULT_MONEY_SETTINGS> }).money }
+      const sum = monthSummary(s.transactions, month)
+      return {
+        month,
+        currency: 'EUR',
+        income: sum.income,
+        spent: sum.expenses,
+        net: sum.net,
+        business: sum.business,
+        revenue_by_client: sum.byClient.map((c) => ({ client: s.clients.find((x) => x.id === c.clientId)?.name ?? c.clientId, total: c.total })),
+        spending_by_category: sum.byCategory.filter((c) => c.direction === 'out'),
+        buckets: bucketStatus(s.transactions, s.moves, settings, month),
+        put_away_rate_pct: savingsRate(s.transactions, settings, month),
+        subscriptions: { ...subscriptionTotals(s.subscriptions, settings.rates), list: s.subscriptions.filter((x) => x.active).map((x) => ({ name: x.name, amount: x.amount, currency: x.currency, cycle: x.cycle })) },
+        savings_goals: s.savingsGoals.map((g) => ({ name: g.name, target: g.target, saved: g.saved, by: g.targetDate ?? null })),
       }
     },
   },

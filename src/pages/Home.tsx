@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { toggleWorkItem } from '@/lib/work'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { AtRiskCard, AutopilotCard, CountdownsCard, TrainingCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
+import { AtRiskCard, AutopilotCard, CountdownsCard, MoneyCard, TrainingCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
 import { startFocus } from '@/features/mission/focus'
 import type { Occurrence } from '@/lib/types'
 import { NowNext } from '@/features/overview/NowNext'
@@ -148,7 +148,8 @@ export default function Home() {
   const risks = useRisks(now)
   const show = useMissionVisible()
   const open = top.filter((t) => !t.done).length
-  const training = useApp((s) => show('fitness') && (s.routines.some((r) => r.active) || s.workouts.length > 0 || s.bodyweight.length > 0))
+  const training = useApp((s) => s.routines.some((r) => r.active) || s.workouts.length > 0 || s.bodyweight.length > 0)
+  const hasMoney = useApp((s) => s.transactions.length > 0)
 
   const focusOn = (current: Occurrence | undefined) => {
     if (current) {
@@ -194,21 +195,12 @@ export default function Home() {
             <Targets now={now} />
           </div>
         )}
-        {show('fitness') && (
-          <div className="order-7 min-w-0 empty:hidden lg:col-span-4">
-            <TrainingCard now={now} />
-          </div>
-        )}
-        {show('clients') && (
-          <div className={cn('order-7 min-w-0', training ? 'lg:col-span-5' : 'lg:col-span-7')}>
-            <ClientAttention now={now} />
-          </div>
-        )}
-        {show('practice') && (
-          <div className={cn('order-8 min-w-0', training ? 'lg:col-span-3' : 'lg:col-span-5')}>
-            <PracticeCard now={now} />
-          </div>
-        )}
+        <div className="order-7 grid min-w-0 gap-4 md:grid-cols-2 lg:col-span-12 xl:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
+          {show('fitness') && training && <TrainingCard now={now} />}
+          {show('money') && hasMoney && <MoneyCard now={now} />}
+          {show('clients') && <ClientAttention now={now} />}
+          {show('practice') && <PracticeCard now={now} />}
+        </div>
       </div>
     </div>
   )

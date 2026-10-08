@@ -21,7 +21,8 @@
     "setup:secrets": "node scripts/setup-secrets.mjs",
     "test:v4": "node tests/v4.mjs",
     "test:school": "node tests/school.mjs",
-    "test:fitness": "node tests/fitness.mjs"
+    "test:fitness": "node tests/fitness.mjs",
+    "test:money": "node tests/money.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

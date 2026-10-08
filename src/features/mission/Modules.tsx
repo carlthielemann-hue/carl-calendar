@@ -1,6 +1,9 @@
 import { differenceInMinutes, format } from 'date-fns'
-import { AlertTriangle, Bot, CalendarClock, Check, Dumbbell, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { AlertTriangle, Bot, CalendarClock, Check, Dumbbell, Plus, SlidersHorizontal, Wallet, X } from 'lucide-react'
 import { bodyweightSeries } from '@/domain/fitness'
+import { bucketStatus, monthSummary, nextCharge, savingsRate } from '@/domain/money'
+import { Amount, eur } from '@/features/money/ui'
+import { differenceInCalendarDays } from 'date-fns'
 import { startWorkout } from '@/features/fitness/actions'
 import { undoAuto, usePlanner } from '@/lib/plannerRunner'
 import { useMemo, useState } from 'react'
@@ -21,6 +24,7 @@ export const MISSION_MODULES = [
   { id: 'week', label: 'This week' },
   { id: 'autopilot', label: 'Autopilot log' },
   { id: 'fitness', label: 'Training' },
+  { id: 'money', label: 'Money pulse' },
   { id: 'clients', label: 'Client work' },
   { id: 'practice', label: 'Creative practice' },
 ] as const
@@ -37,8 +41,23 @@ export function useRisks(now: Date) {
   const subjects = useApp((s) => s.subjects)
   const needsPace = usePlanner((s) => s.needsPace)
   const warnings = usePlanner((s) => s.warnings)
+  const txs = useApp((s) => s.transactions)
+  const moves = useApp((s) => s.moves)
+  const subs = useApp((s) => s.subscriptions)
+  const money = useApp((s) => s.settings.money)
+  const hideAmounts = useApp((s) => s.settings.hideAmounts)
+  const moneyVisible = useMissionVisible()('money')
   const today = dateKey(now)
   return useMemo(() => {
+    const moneyRisks: RiskItem[] = []
+    if (moneyVisible) {
+      const toMove = bucketStatus(txs, moves, money, today.slice(0, 7)).filter((b) => b.kind === 'set-aside').reduce((a, b) => a + b.toMove, 0)
+      if (toMove >= 1) moneyRisks.push({ id: 'money:move', level: 'medium', title: hideAmounts ? 'Money still to put away' : `${eur(toMove, true)} still to put away`, detail: 'Move it to your reserves / investing account, then tap “Moved”', path: '/money/split' })
+      for (const sb of subs.filter((x) => x.active)) {
+        const d = differenceInCalendarDays(fromDateKey(nextCharge(sb, today)), fromDateKey(today))
+        if (d <= 2) moneyRisks.push({ id: `sub:${sb.id}`, level: 'medium', title: `${sb.name} renews ${d === 0 ? 'today' : d === 1 ? 'tomorrow' : 'in 2 days'}`, detail: 'Cancel now if you don’t need it', path: '/money/subscriptions' })
+      }
+    }
     const name = (id: string) => subjects.find((s) => s.id === id)?.name
     const extra: RiskItem[] = [
       ...warnings.map((w) => ({ id: `warn:${w.link}`, level: w.level, title: w.title, detail: w.message, path: w.link.startsWith('exam:') || w.link.startsWith('subject:') ? '/school/overview' : '/fitness/today' })),
@@ -50,8 +69,8 @@ export function useRisks(now: Date) {
         path: `/school/exams/${e.id}`,
       })),
     ]
-    return atRisk({ items, today, proposals, extra })
-  }, [items, today, proposals, subjects, needsPace, warnings])
+    return atRisk({ items, today, proposals, extra: [...extra, ...moneyRisks] })
+  }, [items, today, proposals, subjects, needsPace, warnings, txs, moves, subs, money, hideAmounts, moneyVisible])
 }
 
 /** What the planner did or wants to do, with Undo for changes it made on its own. */
@@ -310,6 +329,38 @@ export function TrainingCard({ now }: { now: Date }) {
               <span className="font-semibold text-fg tnum">{avg}</span> kg avg
             </span>
           )}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+/** This month at a glance — respects “Hide amounts”. */
+export function MoneyCard({ now }: { now: Date }) {
+  const txs = useApp((s) => s.transactions)
+  const moves = useApp((s) => s.moves)
+  const money = useApp((s) => s.settings.money)
+  const go = useUI((s) => s.go)
+  if (!txs.length) return null
+  const month = dateKey(now).slice(0, 7)
+  const sum = monthSummary(txs, month)
+  const rate = savingsRate(txs, money, month)
+  const spend = bucketStatus(txs, moves, money, month).find((b) => b.kind === 'spend')
+  return (
+    <Card className="flex h-full flex-col">
+      <CardHeader title="Money" icon={<Wallet />} action={<button onClick={() => go('/money/overview')} className="text-[12px] text-muted hover:text-fg">Money →</button>} />
+      <div className="grid grid-cols-3 gap-2 px-4 pb-4">
+        <div>
+          <div className="text-[11.5px] text-muted">Net this month</div>
+          <Amount value={sum.net} whole className="text-[17px] font-semibold" />
+        </div>
+        <div>
+          <div className="text-[11.5px] text-muted">Put away</div>
+          <div className="text-[17px] font-semibold tnum">{rate === null ? '–' : `${rate}%`}</div>
+        </div>
+        <div>
+          <div className="text-[11.5px] text-muted">{spend?.name ?? 'Spend'} left</div>
+          <Amount value={spend?.left ?? 0} whole className={cn('text-[17px] font-semibold', (spend?.left ?? 0) < 0 && 'text-danger')} />
         </div>
       </div>
     </Card>

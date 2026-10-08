@@ -1,5 +1,10 @@
 import {
   BarChart3,
+  PieChart,
+  PiggyBank,
+  Repeat,
+  Table2,
+  Wallet,
   Dumbbell,
   ListChecks,
   Scale,
@@ -50,6 +55,7 @@ export const SPACE_DEFS: SpaceDef[] = [
   { id: 'lab', label: 'Creative Lab', short: 'Lab', icon: FlaskConical, color: '#3fb5c4', key: 'L' },
   { id: 'school', label: 'School', short: 'School', icon: GraduationCap, color: '#5b8def', key: 'S' },
   { id: 'fitness', label: 'Fitness', short: 'Fitness', icon: Dumbbell, color: '#4cc38a', key: 'F' },
+  { id: 'money', label: 'Money', short: 'Money', icon: Wallet, color: '#e5a54b', key: 'M' },
 ]
 
 export interface PageDef {
@@ -96,6 +102,13 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'routines', label: 'Routines', icon: ListChecks },
     { page: 'progress', label: 'Progress', icon: TrendingUp },
     { page: 'bodyweight', label: 'Bodyweight', icon: Scale },
+  ],
+  money: [
+    { page: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { page: 'ledger', label: 'Ledger', icon: Table2 },
+    { page: 'split', label: 'Split & reserves', icon: PieChart },
+    { page: 'subscriptions', label: 'Subscriptions', icon: Repeat },
+    { page: 'savings', label: 'Savings goals', icon: PiggyBank },
   ],
 }
 

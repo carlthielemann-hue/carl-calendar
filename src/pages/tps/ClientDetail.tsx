@@ -6,6 +6,7 @@ import { Button, Card, CardHeader, ConfirmButton, Empty, Input, Select } from '@
 import type { ProjectStatus } from '@/domain/entities'
 import { dateKey } from '@/lib/dates'
 import { cn, uid } from '@/lib/utils'
+import { Amount } from '@/features/money/ui'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { ClientDialog } from '@/features/tps/ClientDialog'
@@ -49,6 +50,7 @@ export default function ClientDetail() {
   const perfN = useApp((s) => s.performance.filter((r) => r.clientId === id).length)
   const counts = { research: researchN, assets: assetsN, feedback: feedbackN, performance: perfN }
   const client = useApp((s) => s.clients.find((c) => c.id === id))
+  const revenue = useApp((st) => st.transactions.filter((t) => t.clientId === client?.id && t.direction === 'in').reduce((a, t) => a + t.eur, 0))
   const projects = useApp((s) => s.projects)
   const tasks = useApp((s) => s.tasks)
   const activity = useApp((s) => s.activity)
@@ -107,6 +109,11 @@ export default function ClientDetail() {
               </a>
             )}
             {client.terms && <span>· {client.terms}</span>}
+            {revenue > 0 && (
+              <button onClick={() => useUI.getState().go('/money/ledger')} className="hover:text-fg">
+                · Revenue <Amount value={revenue} whole />
+              </button>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

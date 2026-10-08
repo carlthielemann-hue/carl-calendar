@@ -12,6 +12,7 @@ export const ARRAY_COLLS = [
   'concepts', 'aiOutputs', 'workflows', 'posts', 'countdowns', 'proposals',
   'subjects', 'exams', 'assignments', 'grades',
   'exercises', 'routines', 'workouts', 'bodyweight',
+  'transactions', 'accounts', 'subscriptions', 'savingsGoals', 'moves',
 ] as const
 export const MAP_COLLS = ['topThree', 'weekly', 'dayPlans', 'scorecards'] as const
 export const CONFIG_KEYS = ['stages', 'settings'] as const
@@ -28,7 +29,7 @@ export interface SyncRecord {
 }
 
 /** Settings that stay per device (not synced). */
-const LOCAL_SETTINGS = ['theme', 'googleClientId', 'showDemoEvents'] as const
+const LOCAL_SETTINGS = ['theme', 'googleClientId', 'showDemoEvents', 'hideAmounts'] as const
 
 export type SyncableState = Record<ArrayColl, { id: string }[]> & Record<MapColl, Record<string, unknown>> & { stages: unknown; settings: Record<string, unknown> }
 

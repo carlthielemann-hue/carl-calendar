@@ -30,6 +30,7 @@ export function useScorecard(weekKey: string) {
   const events = useApp((s) => s.events)
   const assignments = useApp((s) => s.assignments)
   const workouts = useApp((s) => s.workouts)
+  const transactions = useApp((s) => s.transactions)
   const ensureWeek = useApp((s) => s.ensureWeek)
   const isFuture = weekKey > dateKey(new Date())
 
@@ -40,7 +41,7 @@ export function useScorecard(weekKey: string) {
 
   return useMemo(() => {
     const ws = fromDateKey(weekKey)
-    const data = { deliverables, opportunities, focusLogs, analyses, insights, tasks, events, assignments, workouts }
+    const data = { deliverables, opportunities, focusLogs, analyses, insights, tasks, events, assignments, workouts, transactions }
     const sc: WeekScore | undefined = score
     const rows: ScoreRow[] = metrics
       .filter((m) => (sc ? sc.targets[m.id] != null : !m.archived))
@@ -51,12 +52,12 @@ export function useScorecard(weekKey: string) {
         return { metric: m, target, carried: sc?.carried[m.id] ?? 0, actual, pace: pace(actual, target, ws) }
       })
     return { rows, score: sc }
-  }, [weekKey, score, metrics, deliverables, opportunities, focusLogs, analyses, insights, tasks, events, assignments, workouts])
+  }, [weekKey, score, metrics, deliverables, opportunities, focusLogs, analyses, insights, tasks, events, assignments, workouts, transactions])
 }
 
 export const PACE_LABEL: Record<Pace, string> = { done: 'Hit', on_track: 'On track', behind: 'Behind', not_started: 'Not started' }
 export const PACE_COLOR: Record<Pace, string> = { done: 'var(--ok)', on_track: '#5b8def', behind: '#e5a54b', not_started: 'var(--faint)' }
 
 export function fmtValue(v: number, unit: Metric['unit']) {
-  return unit === 'hours' ? `${Math.round(v * 10) / 10}h` : String(v)
+  return unit === 'hours' ? `${Math.round(v * 10) / 10}h` : unit === 'eur' ? `€${Math.round(v).toLocaleString('de-DE')}` : String(v)
 }
