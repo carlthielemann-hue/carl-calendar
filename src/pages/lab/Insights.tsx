@@ -10,6 +10,8 @@ import { describeRef, openRef } from '@/lib/work'
 import { useApp, type AppState } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { InsightDialog } from '@/features/lab/InsightDialog'
+import { InsightChain } from '@/features/lab/Chain'
+import { insightChain } from '@/domain/chain'
 import { parseTags } from '@/features/lab/components'
 
 function linkOptions(s: AppState, exclude: Ref[], selfId: string) {
@@ -110,8 +112,9 @@ function Detail({ insight }: { insight: Insight }) {
             ))}
           </ul>
         )}
-        {applied.length === 0 && insight.links.length > 0 && <p className="mt-2 text-[12px] text-[#e5a54b]">Not applied to client work yet.</p>}
+        {applied.length === 0 && insight.links.length > 0 && !state.concepts.some((c) => c.insightIds.includes(insight.id) && c.deliverableId) && <p className="mt-2 text-[12px] text-[#e5a54b]">Not applied to client work yet.</p>}
       </div>
+      <InsightChain insight={insight} />
       <div className="flex items-center justify-between border-t border-line pt-3 text-[11.5px] text-faint">
         <span>Saved {format(new Date(insight.createdAt), 'd MMM yyyy')}</span>
         <ConfirmButton
@@ -134,6 +137,7 @@ export default function InsightsPage() {
   const id = useUI((s) => s.loc.id)
   const go = useUI((s) => s.go)
   const insights = useApp((s) => s.insights)
+  const concepts = useApp((s) => s.concepts)
   const [q, setQ] = useState('')
   const [type, setType] = useState<'all' | InsightType>('all')
   const [creating, setCreating] = useState(false)
@@ -144,7 +148,7 @@ export default function InsightsPage() {
     const hay = `${i.title} ${i.body ?? ''} ${i.tags.join(' ')}`.toLowerCase()
     return q.toLowerCase().split(/\s+/).every((w) => hay.includes(w))
   })
-  const appliedCount = (i: Insight) => i.links.filter((l) => l.startsWith('deliverable:')).length
+  const appliedCount = (i: Insight) => insightChain({ concepts }, i).deliverables.length
 
   return (
     <div className="mx-auto w-full max-w-[1320px]">

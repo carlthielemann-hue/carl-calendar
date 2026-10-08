@@ -92,7 +92,7 @@ export function RunPanel({ clientId, workflow }: { clientId: string; workflow: A
     setBusy('manus')
     try {
       const r = await api<{ taskId: string; taskUrl?: string }>('/manus/task', { method: 'POST', json: { prompt, title: workflow.name, clientId } })
-      save('Manus is working on this. The result is attached here automatically when the task finishes (or open it in Manus).', 'manus', { externalUrl: r.taskUrl })
+      save('Manus is working on this. Open the output and use “Fetch Manus result” once the task has finished (or follow it in Manus).', 'manus', { externalUrl: r.taskUrl, externalId: r.taskId })
     } catch (e) {
       toast.error((e as Error).message)
     } finally {

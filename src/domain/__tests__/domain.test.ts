@@ -139,3 +139,28 @@ describe('sync schema', () => {
     expect(changes.map((c) => `${c.id}:${c.data === null ? 'del' : 'put'}`).sort()).toEqual(['t1:put', 't2:del', 't3:put'])
   })
 })
+
+describe('creative chain', () => {
+  it('counts a deliverable once when reached directly and via a concept', async () => {
+    const { insightChain } = await import('../chain')
+    const insight = { id: 'i1', title: 'Pain-first hooks', type: 'Hook', tags: [], links: ['ad:a1', 'analysis:an1', 'deliverable:d1'], createdAt: '' } as never
+    const concepts = [
+      { id: 'c1', clientId: 'x', title: 'A', body: '', status: 'draft', origin: 'manual', insightIds: ['i1'], deliverableId: 'd1', createdAt: '' },
+      { id: 'c2', clientId: 'x', title: 'B', body: '', status: 'approved', origin: 'manual', insightIds: ['i1'], deliverableId: 'd2', createdAt: '' },
+      { id: 'c3', clientId: 'x', title: 'C', body: '', status: 'draft', origin: 'manual', insightIds: ['other'], deliverableId: 'd3', createdAt: '' },
+    ] as never
+    const c = insightChain({ concepts }, insight)
+    expect(c.sources).toEqual(['ad:a1', 'analysis:an1'])
+    expect(c.concepts).toEqual(['concept:c1', 'concept:c2'])
+    expect(c.deliverables.sort()).toEqual(['deliverable:d1', 'deliverable:d2'])
+  })
+})
+
+describe('sync hashing', () => {
+  it('detects any content change and treats deletions distinctly', async () => {
+    const { hash } = await import('@/lib/sync')
+    expect(hash('{"a":1}')).toBe(hash('{"a":1}'))
+    expect(hash('{"a":1}')).not.toBe(hash('{"a":2}'))
+    expect(hash(null)).toBe('null')
+  })
+})

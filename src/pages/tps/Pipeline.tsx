@@ -207,7 +207,13 @@ function OppBody({ o, onClose }: { o: Opportunity; onClose: () => void }) {
           </Select>
         </Field>
         <Field label="Proposal">
-          <Select value={o.proposalStatus} onChange={(e) => set({ proposalStatus: e.target.value as ProposalStatus })}>
+          <Select
+            value={o.proposalStatus}
+            onChange={(e) => {
+              const v = e.target.value as ProposalStatus
+              set({ proposalStatus: v, ...(v === 'sent' && !o.proposalSentAt ? { proposalSentAt: new Date().toISOString() } : {}) })
+            }}
+          >
             <option value="none">None</option>
             <option value="drafting">Drafting</option>
             <option value="sent">Sent</option>
@@ -222,6 +228,19 @@ function OppBody({ o, onClose }: { o: Opportunity; onClose: () => void }) {
           <Input type="number" min={0} defaultValue={o.value ?? ''} onBlur={(e) => set({ value: Number(e.target.value) > 0 ? Number(e.target.value) : undefined })} />
         </Field>
       </div>
+      <Field
+        label={o.channel === 'Upwork' ? 'Upwork job / proposal link' : 'Link'}
+        hint={o.proposalSentAt ? `Proposal sent ${new Date(o.proposalSentAt).toLocaleDateString()}. Submitting happens on Upwork — the app only tracks it.` : 'Paste the job or conversation URL. Nothing is fetched or posted automatically.'}
+      >
+        <div className="flex gap-2">
+          <Input key={`url-${o.id}`} defaultValue={o.url ?? ''} onBlur={(e) => set({ url: e.target.value.trim() || undefined })} placeholder="https://www.upwork.com/jobs/…" />
+          {o.url && /^https?:\/\//.test(o.url) && (
+            <a href={o.url} target="_blank" rel="noreferrer" className="grid h-9 shrink-0 place-items-center rounded-lg border border-line px-3 text-[12.5px] hover:bg-panel-2">
+              Open
+            </a>
+          )}
+        </div>
+      </Field>
       <Field label="Notes">
         <Textarea rows={2} defaultValue={o.notes ?? ''} onBlur={(e) => set({ notes: e.target.value.trim() || undefined })} />
       </Field>

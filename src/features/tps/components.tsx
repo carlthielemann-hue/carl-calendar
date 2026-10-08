@@ -205,6 +205,8 @@ function DrawerBody({ d, onClose }: { d: Deliverable; onClose: () => void }) {
   const [link, setLink] = useState({ label: '', url: '' })
   const [taskText, setTaskText] = useState('')
   const insights = allInsights.filter((i) => d.insightIds.includes(i.id))
+  const allConcepts = useApp((s) => s.concepts)
+  const concepts = allConcepts.filter((c) => c.deliverableId === d.id)
   const related = tasks.filter((t) => t.link === `deliverable:${d.id}`)
   const blocks = events.filter((e) => e.link === `deliverable:${d.id}`)
   const kindIdx = stages.findIndex((s) => s.id === d.stageId)
@@ -350,6 +352,22 @@ function DrawerBody({ d, onClose }: { d: Deliverable; onClose: () => void }) {
             </ul>
           )}
         </Section>
+
+        {concepts.length > 0 && (
+          <Section title="Concepts">
+            <ul className="space-y-1">
+              {concepts.map((c) => (
+                <li key={c.id} className="flex items-center gap-2 text-[13px]">
+                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', c.status === 'approved' ? 'bg-ok' : c.status === 'rejected' ? 'bg-danger' : 'bg-[#e5a54b]')} />
+                  <button onClick={() => (onClose(), useUI.getState().go(`/tps/studio/${c.clientId}/concepts`))} className="min-w-0 flex-1 truncate text-left hover:underline">
+                    {c.title}
+                  </button>
+                  <span className="text-[11px] text-faint">{c.status}</span>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
 
         <Section title="Tasks">
           {related.map((t) => (

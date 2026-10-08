@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
-import { BookOpen, Check, CheckSquare, ClipboardCopy, ExternalLink, Layers, Lightbulb, Sparkles, StickyNote, Trash2 } from 'lucide-react'
+import { BookOpen, Check, CheckSquare, ClipboardCopy, ExternalLink, Layers, Lightbulb, Loader2, RefreshCw, Sparkles, StickyNote, Trash2 } from 'lucide-react'
+import { api } from '@/lib/cloud'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Card, ConfirmButton, Dialog, Empty, Field, Input, Select } from '@/components/ui'
@@ -66,6 +67,21 @@ export function OutputCard({ o }: { o: AiOutput }) {
   const state = useApp()
   const [open, setOpen] = useState(false)
   const [toDeliv, setToDeliv] = useState(false)
+  const [fetching, setFetching] = useState(false)
+  const fetchManus = async () => {
+    setFetching(true)
+    try {
+      const r = await api<{ status: string; text: string }>(`/manus/task/${encodeURIComponent(o.externalId!)}`)
+      if (r.status === 'completed' && r.text) {
+        useApp.getState().patch('aiOutputs', o.id, { response: r.text })
+        toast.success('Manus result attached', { description: 'Still a draft — review before using it.' })
+      } else toast(`Manus task is ${r.status}`, { description: r.status === 'failed' ? 'Open it in Manus for details.' : 'Try again in a few minutes.' })
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setFetching(false)
+    }
+  }
   const st = useApp.getState()
   const clientId = o.clientId
 
@@ -115,11 +131,18 @@ export function OutputCard({ o }: { o: AiOutput }) {
       {open && (
         <div className="border-t border-line px-4 py-3">
           <div className="max-h-[420px] overflow-y-auto whitespace-pre-wrap text-[13px] leading-relaxed text-fg-2">{o.response}</div>
-          {o.externalUrl && (
-            <a href={o.externalUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[12.5px] text-fg-2 underline">
-              Open in Manus <ExternalLink className="h-3 w-3" />
-            </a>
-          )}
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            {o.externalUrl && (
+              <a href={o.externalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] text-fg-2 underline">
+                Open in Manus <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+            {o.provider === 'manus' && o.externalId && (
+              <Button size="sm" variant="secondary" disabled={fetching} onClick={fetchManus}>
+                {fetching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Fetch Manus result
+              </Button>
+            )}
+          </div>
           {o.savedAs.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {o.savedAs.map((r) => {

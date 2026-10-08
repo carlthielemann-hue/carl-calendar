@@ -150,6 +150,8 @@ export interface Opportunity {
   touches: Touch[]
   /** Upwork job / proposal link, X conversation, etc. */
   url?: string
+  /** When the proposal was marked sent (manual — the app never submits proposals) */
+  proposalSentAt?: string
   /** Set when the opportunity is won and converted. */
   clientId?: string
   createdAt: string
@@ -488,6 +490,8 @@ export interface AiOutput {
   /** Records created from this output */
   savedAs: Ref[]
   externalUrl?: string
+  /** Manus task id, for fetching the result later */
+  externalId?: string
   createdAt: string
 }
 

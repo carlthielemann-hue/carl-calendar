@@ -51,6 +51,13 @@ function searchIndex(s: AppState): { ref: Ref; text: string }[] {
     ...s.opportunities.map((o) => ({ ref: `opportunity:${o.id}` as Ref, text: `${o.name} ${o.company ?? ''} ${o.channel}` })),
     ...s.ads.map((a) => ({ ref: `ad:${a.id}` as Ref, text: `${a.title} ${a.brand ?? ''} ${a.hook ?? ''} ${a.angle ?? ''} ${a.tags.join(' ')}` })),
     ...s.insights.map((i) => ({ ref: `insight:${i.id}` as Ref, text: `${i.title} ${i.body ?? ''} ${i.type} ${i.tags.join(' ')}` })),
+    ...s.analyses.map((a) => ({ ref: `analysis:${a.id}` as Ref, text: `${s.ads.find((x) => x.id === a.adId)?.title ?? ''} ${a.focus ?? ''} ${a.quickNotes ?? ''} ${Object.values(a.fields).join(' ')}` })),
+    ...s.research.map((r) => ({ ref: `research:${r.id}` as Ref, text: `${r.title} ${r.kind} ${r.body} ${r.tags.join(' ')} ${clientName.get(r.clientId) ?? ''}` })),
+    ...s.assets.map((a) => ({ ref: `asset:${a.id}` as Ref, text: `${a.name} ${a.kind} ${a.notes ?? ''} ${clientName.get(a.clientId ?? '') ?? ''}` })),
+    ...s.concepts.map((c) => ({ ref: `concept:${c.id}` as Ref, text: `${c.title} ${c.body} ${c.status} ${clientName.get(c.clientId) ?? ''}` })),
+    ...s.feedback.map((f) => ({ ref: `feedback:${f.id}` as Ref, text: `${f.text} ${f.kind} ${f.nextAction ?? ''} ${clientName.get(f.clientId) ?? ''}` })),
+    ...s.aiOutputs.map((o) => ({ ref: `aiOutput:${o.id}` as Ref, text: `${o.title} ${o.response.slice(0, 4000)} ${clientName.get(o.clientId ?? '') ?? ''}` })),
+    ...s.posts.map((p) => ({ ref: `post:${p.id}` as Ref, text: `${p.text} ${p.notes ?? ''} ${p.status}` })),
   ]
 }
 
@@ -62,6 +69,24 @@ const GROUP_LABEL: Record<string, string> = {
   opportunity: 'Pipeline',
   ad: 'Swipe library',
   insight: 'Insights',
+  analysis: 'Analyses',
+  research: 'Research',
+  asset: 'Assets',
+  concept: 'Concepts',
+  feedback: 'Feedback',
+  aiOutput: 'AI outputs',
+  post: 'X posts',
+}
+
+/** "@research hooks" → only research; "@client" etc. match type keys or group labels. */
+function scopeOf(query: string): { types: string[] | null; rest: string } {
+  const m = query.match(/^@(\w+)\s*(.*)$/)
+  if (!m) return { types: null, rest: query }
+  const w = m[1].toLowerCase()
+  const types = Object.entries(GROUP_LABEL)
+    .filter(([k, label]) => k.toLowerCase().startsWith(w) || label.toLowerCase().startsWith(w))
+    .map(([k]) => k)
+  return { types: types.length ? types : null, rest: m[2] }
 }
 
 function PaletteBody({ close }: { close: () => void }) {
@@ -148,8 +173,12 @@ function PaletteBody({ close }: { close: () => void }) {
         },
       })
       // entity search
-      const words = query.split(/\s+/)
-      const hits = index.filter((e) => words.every((w) => e.text.toLowerCase().includes(w))).slice(0, 24)
+      const scope = scopeOf(query)
+      const words = scope.rest.split(/\s+/).filter(Boolean)
+      const hits = index
+        .filter((e) => !scope.types || scope.types.includes(e.ref.slice(0, e.ref.indexOf(':'))))
+        .filter((e) => words.every((w) => e.text.toLowerCase().includes(w)))
+        .slice(0, scope.types ? 60 : 24)
       for (const h of hits) {
         const d = describeRef(state, h.ref)
         if (!d) continue
@@ -244,7 +273,7 @@ function PaletteBody({ close }: { close: () => void }) {
               items[idx]?.run()
             }
           }}
-          placeholder="Search clients, ads, insights… or type a task to add"
+          placeholder="Search everything (@research, @concept, @client…) or type a task to add"
           className="h-12 flex-1 bg-transparent text-[14px] text-fg outline-none placeholder:text-faint"
           aria-label="Command"
         />

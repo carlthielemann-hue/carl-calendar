@@ -166,3 +166,24 @@ describe('client knowledge', () => {
     expect(pack.summary).toBe('Brand intelligence (1), Research (1)')
   })
 })
+
+describe('V2 → account import', () => {
+  it('excludes every sample record by default and keeps real ones', async () => {
+    const { buildImport, summarize, isDemoRecord } = await import('@/lib/migration')
+    const st = useApp.getState()
+    st.addTask({ title: 'My real task', category: 'tps' })
+    const c = st.addClient({ name: 'Real client' })
+    const data = useApp.getState()
+    const rows = summarize(data)
+    expect(rows.find((r) => r.coll === 'clients')!.demo).toBeGreaterThan(0)
+    const out = buildImport(data, { includeDemo: false, colls: new Set(rows.map((r) => r.coll)) })
+    const all = ['events', 'tasks', 'clients', 'projects', 'deliverables', 'ads', 'analyses', 'insights', 'research', 'feedback', 'concepts'] as const
+    for (const k of all) expect((out[k] as unknown[]).filter(isDemoRecord)).toEqual([])
+    expect(out.tasks.map((t) => t.title)).toEqual(['My real task'])
+    expect(out.clients.map((x) => x.id)).toEqual([c.id])
+    expect(Object.values(out.topThree).flat().some((r) => String(r).includes(':demo-'))).toBe(false)
+    expect(out.hasDemoData).toBe(false)
+    const withDemo = buildImport(data, { includeDemo: true, colls: new Set(rows.map((r) => r.coll)) })
+    expect(withDemo.clients.length).toBeGreaterThan(1)
+  })
+})
