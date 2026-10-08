@@ -5,6 +5,7 @@ import { Kbd } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useSync } from '@/lib/sync'
+import { DockBar } from '@/features/dock/DockBar'
 import { isAccountMode } from '@/store/mode'
 import { useUI, type Space } from '@/store/ui'
 import { PAGES, SPACE_DEFS, spaceDef } from './nav'
@@ -164,6 +165,7 @@ export function Sidebar() {
       </button>
 
       <div className="mt-auto space-y-1.5">
+        <DockBar />
         <NavItem active={loc.space === 'settings'} onClick={() => go('/settings')} icon={Settings} label="Settings" />
         <button
           onClick={() => go('/settings')}
