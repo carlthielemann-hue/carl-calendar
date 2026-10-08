@@ -10,6 +10,8 @@ import type { Recurrence } from '@/lib/types'
 import { alpha } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
+import { describeRef, openRef, toggleWorkItem, useWorkItemMap } from '@/lib/work'
+import type { Ref } from '@/domain/entities'
 
 const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 export function describeRecurrence(r: Recurrence) {
@@ -39,8 +41,9 @@ function DetailBody() {
   const occ = useUI((s) => s.selected)!
   const fmt = useApp((s) => s.settings.timeFormat)
   const color = useApp((s) => s.settings.categoryColors[occ.event.category])
-  const task = useApp((s) => s.tasks.find((t) => t.id === occ.event.taskId))
-  const toggle = useApp((s) => s.toggleTask)
+  const linked = useWorkItemMap().get(occ.event.link ?? '')
+  const linkLabel = useApp((s) => (occ.event.link && !linked ? (describeRef(s, occ.event.link)?.label ?? null) : null))
+  const logged = useApp((s) => s.focusLogs.some((l) => l.occurrenceKey === occ.key))
   const [confirm, setConfirm] = useState(false)
   const [busy, setBusy] = useState(false)
   const ev = occ.event
@@ -106,13 +109,45 @@ function DetailBody() {
           )}
         </div>
 
-        {task && (
+        {linked && (
           <div className="mt-5 rounded-xl border border-line p-3" style={{ background: alpha(color, 0.05) }}>
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">Linked task</div>
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">For</div>
             <div className="flex items-center gap-2.5">
-              <Checkbox checked={task.completed} onChange={() => toggle(task.id)} color={color} label={`Complete ${task.title}`} />
-              <span className={task.completed ? 'text-[13.5px] text-faint line-through' : 'text-[13.5px]'}>{task.title}</span>
+              <Checkbox checked={linked.done} onChange={() => toggleWorkItem(linked.ref)} color={color} label={`Complete ${linked.title}`} />
+              <button onClick={() => openRef(linked.ref)} className="min-w-0 text-left">
+                <span className={linked.done ? 'block truncate text-[13.5px] text-faint line-through' : 'block truncate text-[13.5px] hover:underline'}>{linked.title}</span>
+                {linked.context && <span className="block truncate text-[11.5px] text-muted">{linked.context}</span>}
+              </button>
             </div>
+          </div>
+        )}
+        {linkLabel && (
+          <button onClick={() => openRef(occ.event.link!)} className="mt-5 block text-left text-[13px] text-fg-2 hover:underline">
+            Linked: {linkLabel}
+          </button>
+        )}
+        {(ev.category === 'tps' || ev.category === 'lab') && occ.start < new Date() && (
+          <div className="mt-5 flex items-center justify-between rounded-xl border border-line px-3 py-2.5">
+            <span className="text-[12.5px] text-muted">{logged ? 'Logged as focus time' : 'Did this session happen?'}</span>
+            <Button
+              size="sm"
+              variant={logged ? 'ghost' : 'secondary'}
+              disabled={logged}
+              onClick={() => {
+                const end = occ.end < new Date() ? occ.end : new Date()
+                const r = useApp.getState().logFocus({
+                  workspace: ev.category === 'lab' ? 'lab' : 'tps',
+                  start: occ.start.toISOString(),
+                  minutes: Math.round((end.getTime() - occ.start.getTime()) / 60000),
+                  occurrenceKey: occ.key,
+                  link: ev.link as Ref | undefined,
+                  note: ev.title,
+                })
+                if (r) toast.success('Focus time logged', { description: 'Counts toward this week’s effort targets.' })
+              }}
+            >
+              {logged ? 'Logged ✓' : 'Log focus time'}
+            </Button>
           </div>
         )}
 

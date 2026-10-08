@@ -3,9 +3,9 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { CategoryPicker } from '@/components/Category'
 import { Button, Dialog, Field, Input, Segmented, Select, Textarea } from '@/components/ui'
-import { dateKey, expandEvents, formatTime } from '@/lib/dates'
+import { dateKey } from '@/lib/dates'
 import type { CategoryId, Priority, Task } from '@/lib/types'
-import { useApp, useVisibleEvents } from '@/store/app'
+import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { scheduleTask } from './TaskRow'
 
@@ -22,23 +22,21 @@ export function TaskEditor() {
 function TaskForm({ task, onDone }: { task: Task | null; onDone: () => void }) {
   const addTask = useApp((s) => s.addTask)
   const updateTask = useApp((s) => s.updateTask)
-  const fmt = useApp((s) => s.settings.timeFormat)
-  const events = useVisibleEvents()
+  const defaults = useUI((s) => s.taskDefaults) ?? {}
+  const clients = useApp((s) => s.clients)
+  const projects = useApp((s) => s.projects)
+  const deliverables = useApp((s) => s.deliverables)
+  const opportunities = useApp((s) => s.opportunities)
+  const scheduled = useApp((s) => !!task && s.events.some((e) => e.link === `task:${task.id}`))
   const today = dateKey(new Date())
   const [title, setTitle] = useState(task?.title ?? '')
   const [notes, setNotes] = useState(task?.notes ?? '')
-  const [due, setDue] = useState(task?.due ?? (task ? '' : today))
+  const [due, setDue] = useState(task?.due ?? (task ? '' : (defaults.due ?? today)))
   const [dueTime, setDueTime] = useState(task?.dueTime ?? '')
   const [priority, setPriority] = useState<Priority | 'none'>(task?.priority ?? 'none')
-  const [category, setCategory] = useState<CategoryId>(task?.category ?? 'tps')
-  const [eventId, setEventId] = useState(task?.eventId ?? '')
-
-  // Linkable events: upcoming local, non-recurring ones (next 14 days)
-  const upcoming = expandEvents(
-    events.filter((e) => e.source === 'local' && !e.recurrence),
-    new Date(),
-    addDays(new Date(), 14),
-  )
+  const [category, setCategory] = useState<CategoryId>(task?.category ?? defaults.category ?? 'personal')
+  const [link, setLink] = useState(task?.link ?? defaults.link ?? '')
+  const [estimate, setEstimate] = useState(task?.estimate ? String(task.estimate) : '')
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,17 +48,11 @@ function TaskForm({ task, onDone }: { task: Task | null; onDone: () => void }) {
       dueTime: due && dueTime ? dueTime : undefined,
       priority: priority === 'none' ? undefined : priority,
       category,
-      eventId: eventId || undefined,
+      link: link || undefined,
+      estimate: Number(estimate) > 0 ? Number(estimate) : undefined,
     }
-    const s = useApp.getState()
-    let id = task?.id
     if (task) updateTask(task.id, data)
-    else id = addTask(data).id
-    // keep event → task link in sync
-    s.events.forEach((ev) => {
-      if (ev.taskId === id && ev.id !== eventId) s.updateEvent(ev.id, { taskId: undefined })
-    })
-    if (eventId) s.updateEvent(eventId, { taskId: id })
+    else addTask(data)
     toast.success(task ? 'Task updated' : 'Task added')
     onDone()
   }
@@ -115,22 +107,49 @@ function TaskForm({ task, onDone }: { task: Task | null; onDone: () => void }) {
           ]}
         />
       </Field>
-      <Field label="Linked calendar event (optional)">
-        <Select value={eventId} onChange={(e) => setEventId(e.target.value)}>
-          <option value="">None</option>
-          {task?.eventId && !upcoming.some((o) => o.event.id === task.eventId) && <option value={task.eventId}>Current linked event</option>}
-          {upcoming.map((o) => (
-            <option key={o.key} value={o.event.id}>
-              {o.event.title} — {o.start.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} {formatTime(o.start, fmt)}
-            </option>
-          ))}
-        </Select>
-      </Field>
+      <div className="grid grid-cols-[1fr_120px] gap-2">
+        <Field label="Related to (optional)">
+          <Select value={link} onChange={(e) => setLink(e.target.value)}>
+            <option value="">Nothing</option>
+            {clients.length > 0 && (
+              <optgroup label="Clients">
+                {clients.map((c) => (
+                  <option key={c.id} value={`client:${c.id}`}>{c.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {projects.length > 0 && (
+              <optgroup label="Projects">
+                {projects.map((p) => (
+                  <option key={p.id} value={`project:${p.id}`}>{p.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {deliverables.length > 0 && (
+              <optgroup label="Deliverables">
+                {deliverables.map((d) => (
+                  <option key={d.id} value={`deliverable:${d.id}`}>{d.title}</option>
+                ))}
+              </optgroup>
+            )}
+            {opportunities.length > 0 && (
+              <optgroup label="Leads">
+                {opportunities.map((o) => (
+                  <option key={o.id} value={`opportunity:${o.id}`}>{o.name}</option>
+                ))}
+              </optgroup>
+            )}
+          </Select>
+        </Field>
+        <Field label="Estimate (min)">
+          <Input type="number" min={0} step={15} value={estimate} onChange={(e) => setEstimate(e.target.value)} placeholder="—" />
+        </Field>
+      </div>
       <Field label="Notes">
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Next action, context, links…" />
       </Field>
       <div className="-mx-5 mt-1 flex items-center gap-2 border-t border-line px-5 pt-3">
-        {task && !task.eventId && !task.completed && (
+        {task && !scheduled && !task.completed && (
           <Button
             variant="ghost"
             onClick={() => {

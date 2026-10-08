@@ -1,23 +1,23 @@
 import { differenceInMinutes } from 'date-fns'
 import { atTime, dateKey, formatDuration } from '@/lib/dates'
-import { useDayOccurrences, useTopThree } from '@/lib/hooks'
+import { useDayOccurrences } from '@/lib/hooks'
 import { useNow } from '@/lib/useNow'
 import { useApp } from '@/store/app'
 import { OverviewHeader } from '@/features/overview/Header'
 import { NowNext } from '@/features/overview/NowNext'
 import { Shutdown } from '@/features/overview/Shutdown'
 import { Timeline } from '@/features/overview/Timeline'
-import { TopThree } from '@/features/overview/TopThree'
+import { TopThree, useTop } from '@/features/overview/TopThree'
 import { WeekGlance } from '@/features/overview/WeekGlance'
 import { DemoBanner } from '@/components/DemoBanner'
 
 export default function Overview() {
   const now = useNow(30_000)
   const occs = useDayOccurrences(now)
-  const top = useTopThree(dateKey(now))
+  const top = useTop(dateKey(now))
   const shutdown = useApp((s) => s.settings.shutdownTime)
   const left = occs.filter((o) => !o.event.allDay && o.end > now).length
-  const openTop = top.filter((t) => !t.completed).length
+  const openTop = top.filter((t) => !t.done).length
   const toShutdown = differenceInMinutes(atTime(now, shutdown), now)
 
   const parts = [

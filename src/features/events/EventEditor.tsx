@@ -9,6 +9,8 @@ import { createEvent, saveEvent, type Scope } from '@/lib/eventActions'
 import type { CategoryId, RecurrenceFreq } from '@/lib/types'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
+import { useWorkItems } from '@/lib/work'
+import { WORK_KIND_LABEL } from '@/domain/workItems'
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 type Rec = 'none' | RecurrenceFreq
@@ -27,7 +29,7 @@ function EditorForm({ onDone }: { onDone: () => void }) {
   const draft = useUI((s) => s.eventDraft)!
   const occ = draft.occurrence
   const ev = occ?.event
-  const tasks = useApp((s) => s.tasks)
+  const workItems = useWorkItems()
   const google = useApp((s) => s.google)
   const wso = useApp((s) => s.settings.weekStartsOn)
 
@@ -40,7 +42,7 @@ function EditorForm({ onDone }: { onDone: () => void }) {
   const [rec, setRec] = useState<Rec>(ev?.recurrence?.freq ?? 'none')
   const [byWeekday, setByWeekday] = useState<number[]>(ev?.recurrence?.byWeekday ?? [draft.start.getDay()])
   const [until, setUntil] = useState(ev?.recurrence?.until ?? '')
-  const [taskId, setTaskId] = useState(draft.taskId ?? ev?.taskId ?? '')
+  const [link, setLink] = useState<string>(draft.link ?? ev?.link ?? '')
   const [scope, setScope] = useState<Scope>('all')
   const [target, setTarget] = useState<'local' | 'google'>(google.connected ? 'google' : 'local')
   const [saving, setSaving] = useState(false)
@@ -66,7 +68,7 @@ function EditorForm({ onDone }: { onDone: () => void }) {
     const en = atTime(day, end)
     if (en <= s) return toast.error('End time must be after start time')
     const recurrence = rec === 'none' ? undefined : { freq: rec, byWeekday: rec === 'weekly' ? byWeekday : undefined, until: until || undefined }
-    const input = { title: title.trim(), description: description.trim() || undefined, start: s, end: en, category, recurrence, taskId: taskId || undefined }
+    const input = { title: title.trim(), description: description.trim() || undefined, start: s, end: en, category, recurrence, link: link || undefined }
     setSaving(true)
     try {
       if (occ) await saveEvent(occ, input, editingSeries ? scope : 'all')
@@ -158,16 +160,24 @@ function EditorForm({ onDone }: { onDone: () => void }) {
         </p>
       )}
 
-      <Field label="Linked task (optional)">
-        <Select value={taskId} onChange={(e) => setTaskId(e.target.value)}>
-          <option value="">None</option>
-          {tasks
-            .filter((t) => !t.completed || t.id === taskId)
-            .map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
-              </option>
-            ))}
+      <Field label="For (optional)" hint="Link this block to a task, deliverable or practice item.">
+        <Select value={link} onChange={(e) => setLink(e.target.value)}>
+          <option value="">Nothing linked</option>
+          {link && !workItems.some((w) => w.ref === link) && <option value={link}>Current link</option>}
+          {(['task', 'deliverable', 'analysis', 'followup'] as const).map((k) => {
+            const list = workItems.filter((w) => w.kind === k && (!w.done || w.ref === link))
+            if (!list.length) return null
+            return (
+              <optgroup key={k} label={WORK_KIND_LABEL[k] + 's'}>
+                {list.map((w) => (
+                  <option key={w.ref} value={w.ref}>
+                    {w.title}
+                    {w.context ? ` — ${w.context}` : ''}
+                  </option>
+                ))}
+              </optgroup>
+            )
+          })}
         </Select>
       </Field>
 

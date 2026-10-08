@@ -176,6 +176,7 @@ function toCalEvent(g: GEvent, calendarId: string): CalEvent | null {
     category: cat ?? guessCategory(title),
     source: 'google',
     htmlLink: g.htmlLink,
+    link: g.extendedProperties?.private?.ccLink,
   }
 }
 
@@ -225,7 +226,7 @@ function rrule(r: Recurrence, start: Date): string[] {
   }
 }
 
-function body(e: Pick<CalEvent, 'title' | 'description' | 'start' | 'end' | 'category' | 'recurrence'>) {
+function body(e: Pick<CalEvent, 'title' | 'description' | 'start' | 'end' | 'category' | 'recurrence' | 'link'>) {
   const s = fromLocalDT(e.start)
   const en = fromLocalDT(e.end)
   return {
@@ -233,7 +234,7 @@ function body(e: Pick<CalEvent, 'title' | 'description' | 'start' | 'end' | 'cat
     description: e.description ?? '',
     start: { dateTime: format(s, "yyyy-MM-dd'T'HH:mm:ssXXX"), timeZone: tz() },
     end: { dateTime: format(en, "yyyy-MM-dd'T'HH:mm:ssXXX"), timeZone: tz() },
-    extendedProperties: { private: { ccCategory: e.category } },
+    extendedProperties: { private: { ccCategory: e.category, ...(e.link ? { ccLink: e.link } : {}) } },
     ...(e.recurrence ? { recurrence: rrule(e.recurrence, s) } : {}),
   }
 }

@@ -1,0 +1,112 @@
+import { describe, expect, it } from 'vitest'
+import type { Deliverable, Metric } from '../entities'
+import { metricActual, pace, snapshotWeek, type MetricData } from '../metrics'
+import { DEFAULT_STAGES, deliverableHealth, moveDeliverable, stageOf } from '../stages'
+import { deriveWorkItems } from '../workItems'
+import { parseRef, ref } from '../refs'
+
+const S = (id: string) => stageOf(DEFAULT_STAGES, id)
+const base: Deliverable = {
+  id: 'd1', projectId: 'p1', clientId: 'c1', title: 'Hooks', type: 'Hooks', quantity: 5, stageId: 'drafting',
+  links: [], insightIds: [], revisionRounds: 0, history: [], createdAt: '2026-10-01T00:00:00.000Z',
+}
+const empty: MetricData = { deliverables: [], opportunities: [], focusLogs: [], analyses: [], insights: [], tasks: [] }
+const metric = (p: Partial<Metric>): Metric => ({
+  id: 'm', name: 'm', workspace: 'tps', kind: 'output', unit: 'count', source: { type: 'manual' }, defaultTarget: 5,
+  carryOver: false, pinned: false, archived: false, order: 0, createdAt: '', ...p,
+})
+
+describe('refs', () => {
+  it('round-trips', () => {
+    expect(parseRef(ref('deliverable', 'a:b'))).toEqual({ type: 'deliverable', id: 'a:b' })
+    expect(parseRef('bad')).toBeNull()
+  })
+})
+
+describe('deliverable transitions', () => {
+  it('separates completed, delivered, revisions and approved', () => {
+    const t1 = new Date('2026-10-05T10:00:00Z')
+    const t2 = new Date('2026-10-06T10:00:00Z')
+    const t3 = new Date('2026-10-07T10:00:00Z')
+    let d = moveDeliverable(base, S('internal'), S('drafting'), t1)
+    expect(d.completedAt).toBe(t1.toISOString())
+    expect(d.firstDeliveredAt).toBeUndefined()
+    d = moveDeliverable(d, S('client'), S('internal'), t2)
+    expect(d.firstDeliveredAt).toBe(t2.toISOString())
+    d = moveDeliverable(d, S('revisions'), S('client'), t3)
+    expect(d.revisionRounds).toBe(1)
+    d = moveDeliverable(d, S('client'), S('revisions'), new Date('2026-10-08T10:00:00Z'))
+    // re-delivery does not move first delivery or completion
+    expect(d.firstDeliveredAt).toBe(t2.toISOString())
+    expect(d.completedAt).toBe(t1.toISOString())
+    d = moveDeliverable(d, S('approved'), S('client'), new Date('2026-10-09T10:00:00Z'))
+    expect(d.approvedAt).toBe('2026-10-09T10:00:00.000Z')
+    expect(d.history).toHaveLength(5)
+  })
+  it('health', () => {
+    expect(deliverableHealth({ ...base, due: '2026-10-01' }, 'working', '2026-10-05', '2026-10-07')).toBe('behind')
+    expect(deliverableHealth({ ...base, due: '2026-10-06' }, 'working', '2026-10-05', '2026-10-07')).toBe('at_risk')
+    expect(deliverableHealth({ ...base, due: '2026-10-01' }, 'client_review', '2026-10-05', '2026-10-07')).toBe('on_track')
+  })
+})
+
+describe('metrics', () => {
+  const week = new Date('2026-10-05T00:00:00')
+  it('counts deliverable units once per timestamp', () => {
+    const d = moveDeliverable(moveDeliverable(base, S('internal'), S('drafting'), new Date('2026-10-06T10:00:00')), S('client'), S('internal'), new Date('2026-10-06T12:00:00'))
+    const data = { ...empty, deliverables: [d] }
+    expect(metricActual(metric({ source: { type: 'auto', key: 'deliverables_completed' } }), data, week)).toBe(5)
+    expect(metricActual(metric({ source: { type: 'auto', key: 'deliverables_delivered' } }), data, week)).toBe(5)
+    expect(metricActual(metric({ source: { type: 'auto', key: 'deliverables_delivered', deliverableType: 'Concepts' } }), data, week)).toBe(0)
+    expect(metricActual(metric({ source: { type: 'auto', key: 'deliverables_delivered' } }), data, new Date('2026-10-12T00:00:00'))).toBe(0)
+  })
+  it('manual metrics read the week score', () => {
+    expect(metricActual(metric({ id: 'x' }), empty, week, { targets: {}, carried: {}, manual: { x: 3 } })).toBe(3)
+  })
+  it('snapshot carries shortfall, capped', () => {
+    const m = metric({ id: 'a', defaultTarget: 4, carryOver: true })
+    const s = snapshotWeek([m], { score: { targets: { a: 4 }, carried: {}, manual: {} }, actual: () => 1 })
+    expect(s.targets.a).toBe(7)
+    expect(s.carried.a).toBe(3)
+    const s2 = snapshotWeek([m], { score: { targets: { a: 20 }, carried: {}, manual: {} }, actual: () => 0 })
+    expect(s2.targets.a).toBe(8)
+  })
+  it('pace', () => {
+    const ws = new Date('2026-10-05T00:00:00')
+    expect(pace(5, 5, ws)).toBe('done')
+    expect(pace(1, 7, ws, new Date('2026-10-10T00:00:00'))).toBe('behind')
+    expect(pace(5, 7, ws, new Date('2026-10-10T00:00:00'))).toBe('on_track')
+  })
+})
+
+describe('work items', () => {
+  it('derives without copying and hides client-court work', () => {
+    const items = deriveWorkItems({
+      tasks: [{ id: 't', title: 'T', category: 'school', completed: false, createdAt: '' }],
+      deliverables: [base, { ...base, id: 'd2', stageId: 'client', completedAt: 'x' }, { ...base, id: 'd3', stageId: 'approved' }],
+      stages: DEFAULT_STAGES,
+      clients: [{ id: 'c1', name: 'Acme', status: 'active', links: [], createdAt: '' }],
+      analyses: [{ id: 'a', adId: 'ad', templateId: 'quick', status: 'planned', plannedDate: '2026-10-06', fields: {}, timestamps: [], createdAt: '' }],
+      ads: [{ id: 'ad', title: 'Ad', format: 'Static', tags: [], mediaIds: [], favorite: false, createdAt: '' }],
+      opportunities: [],
+    })
+    expect(items.map((i) => i.ref)).toEqual(['task:t', 'deliverable:d1', 'deliverable:d2', 'analysis:a'])
+    expect(items.find((i) => i.ref === 'deliverable:d2')!.done).toBe(true)
+    expect(items.find((i) => i.ref === 'deliverable:d1')!.context).toBe('Acme · Drafting')
+  })
+})
+
+import { freeWindows } from '@/lib/availability'
+import type { Occurrence } from '@/lib/types'
+
+describe('availability', () => {
+  const day = new Date('2026-10-09T00:00:00')
+  const occ = (s: string, e: string): Occurrence => ({
+    key: s, dateKey: '2026-10-09', recurring: false, start: new Date(`2026-10-09T${s}`), end: new Date(`2026-10-09T${e}`),
+    event: { id: s, title: 'x', start: '', end: '', category: 'school', source: 'local' },
+  })
+  it('finds gaps before shutdown', () => {
+    const w = freeWindows([occ('08:00', '13:00'), occ('14:00', '15:30'), occ('18:00', '19:00')], day, { until: '20:30', now: new Date('2026-10-08T12:00:00'), min: 30 })
+    expect(w.map((x) => x.minutes)).toEqual([60, 150, 90])
+  })
+})

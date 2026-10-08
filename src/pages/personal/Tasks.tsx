@@ -16,6 +16,8 @@ import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { TaskRow, dueLabel } from '@/features/tasks/TaskRow'
 import { TopThree } from '@/features/overview/TopThree'
+import { WorkItemRow } from '@/features/work/WorkItemRow'
+import { useWorkItems } from '@/lib/work'
 
 type Tab = 'today' | 'upcoming' | 'all' | 'completed'
 type Sort = 'due' | 'priority' | 'created'
@@ -84,6 +86,7 @@ function QuickAdd({ now }: { now: Date }) {
 export default function TasksPage() {
   const now = useNow(60_000)
   const tasks = useApp((s) => s.tasks)
+  const workItems = useWorkItems()
   const [tab, setTab] = useState<Tab>('today')
   const [cat, setCat] = useState<CategoryId | 'all'>('all')
   const [sort, setSort] = useState<Sort>('due')
@@ -115,6 +118,13 @@ export default function TasksPage() {
   )
 
   // Group rows
+  // Actionable items owned by TPS / Creative Lab (deliverables, practice, follow-ups) — derived, not copied.
+  const linked = workItems.filter((w) => {
+    if (w.kind === 'task' || w.done || (cat !== 'all' && w.category !== cat)) return false
+    if (tab === 'today') return !!w.due && w.due <= today
+    if (tab === 'upcoming') return !!w.due && w.due > today
+    return tab === 'all'
+  })
   const groups: { label: string; tone?: 'danger'; items: Task[] }[] = []
   if (tab === 'today') {
     const overdue = filtered.filter((t) => t.due! < today)
@@ -189,7 +199,7 @@ export default function TasksPage() {
             </div>
           </div>
           <Card className="p-1.5">
-            {filtered.length === 0 ? (
+            {filtered.length === 0 && linked.length === 0 ? (
               <Empty {...emptyCopy[tab]} />
             ) : (
               groups.map((g, i) => (
@@ -204,6 +214,18 @@ export default function TasksPage() {
                   ))}
                 </section>
               ))
+            )}
+            {linked.length > 0 && (
+              <section className={cn(filtered.length > 0 && 'mt-2 border-t border-line pt-1')}>
+                <h3 className="px-3 pt-2 pb-1 text-[11.5px] font-semibold uppercase tracking-wide text-faint">
+                  From TPS & Creative Lab <span className="ml-1 font-normal tnum">{linked.length}</span>
+                </h3>
+                {linked
+                  .sort((a, b) => (a.due ?? '9').localeCompare(b.due ?? '9'))
+                  .map((w) => (
+                    <WorkItemRow key={w.ref} item={w} now={now} />
+                  ))}
+              </section>
             )}
           </Card>
           {tab === 'completed' && counts.completed > 0 && (

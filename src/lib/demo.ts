@@ -77,7 +77,9 @@ export function buildDemoData(now = new Date()) {
     }),
     ev('Dentist appointment', 'personal', 5, '09:00', '09:45', { description: 'Demo event.' }),
     ev('Long run / mobility', 'gym', 6, '10:00', '11:00'),
-    ev('Free afternoon', 'rest', 5, '14:00', '18:00'),
+    ev('Free afternoon', 'rest', 5, '15:00', '18:00'),
+    ev('Ad analysis practice', 'lab', 5, '14:00', '15:00', { recurrence: weekly(6), description: 'Work through this week’s practice queue in Creative Lab.' }),
+    ev('Ad analysis practice', 'lab', 6, '11:30', '12:30', { recurrence: weekly(0) }),
   ]
 
   const today = dateKey(now)
@@ -125,6 +127,6 @@ export function buildDemoData(now = new Date()) {
     }),
   ]
 
-  const topThree = { [today]: tasks.slice(0, 3).map((x) => x.id) }
+  const topThree: Record<string, string[]> = { [today]: tasks.slice(0, 3).map((x) => `task:${x.id}`) }
   return { events, tasks, topThree }
 }

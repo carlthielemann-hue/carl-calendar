@@ -13,19 +13,13 @@ export interface EventInput {
   end: Date
   category: CalEvent['category']
   recurrence?: CalEvent['recurrence']
-  taskId?: string
+  /** Entity ref this block is for */
+  link?: string
 }
 
 const gcfg = () => {
   const s = useApp.getState()
   return { clientId: s.settings.googleClientId || google.envClientId, calendarId: s.google.calendarId }
-}
-
-function linkTask(eventId: string, taskId?: string) {
-  const s = useApp.getState()
-  // unlink any task previously pointing at this event
-  s.tasks.filter((t) => t.eventId === eventId && t.id !== taskId).forEach((t) => s.updateTask(t.id, { eventId: undefined }))
-  if (taskId) s.updateTask(taskId, { eventId })
 }
 
 /** Create a new event, locally or in Google Calendar. */
@@ -40,7 +34,6 @@ export async function createEvent(input: EventInput, target: 'local' | 'google' 
     return
   }
   const ev = s.addEvent(data)
-  linkTask(ev.id, input.taskId)
   toast.success('Event created', { description: input.title })
   return ev
 }
@@ -62,15 +55,16 @@ export async function saveEvent(occ: Occurrence, input: EventInput, scope: Scope
   }
   if (occ.recurring && scope === 'this') {
     s.skipOccurrence(ev.id, occ.dateKey)
-    const single = s.addEvent({
+    s.addEvent({
       title: input.title,
       description: input.description,
       category: input.category,
       start: toLocalDT(input.start),
       end: toLocalDT(input.end),
+      link: input.link,
       isDemo: ev.isDemo,
     })
-    linkTask(single.id, input.taskId)
+
     toast.success('Updated this event')
     return
   }
@@ -89,8 +83,8 @@ export async function saveEvent(occ: Occurrence, input: EventInput, scope: Scope
     recurrence: input.recurrence,
     start: toLocalDT(start),
     end: toLocalDT(end),
+    link: input.link,
   })
-  linkTask(ev.id, input.taskId)
   toast.success(occ.recurring ? 'Updated all events in series' : 'Event updated')
 }
 
@@ -128,7 +122,7 @@ export async function moveOccurrence(occ: Occurrence, start: Date, end: Date) {
     category: ev.category,
     start,
     end,
-    taskId: ev.taskId,
+    link: ev.link,
   }
   try {
     await saveEvent(occ, input, 'this')

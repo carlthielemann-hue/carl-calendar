@@ -7,17 +7,20 @@ import type { Occurrence } from '@/lib/types'
 import { alpha } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
+import { openRef, toggleWorkItem, useWorkItemMap } from '@/lib/work'
+import { WORK_KIND_LABEL } from '@/domain/workItems'
 
-function LinkedTask({ taskId }: { taskId?: string }) {
-  const task = useApp((s) => s.tasks.find((t) => t.id === taskId))
-  const toggle = useApp((s) => s.toggleTask)
-  const color = useApp((s) => (task ? s.settings.categoryColors[task.category] : undefined))
-  if (!task) return null
+function LinkedItem({ link }: { link: string }) {
+  const item = useWorkItemMap().get(link)
+  const color = useApp((s) => (item ? s.settings.categoryColors[item.category] : undefined))
+  if (!item) return null
   return (
     <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-line bg-panel-2 px-3 py-2">
-      <Checkbox checked={task.completed} onChange={() => toggle(task.id)} color={color} label={`Complete ${task.title}`} size={16} />
-      <span className="text-[11.5px] font-medium uppercase tracking-wide text-faint">Task</span>
-      <span className={task.completed ? 'truncate text-[13px] text-faint line-through' : 'truncate text-[13px] text-fg-2'}>{task.title}</span>
+      <Checkbox checked={item.done} onChange={() => toggleWorkItem(item.ref)} color={color} label={`Complete ${item.title}`} size={16} />
+      <span className="text-[11.5px] font-medium uppercase tracking-wide text-faint">{WORK_KIND_LABEL[item.kind]}</span>
+      <button onClick={() => openRef(item.ref)} className={item.done ? 'truncate text-[13px] text-faint line-through' : 'truncate text-left text-[13px] text-fg-2 hover:underline'}>
+        {item.title}
+      </button>
     </div>
   )
 }
@@ -80,7 +83,7 @@ export function NowNext({ occs, now }: { occs: Occurrence[]; now: Date }) {
               </p>
             </div>
           )}
-          {current?.event.taskId && <LinkedTask taskId={current.event.taskId} />}
+          {current?.event.link && <LinkedItem link={current.event.link} />}
         </div>
 
         {/* NEXT */}

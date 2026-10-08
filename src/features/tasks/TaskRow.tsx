@@ -9,6 +9,7 @@ import type { Priority, Task } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { MAX_TOP, useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
+import { describeRef } from '@/lib/work'
 
 export const PRIORITY_COLOR: Record<Priority, string> = { high: '#ef6b6b', medium: '#e5a54b', low: 'var(--faint)' }
 
@@ -23,11 +24,12 @@ export function dueLabel(t: Pick<Task, 'due' | 'dueTime'>, now = new Date()) {
   return t.dueTime ? `${label} · ${t.dueTime}` : label
 }
 
-export function toggleTopWithToast(dk: string, taskId: string) {
-  const r = useApp.getState().toggleTop(dk, taskId)
-  if (r === 'full') toast(`You already have ${MAX_TOP} priorities today`, { description: 'Remove one first. Three is the point.' })
-  else if (r === 'added') toast.success('Added to today’s top three')
-  return r
+export function toggleTopWithToast(dk: string, r: string) {
+  const res = useApp.getState().toggleTop(dk, r)
+  const day = dk === dateKey(new Date()) ? 'today' : 'that day'
+  if (res === 'full') toast(`You already have ${MAX_TOP} priorities ${day}`, { description: 'Remove one first. Three is the point.' })
+  else if (res === 'added') toast.success(`Added to ${day === 'today' ? 'today’s' : 'the'} top three`)
+  return res
 }
 
 export function scheduleTask(t: Task) {
@@ -37,7 +39,7 @@ export function scheduleTask(t: Task) {
     const d = fromDateKey(t.due)
     if (dateKey(d) !== dateKey(now)) start.setTime(atTime(d, '16:00').getTime())
   }
-  useUI.getState().editEvent({ title: t.title, start, end: new Date(start.getTime() + 3600000), category: t.category, taskId: t.id })
+  useUI.getState().editEvent({ title: t.title, start, end: new Date(start.getTime() + 3600000), category: t.category, link: `task:${t.id}` })
 }
 
 export function TaskRow({
@@ -57,7 +59,9 @@ export function TaskRow({
 }) {
   const color = useApp((s) => s.settings.categoryColors[task.category])
   const todayKey = dateKey(now)
-  const isTop = useApp((s) => (s.topThree[todayKey] ?? []).includes(task.id))
+  const isTop = useApp((s) => (s.topThree[todayKey] ?? []).includes(`task:${task.id}`))
+  const scheduled = useApp((s) => s.events.some((e) => e.link === `task:${task.id}`))
+  const parent = useApp((s) => (task.link ? (describeRef(s, task.link)?.label ?? null) : null))
   const toggle = useApp((s) => s.toggleTask)
   const del = useApp((s) => s.deleteTask)
   const editTask = useUI((s) => s.editTask)
@@ -91,14 +95,15 @@ export function TaskRow({
         <div className={cn('truncate text-[13.5px] transition-colors', task.completed ? 'text-faint line-through decoration-faint/60' : 'text-fg')}>
           {task.title}
         </div>
-        {!dense && (due || task.eventId) && (
+        {!dense && (due || scheduled || parent) && (
           <div className="mt-0.5 flex items-center gap-2 text-[11.5px]">
             {due && <span className={cn('tnum', overdue ? 'text-danger' : 'text-muted')}>{due}</span>}
-            {task.eventId && (
+            {scheduled && (
               <span className="inline-flex items-center gap-1 text-faint">
                 <CalendarClock className="h-3 w-3" /> Scheduled
               </span>
             )}
+            {parent && <span className="truncate text-faint">↳ {parent}</span>}
           </div>
         )}
       </div>
@@ -112,13 +117,13 @@ export function TaskRow({
           {showTop && !task.completed && (
             <IconAction
               label={isTop ? 'Remove from top three' : 'Add to today’s top three'}
-              onClick={() => toggleTopWithToast(todayKey, task.id)}
+              onClick={() => toggleTopWithToast(todayKey, `task:${task.id}`)}
               className={isTop ? 'text-[#e5a54b]' : ''}
             >
               <Star className="h-3.5 w-3.5" fill={isTop ? 'currentColor' : 'none'} />
             </IconAction>
           )}
-          {!task.completed && !task.eventId && (
+          {!task.completed && !scheduled && (
             <IconAction label="Schedule on calendar" onClick={() => scheduleTask(task)}>
               <CalendarPlus className="h-3.5 w-3.5" />
             </IconAction>
@@ -131,13 +136,15 @@ export function TaskRow({
             className="hover:text-danger"
             onClick={() => {
               const snapshot = { ...task }
-              const tops = useApp.getState().topThree
+              const st = useApp.getState()
+              const tops = st.topThree
+              const evs = st.events
               del(task.id)
               toast('Task deleted', {
                 description: task.title,
                 action: {
                   label: 'Undo',
-                  onClick: () => useApp.setState((s) => ({ tasks: [snapshot, ...s.tasks], topThree: tops })),
+                  onClick: () => useApp.setState((s) => ({ tasks: [snapshot, ...s.tasks], topThree: tops, events: evs })),
                 },
               })
             }}

@@ -17,9 +17,9 @@ export function DemoBanner() {
     <div className="mb-5 flex items-center gap-3 rounded-xl border border-[color-mix(in_srgb,#ec8a45_25%,transparent)] bg-[color-mix(in_srgb,#ec8a45_7%,transparent)] px-3.5 py-2.5 text-[12.5px]">
       <FlaskConical className="h-4 w-4 shrink-0 text-[#ec8a45]" />
       <p className="flex-1 text-fg-2">
-        <span className="font-medium text-fg">Demo mode.</span> Events and tasks are sample data — not your real schedule. Edit freely; changes are saved in this browser.
+        <span className="font-medium text-fg">Demo mode.</span> Clients, ads, events and tasks are sample data — not your real schedule or business. Edit freely; changes stay in this browser.
       </p>
-      <button onClick={() => useUI.getState().navigate('settings')} className="hidden shrink-0 text-[12.5px] font-medium text-fg underline-offset-2 hover:underline sm:block">
+      <button onClick={() => useUI.getState().go('/settings')} className="hidden shrink-0 text-[12.5px] font-medium text-fg underline-offset-2 hover:underline sm:block">
         Manage data
       </button>
       <button

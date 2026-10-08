@@ -9,6 +9,7 @@ const CAT_ALIASES: Record<string, CategoryId> = {
   basketball: 'basketball', bball: 'basketball', bb: 'basketball', hoops: 'basketball',
   personal: 'personal', me: 'personal',
   rest: 'rest',
+  lab: 'lab', practice: 'lab', creative: 'lab',
 }
 const DAYS: Record<string, Day> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }
 

@@ -1,4 +1,4 @@
-export type CategoryId = 'school' | 'tps' | 'gym' | 'basketball' | 'personal' | 'rest'
+export type CategoryId = 'school' | 'tps' | 'lab' | 'gym' | 'basketball' | 'personal' | 'rest'
 
 export type Priority = 'high' | 'medium' | 'low'
 
@@ -25,7 +25,8 @@ export interface CalEvent {
   recurrence?: Recurrence
   /** Skipped occurrence dates (yyyy-MM-dd) of a recurring series. */
   exdates?: string[]
-  taskId?: string
+  /** Entity this time block is for, e.g. "task:abc" or "deliverable:xyz" (see domain/refs). */
+  link?: string
   source: EventSource
   /** Google Calendar event id (instance id for recurring instances). */
   googleId?: string
@@ -49,7 +50,10 @@ export interface Task {
   completed: boolean
   completedAt?: string
   createdAt: string
-  eventId?: string
+  /** Optional parent entity (client, project, deliverable, opportunity…) as an entity ref. */
+  link?: string
+  /** Rough effort estimate in minutes, used for capacity planning. */
+  estimate?: number
   isDemo?: boolean
 }
 

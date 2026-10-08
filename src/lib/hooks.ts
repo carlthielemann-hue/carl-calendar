@@ -1,6 +1,6 @@
 import { addDays, endOfDay, startOfDay } from 'date-fns'
 import { useMemo } from 'react'
-import { useApp, useVisibleEvents } from '@/store/app'
+import { useVisibleEvents } from '@/store/app'
 import { dateKey, expandEvents } from './dates'
 import type { Task } from './types'
 
@@ -20,12 +20,6 @@ export function useTodayKey(now: Date) {
   return dateKey(now)
 }
 
-/** Ordered top-three tasks for a date (missing tasks filtered out). */
-export function useTopThree(dk: string): Task[] {
-  const ids = useApp((s) => s.topThree[dk])
-  const tasks = useApp((s) => s.tasks)
-  return useMemo(() => (ids ?? []).map((id) => tasks.find((t) => t.id === id)).filter(Boolean) as Task[], [ids, tasks])
-}
 
 export function isOverdue(t: Task, now: Date) {
   if (t.completed || !t.due) return false

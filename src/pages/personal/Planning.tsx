@@ -318,7 +318,7 @@ export default function PlanningPage() {
             <Card className="flex items-center gap-3 p-4">
               <Sparkles className="h-4 w-4 text-ok" />
               <p className="flex-1 text-[13px] text-fg-2">Reset completed {format(new Date(plan.completedAt), "EEE 'at' HH:mm")}. The plan is set — go execute.</p>
-              <Button size="sm" variant="ghost" onClick={() => useUI.getState().navigate('overview')}>
+              <Button size="sm" variant="ghost" onClick={() => useUI.getState().go('/personal/overview')}>
                 <CalendarCheck className="h-3.5 w-3.5" /> Today
               </Button>
             </Card>
