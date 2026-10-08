@@ -45,13 +45,17 @@ on run {input, parameters}
 	-- The AI window
 	set aiProc to target
 	try
-		if target is "Manus" and not my appExists("Manus") then
+		if target is "Manus" and my appExists("Manus Studio") then
+			set aiProc to "Manus Studio"
+			tell application "Manus Studio" to activate
+		else if target is "Manus" and not my appExists("Manus") then
+			-- no desktop app installed: open the web app as a slim window
 			set aiProc to my openWebApp(browserName, "https://manus.im/app")
 		else
 			tell application target to activate
 		end if
 	on error
-		display dialog "Couldn't open " & target & ". Install its desktop app (claude.ai/download or chatgpt.com/download) and try again." buttons {"OK"} default button 1
+		display dialog "Couldn't open " & target & ". Install its desktop app (claude.ai/download, chatgpt.com/download or manus.im/desktop) and try again." buttons {"OK"} default button 1
 		return input
 	end try
 	delay 0.6

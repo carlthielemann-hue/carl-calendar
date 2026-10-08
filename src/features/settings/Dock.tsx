@@ -21,7 +21,7 @@ export function DockSection() {
       <div className="px-5 py-3.5 text-[12.5px] leading-relaxed text-fg-2">
         <div className="mb-1.5 text-[13px] font-medium text-fg">One-time setup (≈3 minutes)</div>
         <ol className="list-decimal space-y-1 pl-4">
-          <li>Install the desktop apps you want: Claude (claude.ai/download), ChatGPT (chatgpt.com/download). Manus opens as a slim browser window.</li>
+          <li>Install the desktop apps you want: Claude (claude.ai/download), ChatGPT (chatgpt.com/download), Manus (manus.im/desktop, Apple Silicon). Without the Manus app it opens as a slim browser window.</li>
           <li>
             Open the <b>Shortcuts</b> app → <b>New Shortcut</b> → name it exactly <b>{SHORTCUT_NAME}</b>.
           </li>

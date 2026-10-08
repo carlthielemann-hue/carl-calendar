@@ -79,8 +79,11 @@ export function dock(target: DockTarget) {
 /* ---------- open the desktop app directly (no setup) ---------- */
 
 export type AiApp = 'Claude' | 'ChatGPT' | 'Manus'
-/** Desktop apps register these URL schemes; the browser asks once before opening them. */
-const SCHEMES: Partial<Record<AiApp, string>> = { Claude: 'claude://', ChatGPT: 'chatgpt://' }
+/**
+ * Desktop apps register these URL schemes; the browser asks once before opening them.
+ * Manus' scheme isn't documented — `manus://` is a best guess; the fallback toast covers it.
+ */
+const SCHEMES: Partial<Record<AiApp, string>> = { Claude: 'claude://', ChatGPT: 'chatgpt://', Manus: 'manus://' }
 export const AI_WEB: Record<AiApp, string> = { Claude: 'https://claude.ai/new', ChatGPT: 'https://chatgpt.com/', Manus: 'https://manus.im/app' }
 
 /**
