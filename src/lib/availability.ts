@@ -1,6 +1,5 @@
 import { differenceInMinutes, isSameDay } from 'date-fns'
 import { atTime } from './dates'
-import type { Occurrence } from './types'
 
 export interface Window {
   start: Date
@@ -12,14 +11,21 @@ export interface Window {
  * Free time on `day` between `from` and `until` (HH:mm), skipping every timed event.
  * Starts no earlier than `now` on the current day. Only windows ≥ `min` minutes are returned.
  */
-export function freeWindows(occs: Occurrence[], day: Date, opts: { from?: string; until: string; now?: Date; min?: number }): Window[] {
+/** Anything with a time span; occurrences qualify. */
+export interface Busy {
+  start: Date
+  end: Date
+  event?: { allDay?: boolean }
+}
+
+export function freeWindows(occs: Busy[], day: Date, opts: { from?: string; until: string; now?: Date; min?: number }): Window[] {
   const now = opts.now ?? new Date()
   const min = opts.min ?? 30
   let cursor = atTime(day, opts.from ?? '08:00')
   const stop = atTime(day, opts.until)
   if (isSameDay(day, now) && now > cursor) cursor = new Date(Math.ceil(now.getTime() / 900000) * 900000)
   const out: Window[] = []
-  const busy = occs.filter((o) => !o.event.allDay && o.end > cursor && o.start < stop).sort((a, b) => a.start.getTime() - b.start.getTime())
+  const busy = occs.filter((o) => !o.event?.allDay && o.end > cursor && o.start < stop).sort((a, b) => a.start.getTime() - b.start.getTime())
   for (const o of busy) {
     if (o.start > cursor) {
       const end = o.start < stop ? o.start : stop
