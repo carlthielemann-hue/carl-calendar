@@ -175,6 +175,21 @@ await step('command palette quick-add', async () => {
   await main.getByText('E2E palette task', { exact: true }).waitFor()
 })
 
+await step('remove demo data (two-step confirm) → empty states', async () => {
+  await page.keyboard.press('5')
+  const btn = page.getByRole('button', { name: 'Remove demo data' })
+  await btn.click()
+  await page.getByRole('button', { name: /Remove sample data\? Click again/ }).click()
+  await page.getByText('Demo data removed').first().waitFor()
+  await page.keyboard.press('1')
+  assert.equal(await main.getByText('Demo mode.').count(), 0)
+  assert.equal(await main.getByText('Classes', { exact: true }).count(), 0)
+  // user-created task survives
+  await page.keyboard.press('3')
+  await page.getByRole('tab', { name: /All open/ }).click()
+  await main.getByText('E2E write 10 hooks', { exact: true }).first().waitFor()
+})
+
 console.log('Mobile')
 await step('mobile layout renders with bottom nav', async () => {
   await page.setViewportSize({ width: 390, height: 844 })

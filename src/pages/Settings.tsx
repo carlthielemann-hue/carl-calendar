@@ -3,7 +3,7 @@ import { AlertTriangle, CalendarDays, Check, Database, Download, ExternalLink, F
 import { useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Button, Card, Input, Segmented, Select } from '@/components/ui'
+import { Button, Card, ConfirmButton, Input, Segmented, Select } from '@/components/ui'
 import { CATEGORY_IDS, CATEGORY_LABELS, DEFAULT_CATEGORY_COLORS } from '@/lib/categories'
 import { syncGoogle } from '@/lib/eventActions'
 import * as google from '@/lib/google'
@@ -196,9 +196,16 @@ export default function SettingsPage() {
 
   const exportData = () => {
     const { events, tasks, topThree, weekly, settings } = useApp.getState()
-    const blob = new Blob([JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), events, tasks, topThree, weekly, settings }, null, 2)], {
-      type: 'application/json',
-    })
+    const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), events, tasks, topThree, weekly, settings }, null, 2)
+    if (google.inSandboxedFrame()) {
+      // Embedded previews block downloads — copy instead.
+      navigator.clipboard
+        .writeText(json)
+        .then(() => toast.success('Export copied to clipboard', { description: 'Paste it into a .json file to keep it.' }))
+        .catch(() => toast.error('Couldn’t copy the export here. Run the app from its own URL to download it.'))
+      return
+    }
+    const blob = new Blob([json], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = `command-center-${new Date().toISOString().slice(0, 10)}.json`
@@ -340,30 +347,26 @@ export default function SettingsPage() {
             <Toggle checked={s.showDemoEvents} onChange={set('showDemoEvents')} label="Show demo data" />
           </Row>
           <div className="flex flex-wrap gap-2 px-5 py-3.5">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (confirm('Reset demo data? Sample events and tasks are restored to their original state. Your own items are kept.')) {
-                  useApp.getState().resetDemo()
-                  update({ showDemoEvents: true })
-                  toast.success('Demo data reset')
-                }
+            <ConfirmButton
+              confirmLabel="Reset sample data? Click again"
+              onConfirm={() => {
+                useApp.getState().resetDemo()
+                update({ showDemoEvents: true })
+                toast.success('Demo data reset', { description: 'Sample events and tasks restored. Your own items were kept.' })
               }}
             >
               <FlaskConical className="h-3.5 w-3.5" /> Reset demo data
-            </Button>
+            </ConfirmButton>
             {hasDemo && (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  if (confirm('Remove all demo events and tasks? Your own items are kept.')) {
-                    useApp.getState().clearDemo()
-                    toast.success('Demo data removed — it’s all yours now')
-                  }
+              <ConfirmButton
+                confirmLabel="Remove sample data? Click again"
+                onConfirm={() => {
+                  useApp.getState().clearDemo()
+                  toast.success('Demo data removed', { description: 'Your own events and tasks were kept.' })
                 }}
               >
                 Remove demo data
-              </Button>
+              </ConfirmButton>
             )}
             <Button variant="secondary" onClick={exportData}>
               <Download className="h-3.5 w-3.5" /> Export
@@ -372,19 +375,18 @@ export default function SettingsPage() {
               <Upload className="h-3.5 w-3.5" /> Import
             </Button>
             <input ref={fileRef} type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && importData(e.target.files[0])} />
-            <Button
+            <ConfirmButton
               variant="danger"
               className="ml-auto"
-              onClick={() => {
-                if (confirm('Erase ALL events, tasks and plans in this browser? This cannot be undone. (Google Calendar is not affected.)')) {
-                  useApp.getState().clearAll()
-                  update({ ...DEFAULT_SETTINGS, theme: s.theme })
-                  toast('All local data erased')
-                }
+              confirmLabel="Erase all local data? Click again"
+              onConfirm={() => {
+                useApp.getState().clearAll()
+                update({ ...DEFAULT_SETTINGS, theme: s.theme })
+                toast('All local data erased', { description: 'Google Calendar was not touched.' })
               }}
             >
               <Trash2 className="h-3.5 w-3.5" /> Erase everything
-            </Button>
+            </ConfirmButton>
           </div>
         </Section>
       </div>

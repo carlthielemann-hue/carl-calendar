@@ -1,6 +1,6 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Check, ChevronDown, X } from 'lucide-react'
-import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 /* ---------- Button ---------- */
@@ -272,5 +272,42 @@ export function Empty({ icon, title, hint, action, className }: { icon?: ReactNo
       {hint && <p className="max-w-[280px] text-[12.5px] leading-relaxed text-muted">{hint}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
+  )
+}
+
+/* ---------- Two-step confirm button (no window.confirm) ---------- */
+export function ConfirmButton({
+  onConfirm,
+  children,
+  confirmLabel = 'Click again to confirm',
+  variant = 'secondary',
+  className,
+}: {
+  onConfirm: () => void
+  children: ReactNode
+  confirmLabel?: string
+  variant?: Variant
+  className?: string
+}) {
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const t = setTimeout(() => setArmed(false), 4000)
+    return () => clearTimeout(t)
+  }, [armed])
+  return (
+    <Button
+      variant={armed ? 'danger' : variant}
+      className={cn(armed && 'border border-[color-mix(in_srgb,var(--danger)_45%,transparent)]', className)}
+      onClick={() => {
+        if (armed) {
+          setArmed(false)
+          onConfirm()
+        } else setArmed(true)
+      }}
+      onBlur={() => setArmed(false)}
+    >
+      {armed ? confirmLabel : children}
+    </Button>
   )
 }
