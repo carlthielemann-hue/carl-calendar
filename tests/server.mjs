@@ -167,6 +167,17 @@ await step('invalid input is rejected with a clear message', async () => {
   assert.equal(r.result.isError, true)
   assert.match(r.result.content[0].text, /yyyy-MM-dd/)
 })
+await step('V4: swipes save once, are searchable; money stays private by default', async () => {
+  const args = { title: 'Question hook UGC', url: 'https://www.tiktok.com/@b/video/9', platform: 'TikTok', board: 'Hooks' }
+  const a = await rpc('tools/call', { name: 'save_swipe', arguments: args })
+  assert.equal(a.result.structuredContent.saved, true, JSON.stringify(a))
+  const b = await rpc('tools/call', { name: 'save_swipe', arguments: { ...args, url: 'tiktok.com/@b/video/9/' } })
+  assert.equal(b.result.structuredContent.duplicate, true)
+  const f = await rpc('tools/call', { name: 'search_swipes', arguments: { query: 'question', board: 'Hooks' } })
+  assert.equal(f.result.structuredContent.ads.length, 1)
+  const m = await rpc('tools/call', { name: 'get_money_summary', arguments: {} })
+  assert.equal(m.result.isError, true)
+})
 await step('grants are listed and can be revoked', async () => {
   const g = await api('/mcp/grants')
   assert.ok(g.body.grants.length >= 1)

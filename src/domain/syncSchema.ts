@@ -12,7 +12,7 @@ export const ARRAY_COLLS = [
   'concepts', 'aiOutputs', 'workflows', 'posts', 'countdowns', 'proposals',
   'subjects', 'exams', 'assignments', 'grades',
   'exercises', 'routines', 'workouts', 'bodyweight',
-  'transactions', 'accounts', 'subscriptions', 'savingsGoals', 'moves', 'goals',
+  'transactions', 'accounts', 'subscriptions', 'savingsGoals', 'moves', 'goals', 'boards',
 ] as const
 export const MAP_COLLS = ['topThree', 'weekly', 'dayPlans', 'scorecards'] as const
 export const CONFIG_KEYS = ['stages', 'settings'] as const

@@ -5,6 +5,8 @@
  */
 import { useEffect, useState } from 'react'
 import { uid } from './utils'
+import { cloud } from './cloud'
+import { isAccountMode } from '@/store/mode'
 
 const DB = 'command-center-media'
 const STORE = 'media'
@@ -56,10 +58,19 @@ async function shrink(file: File): Promise<Blob> {
   }
 }
 
+/** Synced media lives in cloud storage (account mode with R2) under "cloud:<key>". */
+export const isCloudMedia = (id: string) => id.startsWith('cloud:')
+
 export async function saveMedia(file: File): Promise<string> {
   if (file.size > 25 * 1024 * 1024) throw new Error('That file is over 25 MB — save a link to it instead.')
-  const id = uid('media-')
   const blob = await shrink(file)
+  if (isAccountMode() && cloud.isSignedIn()) {
+    const key = await cloud.uploadFile(new File([blob], file.name, { type: blob.type || file.type }))
+    const id = `cloud:${key}`
+    memory.set(id, blob)
+    return id
+  }
+  const id = uid('media-')
   memory.set(id, blob)
   await tx('readwrite', (s) => s.put(blob, id))
   return id
@@ -67,11 +78,29 @@ export async function saveMedia(file: File): Promise<string> {
 
 export async function deleteMedia(id: string) {
   memory.delete(id)
+  if (isCloudMedia(id)) {
+    if (cloud.isSignedIn()) await cloud.deleteFile(id.slice(6)).catch(() => {})
+    return
+  }
   await tx('readwrite', (s) => s.delete(id))
 }
 
 export async function getMedia(id: string): Promise<Blob | undefined> {
-  return memory.get(id) ?? (await tx<Blob>('readonly', (s) => s.get(id)))
+  const hit = memory.get(id)
+  if (hit) return hit
+  if (isCloudMedia(id)) {
+    // Cache downloaded cloud media on this device too.
+    const cached = await tx<Blob>('readonly', (s) => s.get(id))
+    if (cached) return cached
+    if (!cloud.isSignedIn()) return undefined
+    const b = await cloud.downloadFile(id.slice(6)).catch(() => undefined)
+    if (b) {
+      memory.set(id, b)
+      await tx('readwrite', (s) => s.put(b, id))
+    }
+    return b
+  }
+  return await tx<Blob>('readonly', (s) => s.get(id))
 }
 
 /** Object URL for a stored media id (revoked on unmount). */

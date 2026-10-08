@@ -26,6 +26,7 @@ import type {
   SavingsGoal,
   AllocationMove,
   Goal,
+  Board,
   DayPlan,
   Deliverable,
   FeedbackEntry,
@@ -99,6 +100,7 @@ export interface Data {
   savingsGoals: SavingsGoal[]
   moves: AllocationMove[]
   goals: Goal[]
+  boards: Board[]
   /* Shared */
   metrics: Metric[]
   scorecards: Record<string, WeekScore>

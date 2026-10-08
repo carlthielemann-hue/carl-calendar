@@ -2,7 +2,8 @@ import { Heart, ImagePlus, Loader2, Play, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Dialog, Field, Input, Select, Textarea } from '@/components/ui'
-import { AD_FORMATS, type AdFormat, type AdRef } from '@/domain/entities'
+import { AD_FORMATS, AD_PLATFORMS, AWARENESS, type AdFormat, type AdRef } from '@/domain/entities'
+import { detectPlatform, findDuplicate } from './vault'
 import { deleteMedia, saveMedia, useMediaUrl } from '@/lib/media'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
@@ -60,7 +61,7 @@ export function MediaUploader({ ad }: { ad: AdRef }) {
       const ids: string[] = []
       for (const f of Array.from(files)) ids.push(await saveMedia(f))
       update(ad.id, { mediaIds: [...useApp.getState().ads.find((a) => a.id === ad.id)!.mediaIds, ...ids] })
-      toast.success(ids.length > 1 ? `${ids.length} files saved` : 'Saved', { description: 'Stored on this device.' })
+      toast.success(ids.length > 1 ? `${ids.length} files saved` : 'Saved', { description: ids.some((i) => i.startsWith('cloud:')) ? 'Synced to your account — visible on all your devices.' : 'Stored on this device.' })
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
@@ -121,15 +122,17 @@ export function parseTags(s: string) {
   return [...new Set(s.split(/[,#]/).map((t) => t.trim().toLowerCase()).filter(Boolean))]
 }
 
-export function AdDialog({ open, onOpenChange, initial, onCreated }: { open: boolean; onOpenChange: (v: boolean) => void; initial?: AdRef; onCreated?: (ad: AdRef) => void }) {
+export function AdDialog({ open, onOpenChange, initial, onCreated, prefill }: { open: boolean; onOpenChange: (v: boolean) => void; initial?: AdRef; onCreated?: (ad: AdRef) => void; prefill?: Partial<AdRef> }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={initial ? 'Edit ad' : 'Save an ad'} description={initial ? undefined : 'Add it to your swipe library. You can analyze it now or later.'}>
-      {open && <AdForm initial={initial} onDone={() => onOpenChange(false)} onCreated={onCreated} />}
+    <Dialog open={open} onOpenChange={onOpenChange} title={initial ? 'Edit ad' : 'Save an ad'} description={initial ? undefined : 'Add it to your swipe vault. You can analyze it now or later.'} className="max-w-[620px]">
+      {open && <AdForm initial={initial ?? (prefill as AdRef | undefined)} isNew={!initial} onDone={() => onOpenChange(false)} onCreated={onCreated} />}
     </Dialog>
   )
 }
 
-function AdForm({ initial, onDone, onCreated }: { initial?: AdRef; onDone: () => void; onCreated?: (ad: AdRef) => void }) {
+function AdForm({ initial, isNew, onDone, onCreated }: { initial?: AdRef; isNew: boolean; onDone: () => void; onCreated?: (ad: AdRef) => void }) {
+  const ads = useApp((s) => s.ads)
+  const [more, setMore] = useState(!!(initial?.platform || initial?.awareness || initial?.transcript))
   const [f, setF] = useState({
     title: initial?.title ?? '',
     brand: initial?.brand ?? '',
@@ -137,27 +140,52 @@ function AdForm({ initial, onDone, onCreated }: { initial?: AdRef; onDone: () =>
     format: initial?.format ?? ('UGC video' as AdFormat),
     angle: initial?.angle ?? '',
     hook: initial?.hook ?? '',
-    tags: initial?.tags.join(', ') ?? '',
+    tags: initial?.tags?.join(', ') ?? '',
     notes: initial?.notes ?? '',
+    platform: initial?.platform ?? detectPlatform(initial?.url) ?? '',
+    awareness: initial?.awareness ?? '',
+    funnel: initial?.funnel ?? '',
+    niche: initial?.niche ?? '',
+    hookType: initial?.hookType ?? '',
+    emotion: initial?.emotion ?? '',
+    offer: initial?.offer ?? '',
+    runningSince: initial?.runningSince ?? '',
+    transcript: initial?.transcript ?? '',
   })
+  const dup = findDuplicate(ads, f.url, isNew ? undefined : initial?.id)
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value })
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!f.title.trim()) return toast.error('Give the ad a short title')
     let url = f.url.trim()
     if (url && !/^https?:\/\//.test(url)) url = `https://${url}`
+    if (isNew && dup) {
+      toast('Already in your vault', { description: dup.title, action: { label: 'Open', onClick: () => useUI.getState().go(`/lab/library/${dup.id}`) } })
+      onDone()
+      return
+    }
+    const opt = (v: string) => v.trim() || undefined
     const data = {
       title: f.title.trim(),
-      brand: f.brand.trim() || undefined,
+      brand: opt(f.brand),
       url: url || undefined,
       format: f.format,
-      angle: f.angle.trim() || undefined,
-      hook: f.hook.trim() || undefined,
+      angle: opt(f.angle),
+      hook: opt(f.hook),
       tags: parseTags(f.tags),
-      notes: f.notes.trim() || undefined,
+      notes: opt(f.notes),
+      platform: (f.platform || undefined) as AdRef['platform'],
+      awareness: (f.awareness || undefined) as AdRef['awareness'],
+      funnel: (f.funnel || undefined) as AdRef['funnel'],
+      niche: opt(f.niche),
+      hookType: opt(f.hookType),
+      emotion: opt(f.emotion),
+      offer: opt(f.offer),
+      runningSince: f.runningSince || undefined,
+      transcript: opt(f.transcript),
     }
     const s = useApp.getState()
-    if (initial) {
+    if (!isNew && initial) {
       s.updateAd(initial.id, data)
       toast.success('Ad updated')
       onDone()
@@ -186,9 +214,17 @@ function AdForm({ initial, onDone, onCreated }: { initial?: AdRef; onDone: () =>
           </Select>
         </Field>
       </div>
-      <Field label="Source link" hint="Meta Ad Library, TikTok, YouTube, landing page…">
-        <Input value={f.url} onChange={set('url')} placeholder="https://" />
+      <Field label="Source link" hint={dup ? undefined : 'Meta Ad Library, TikTok, YouTube, landing page…'}>
+        <Input value={f.url} onChange={(e) => setF({ ...f, url: e.target.value, platform: f.platform || detectPlatform(e.target.value) || '' })} placeholder="https://" />
       </Field>
+      {isNew && dup && (
+        <p className="-mt-2 text-[12px] text-[#e5a54b]">
+          Already saved as “{dup.title}”.{' '}
+          <button type="button" className="underline" onClick={() => (onDone(), useUI.getState().go(`/lab/library/${dup.id}`))}>
+            Open it
+          </button>
+        </p>
+      )}
       <Field label="Hook">
         <Input value={f.hook} onChange={set('hook')} placeholder="First words / visual" />
       </Field>
@@ -203,12 +239,67 @@ function AdForm({ initial, onDone, onCreated }: { initial?: AdRef; onDone: () =>
       <Field label="Notes">
         <Textarea rows={2} value={f.notes} onChange={set('notes')} />
       </Field>
+      <button type="button" onClick={() => setMore(!more)} className="self-start text-[12.5px] text-muted hover:text-fg">
+        {more ? '− Fewer details' : '+ Platform, awareness, funnel, offer, transcript…'}
+      </button>
+      {more && (
+        <div className="flex flex-col gap-3 rounded-xl border border-line p-3">
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Platform">
+              <Select value={f.platform} onChange={set('platform')}>
+                <option value="">—</option>
+                {AD_PLATFORMS.map((x) => (
+                  <option key={x}>{x}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Awareness">
+              <Select value={f.awareness} onChange={set('awareness')}>
+                <option value="">—</option>
+                {AWARENESS.map((x) => (
+                  <option key={x}>{x}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Funnel">
+              <Select value={f.funnel} onChange={set('funnel')}>
+                <option value="">—</option>
+                <option>TOF</option>
+                <option>MOF</option>
+                <option>BOF</option>
+              </Select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Niche">
+              <Input value={f.niche} onChange={set('niche')} placeholder="skincare" />
+            </Field>
+            <Field label="Hook type">
+              <Input value={f.hookType} onChange={set('hookType')} placeholder="question, callout…" />
+            </Field>
+            <Field label="Emotion / desire">
+              <Input value={f.emotion} onChange={set('emotion')} placeholder="relief, status…" />
+            </Field>
+          </div>
+          <div className="grid grid-cols-[1fr_160px] gap-2">
+            <Field label="Offer">
+              <Input value={f.offer} onChange={set('offer')} placeholder="20% off first order" />
+            </Field>
+            <Field label="Running since">
+              <Input type="date" value={f.runningSince} onChange={set('runningSince')} />
+            </Field>
+          </div>
+          <Field label="Transcript">
+            <Textarea rows={4} value={f.transcript} onChange={set('transcript')} placeholder="Paste the script / voiceover" />
+          </Field>
+        </div>
+      )}
       <div className="-mx-5 mt-1 flex justify-end gap-2 border-t border-line px-5 pt-3">
         <Button variant="ghost" onClick={onDone}>
           Cancel
         </Button>
         <Button type="submit" variant="primary">
-          {initial ? 'Save' : 'Save ad'}
+          {!isNew ? 'Save' : 'Save ad'}
         </Button>
       </div>
     </form>

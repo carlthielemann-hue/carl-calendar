@@ -1,9 +1,10 @@
 import { format } from 'date-fns'
-import { ArrowLeft, ExternalLink, Lightbulb, Pencil, Plus, ScanSearch, Trash2 } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Lightbulb, LayoutGrid, Pencil, Plus, ScanSearch, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Card, CardHeader, ConfirmButton, Empty } from '@/components/ui'
 import { deleteMedia } from '@/lib/media'
+import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { AdDialog, FavoriteButton, MediaUploader } from '@/features/lab/components'
@@ -13,6 +14,7 @@ export default function AdDetail() {
   const ad = useApp((s) => s.ads.find((a) => a.id === id))
   const analyses = useApp((s) => s.analyses)
   const insights = useApp((s) => s.insights)
+  const boards = useApp((s) => s.boards)
   const go = useUI((s) => s.go)
   const [editing, setEditing] = useState(false)
   if (!ad) return <Empty title="Ad not found" action={<Button onClick={() => go('/lab/library')}>Back to library</Button>} />
@@ -29,7 +31,7 @@ export default function AdDetail() {
   return (
     <div className="mx-auto w-full max-w-[1100px]">
       <button onClick={() => go('/lab/library')} className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-fg">
-        <ArrowLeft className="h-3.5 w-3.5" /> Swipe library
+        <ArrowLeft className="h-3.5 w-3.5" /> Swipe vault
       </button>
       <header className="flex flex-wrap items-start justify-between gap-3 pb-5">
         <div className="min-w-0">
@@ -73,6 +75,25 @@ export default function AdDetail() {
                 <dt className="text-[11px] font-semibold uppercase tracking-wide text-faint">Tags</dt>
                 <dd className="mt-0.5 text-fg-2">{ad.tags.length ? ad.tags.map((t) => `#${t}`).join('  ') : '—'}</dd>
               </div>
+              {(
+                [
+                  ['Platform', ad.platform],
+                  ['Awareness', ad.awareness],
+                  ['Funnel', ad.funnel],
+                  ['Niche', ad.niche],
+                  ['Hook type', ad.hookType],
+                  ['Emotion', ad.emotion],
+                  ['Offer', ad.offer],
+                  ['Running since', ad.runningSince && format(new Date(ad.runningSince + 'T00:00'), 'd MMM yyyy')],
+                ] as const
+              )
+                .filter(([, v]) => v)
+                .map(([k, v]) => (
+                  <div key={k}>
+                    <dt className="text-[11px] font-semibold uppercase tracking-wide text-faint">{k}</dt>
+                    <dd className="mt-0.5 text-fg-2">{v}</dd>
+                  </div>
+                ))}
               {ad.notes && (
                 <div className="sm:col-span-2">
                   <dt className="text-[11px] font-semibold uppercase tracking-wide text-faint">Notes</dt>
@@ -81,6 +102,12 @@ export default function AdDetail() {
               )}
             </dl>
           </Card>
+          {ad.transcript && (
+            <Card>
+              <CardHeader title="Transcript" />
+              <p className="max-h-[360px] overflow-y-auto whitespace-pre-wrap px-4 pb-4 text-[13px] leading-relaxed text-fg-2">{ad.transcript}</p>
+            </Card>
+          )}
         </div>
         <div className="flex min-w-0 flex-col gap-4 lg:col-span-5">
           <Card>
@@ -96,6 +123,26 @@ export default function AdDetail() {
                 </li>
               ))}
             </ul>
+          </Card>
+          <Card>
+            <CardHeader title="Boards" icon={<LayoutGrid />} />
+            <div className="flex flex-wrap gap-1.5 px-4 pb-4">
+              {boards.length === 0 && <span className="text-[12.5px] text-faint">Create boards in the vault to group swipes.</span>}
+              {boards.map((b) => {
+                const on = b.adIds.includes(ad.id)
+                return (
+                  <button
+                    key={b.id}
+                    aria-pressed={on}
+                    onClick={() => useApp.getState().patch('boards', b.id, { adIds: on ? b.adIds.filter((x) => x !== ad.id) : [...b.adIds, ad.id] })}
+                    className={cn('rounded-full border px-3 py-1 text-[12.5px]', on ? 'border-transparent bg-fg text-bg' : 'border-line text-muted hover:text-fg')}
+                  >
+                    {on ? '✓ ' : '+ '}
+                    {b.name}
+                  </button>
+                )
+              })}
+            </div>
           </Card>
           <Card>
             <CardHeader title="Insights from this ad" icon={<Lightbulb />} />
@@ -116,6 +163,7 @@ export default function AdDetail() {
             confirmLabel="Delete ad and its analyses?"
             onConfirm={() => {
               ad.mediaIds.forEach((m) => void deleteMedia(m))
+              boards.filter((b) => b.adIds.includes(ad.id)).forEach((b) => useApp.getState().patch('boards', b.id, { adIds: b.adIds.filter((x) => x !== ad.id) }))
               useApp.getState().deleteAd(ad.id)
               toast('Ad deleted')
               go('/lab/library')

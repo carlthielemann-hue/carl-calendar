@@ -55,7 +55,7 @@ export function LineChart({ series, height = 180, unit = '', ariaLabel }: { seri
           <g key={si}>
             {si === 0 && pts.length > 1 && <path d={`M${px(s.values[0].x)},${H - B} L${pts.join(' L')} L${px(s.values[s.values.length - 1].x)},${H - B} Z`} fill={`url(#${id}-g)`} />}
             <polyline points={pts.join(' ')} fill="none" stroke={s.color} strokeWidth={2} strokeDasharray={s.dashed ? '5 5' : undefined} strokeLinejoin="round" strokeLinecap="round" />
-            {!s.dashed && s.values.map((v) => <circle key={v.x} cx={px(v.x)} cy={py(v.y)} r={2.6} fill={s.color} />)}
+            {!s.dashed && s.values.map((v, vi) => <circle key={vi} cx={px(v.x)} cy={py(v.y)} r={2.6} fill={s.color} />)}
           </g>
         )
       })}

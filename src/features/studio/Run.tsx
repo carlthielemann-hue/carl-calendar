@@ -20,6 +20,7 @@ export const CONTEXT_LABEL: Record<ContextKey, string> = {
   insights: 'Creative Lab insights',
   performance: 'Performance & learnings',
   deliverables: 'Open deliverables',
+  swipes: 'Reference ads',
 }
 const PICKABLE: ContextKey[] = ['research', 'concepts', 'insights']
 

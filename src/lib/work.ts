@@ -61,6 +61,10 @@ export function toggleWorkItem(r: string) {
       })
       return
     }
+    case 'board': {
+      const b = s.boards.find((x) => x.id === p.id)
+      return b ? { label: b.name, sub: `Board · ${b.adIds.length} ads`, path: '/lab/library' } : null
+    }
     case 'analysis': {
       const a = s.analyses.find((x) => x.id === p.id)
       if (!a) return

@@ -1,4 +1,4 @@
-import type { Client, Concept, ContextKey, Deliverable, FeedbackEntry, Insight, PerformanceEntry, ResearchRecord } from './entities'
+import type { AdRef, Board, Client, Concept, ContextKey, Deliverable, FeedbackEntry, Insight, PerformanceEntry, ResearchRecord } from './entities'
 import { BRAND_SECTIONS } from './entities'
 
 export interface ContextSource {
@@ -9,6 +9,8 @@ export interface ContextSource {
   insights: Insight[]
   performance: PerformanceEntry[]
   deliverables: Deliverable[]
+  ads?: AdRef[]
+  boards?: Board[]
 }
 
 export interface ContextSelection {
@@ -75,6 +77,30 @@ export function buildContextPack(src: ContextSource, clientId: string, sel: Cont
     if (key === 'insights') {
       const list = pick('insights', src.insights, (i) => i.links.some((l) => l.startsWith('deliverable:') && src.deliverables.some((d) => `deliverable:${d.id}` === l && d.clientId === clientId)))
       if (list.length) sections.push({ key, label: 'Creative Lab insights', count: list.length, text: list.map((i) => `- ${i.title} (${i.type})${i.body ? `: ${clip(i.body.trim(), 600)}` : ''}`).join('\n') })
+    }
+    if (key === 'swipes') {
+      const adIds = new Set((src.boards ?? []).filter((b) => b.clientId === clientId).flatMap((b) => b.adIds))
+      const list = pick('swipes', (src.ads ?? []).filter((a) => adIds.has(a.id)), () => true)
+      if (list.length)
+        sections.push({
+          key,
+          label: 'Reference ads (swipe boards)',
+          count: list.length,
+          text: list
+            .map((a) =>
+              [
+                `### ${a.title}${a.brand ? ` — ${a.brand}` : ''} (${[a.platform, a.format, a.awareness, a.funnel].filter(Boolean).join(', ')})`,
+                a.hook && `Hook: ${a.hook}`,
+                a.angle && `Angle: ${a.angle}`,
+                a.offer && `Offer: ${a.offer}`,
+                a.notes && `Notes: ${clip(a.notes.trim(), 600)}`,
+                a.transcript && `Transcript: ${clip(a.transcript.trim(), 1200)}`,
+              ]
+                .filter(Boolean)
+                .join('\n'),
+            )
+            .join('\n\n'),
+        })
     }
     if (key === 'deliverables') {
       const list = pick('deliverables', src.deliverables.filter((d) => d.clientId === clientId && !d.approvedAt), () => true)

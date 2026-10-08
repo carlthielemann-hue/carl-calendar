@@ -6,7 +6,7 @@
  */
 import { addDays } from 'date-fns'
 import { buildContextPack } from '@/domain/context'
-import { DEFAULT_MONEY_SETTINGS, DEFAULT_STUDY_PREFS } from '@/domain/entities'
+import { AD_FORMATS, AD_PLATFORMS, AWARENESS, DEFAULT_MONEY_SETTINGS, DEFAULT_STUDY_PREFS } from '@/domain/entities'
 import { bucketStatus, monthSummary, savingsRate, subscriptionTotals } from '@/domain/money'
 import { examStatus, gradeAverage } from '@/domain/school'
 import { bodyweightSeries, personalRecords } from '@/domain/fitness'
@@ -239,7 +239,7 @@ const TOOLS: Tool[] = [
       type: 'object',
       properties: {
         client: { type: 'string' },
-        include: { type: 'array', items: { type: 'string', enum: ['brand', 'research', 'concepts', 'feedback', 'insights', 'performance', 'deliverables'] }, description: 'Default: brand, research, feedback, insights, performance' },
+        include: { type: 'array', items: { type: 'string', enum: ['brand', 'research', 'concepts', 'feedback', 'insights', 'performance', 'deliverables', 'swipes'] }, description: 'Default: brand, research, feedback, insights, performance, swipes (reference ads on boards linked to the client)' },
       },
       required: ['client'],
       additionalProperties: false,
@@ -248,7 +248,7 @@ const TOOLS: Tool[] = [
     run: async (a, ctx) => {
       const s = await ctx.state()
       const c = findClient(s, str(a, 'client', true)!)
-      const include = Array.isArray(a.include) && a.include.length ? (a.include as never[]) : (['brand', 'research', 'feedback', 'insights', 'performance'] as never[])
+      const include = Array.isArray(a.include) && a.include.length ? (a.include as never[]) : (['brand', 'research', 'feedback', 'insights', 'performance', 'swipes'] as never[])
       const pack = buildContextPack(s, c.id, { keys: include })
       return { client: c.name, summary: pack.summary, context: pack.text }
     },
@@ -415,6 +415,90 @@ const TOOLS: Tool[] = [
             }
           }),
       }
+    },
+  },
+  {
+    name: 'search_swipes',
+    title: 'Search the swipe vault',
+    description: 'Search saved reference ads (title, brand, hook, angle, tags, niche, transcript). Optional filters: platform, awareness, board.',
+    inputSchema: {
+      type: 'object',
+      properties: { query: { type: 'string' }, platform: { type: 'string' }, awareness: { type: 'string' }, board: { type: 'string', description: 'Board name' }, limit: { type: 'number' } },
+      additionalProperties: false,
+    },
+    level: 'read',
+    run: async (a, ctx) => {
+      const s = await ctx.state()
+      const q = (str(a, 'query') ?? '').toLowerCase()
+      const board = str(a, 'board')
+      const inBoard = board ? new Set(s.boards.find((b) => b.name.toLowerCase() === board.toLowerCase())?.adIds ?? []) : null
+      const limit = Math.min(50, Number(a.limit) || 20)
+      const hits = s.ads
+        .filter((x) => !x.isDemo)
+        .filter((x) => (!inBoard || inBoard.has(x.id)) && (!str(a, 'platform') || x.platform === str(a, 'platform')) && (!str(a, 'awareness') || x.awareness === str(a, 'awareness')))
+        .filter((x) => !q || q.split(/\s+/).every((w) => `${x.title} ${x.brand ?? ''} ${x.hook ?? ''} ${x.angle ?? ''} ${x.tags.join(' ')} ${x.niche ?? ''} ${x.transcript ?? ''} ${x.notes ?? ''}`.toLowerCase().includes(w)))
+        .slice(0, limit)
+      return { ads: hits.map((x) => ({ id: x.id, title: x.title, brand: x.brand ?? null, platform: x.platform ?? null, format: x.format, awareness: x.awareness ?? null, hook: x.hook ?? null, angle: x.angle ?? null, url: x.url ?? null, tags: x.tags })) }
+    },
+  },
+  {
+    name: 'save_swipe',
+    title: 'Save an ad to the swipe vault',
+    description: 'Save a reference ad you found (e.g. from an ad library or transcript tool). Skips duplicates by URL. Optionally add it to a board.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        brand: { type: 'string' },
+        url: { type: 'string' },
+        platform: { type: 'string', enum: [...AD_PLATFORMS] },
+        format: { type: 'string', enum: [...AD_FORMATS] },
+        hook: { type: 'string' },
+        angle: { type: 'string' },
+        awareness: { type: 'string', enum: [...AWARENESS] },
+        transcript: { type: 'string' },
+        tags: { type: 'array', items: { type: 'string' } },
+        notes: { type: 'string' },
+        board: { type: 'string', description: 'Board name (created if missing)' },
+      },
+      required: ['title'],
+      additionalProperties: false,
+    },
+    level: 'write',
+    run: async (a, ctx) => {
+      const s = await ctx.state()
+      const url = str(a, 'url')
+      const norm = (u?: string) => (u ?? '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').toLowerCase()
+      const dup = url ? s.ads.find((x) => x.url && norm(x.url) === norm(url)) : undefined
+      const id = dup?.id ?? `ad-${randomId(8)}`
+      if (!dup) {
+        const fmt = str(a, 'format')
+        await writeRecord(ctx.env, 'ads', id, {
+          id,
+          title: str(a, 'title', true)!,
+          brand: str(a, 'brand'),
+          url,
+          platform: str(a, 'platform'),
+          format: fmt && (AD_FORMATS as readonly string[]).includes(fmt) ? fmt : AD_FORMATS[0],
+          hook: str(a, 'hook'),
+          angle: str(a, 'angle'),
+          awareness: str(a, 'awareness'),
+          transcript: str(a, 'transcript'),
+          tags: Array.isArray(a.tags) ? (a.tags as unknown[]).filter((t): t is string => typeof t === 'string').map((t) => t.toLowerCase()).slice(0, 20) : [],
+          notes: str(a, 'notes'),
+          mediaIds: [],
+          favorite: false,
+          origin: 'mcp',
+          createdAt: nowIso(),
+        })
+      }
+      const boardName = str(a, 'board')
+      if (boardName) {
+        const b = s.boards.find((x) => x.name.toLowerCase() === boardName.toLowerCase())
+        const rec = b ? { ...b, adIds: b.adIds.includes(id) ? b.adIds : [...b.adIds, id] } : { id: `bd-${randomId(8)}`, name: boardName, adIds: [id], createdAt: nowIso() }
+        await writeRecord(ctx.env, 'boards', rec.id, rec)
+      }
+      return { saved: !dup, duplicate: !!dup, id, message: dup ? 'Already in the vault — not saved again.' : 'Saved to the swipe vault.' }
     },
   },
   {

@@ -88,7 +88,7 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'overview', label: 'Overview', icon: LayoutDashboard },
     { page: 'planner', label: 'Practice planner', icon: CalendarCheck },
     { page: 'analyses', label: 'Analyses', icon: ScanSearch },
-    { page: 'library', label: 'Swipe library', icon: Library },
+    { page: 'library', label: 'Swipe vault', icon: Library },
     { page: 'insights', label: 'Insights', icon: Lightbulb },
     { page: 'history', label: 'Practice history', icon: History },
   ],

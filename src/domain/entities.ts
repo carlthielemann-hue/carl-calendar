@@ -44,6 +44,7 @@ export type EntityType =
   | 'subscription'
   | 'savingsgoal'
   | 'goal'
+  | 'board'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -192,6 +193,35 @@ export interface AdRef {
   notes?: string
   createdAt: string
   isDemo?: boolean
+  /* Swipe Vault (V4.5) */
+  platform?: AdPlatform
+  awareness?: Awareness
+  funnel?: 'TOF' | 'MOF' | 'BOF'
+  niche?: string
+  hookType?: string
+  emotion?: string
+  offer?: string
+  /** First / last seen running (yyyy-MM-dd) */
+  runningSince?: string
+  lastSeen?: string
+  transcript?: string
+  /** Who saved it: you, or an AI via MCP */
+  origin?: 'manual' | 'mcp'
+}
+
+export const AD_PLATFORMS = ['Meta', 'TikTok', 'YouTube', 'Instagram', 'Google', 'Pinterest', 'Snapchat', 'X', 'Landing page', 'Email', 'Other'] as const
+export type AdPlatform = (typeof AD_PLATFORMS)[number]
+export const AWARENESS = ['Unaware', 'Problem aware', 'Solution aware', 'Product aware', 'Most aware'] as const
+export type Awareness = (typeof AWARENESS)[number]
+
+/** A collection of swipes, optionally for a client (then it can feed AI Studio context). */
+export interface Board {
+  id: string
+  name: string
+  description?: string
+  adIds: string[]
+  clientId?: string
+  createdAt: string
 }
 
 export interface TemplateField {
@@ -469,7 +499,7 @@ export interface Concept {
 
 /* ---------------- AI Studio ---------------- */
 
-export type ContextKey = 'brand' | 'research' | 'concepts' | 'feedback' | 'insights' | 'performance' | 'deliverables'
+export type ContextKey = 'brand' | 'research' | 'concepts' | 'feedback' | 'insights' | 'performance' | 'deliverables' | 'swipes'
 
 export interface WorkflowInput {
   key: string
