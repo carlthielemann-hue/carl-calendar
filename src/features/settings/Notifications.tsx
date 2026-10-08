@@ -1,20 +1,21 @@
 import { Bell, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Select } from '@/components/ui'
 import { api, useCloud } from '@/lib/cloud'
 import { currentSubscription, disablePush, enablePush, isIos, isStandalone, pushSupported } from '@/lib/push'
 import { useApp } from '@/store/app'
+import type { AlertPrefs } from '@/domain/alerts'
 import { Row, Section, Toggle } from './ui'
 
-interface Prefs {
+interface Prefs extends AlertPrefs {
   morning: boolean
   morningTime: string
   evening: boolean
   eveningTime: string
 }
 
-/** Push: one morning brief, one optional evening planning nudge. Never per-task. */
+/** Push: morning brief, evening planning nudge, and a few well-timed alerts — each one switchable. */
 export function NotificationsSection() {
   const c = useCloud()
   const shutdown = useApp((s) => s.settings.shutdownTime) || '20:30'
@@ -34,7 +35,7 @@ export function NotificationsSection() {
   const save = async (p: Partial<Prefs>) => setPrefs(await api<Prefs>('/notify/prefs', { method: 'PUT', json: p }))
 
   return (
-    <Section icon={<Bell />} title="Notifications" sub="A morning brief and an optional evening planning reminder — no per-task pings.">
+    <Section icon={<Bell />} title="Notifications" sub="Pop-ups on your iPhone and Mac. Each kind can be switched off; nothing is sent during quiet hours.">
       <Row
         label="This device"
         hint={
@@ -106,6 +107,43 @@ export function NotificationsSection() {
                 }}
               />
               <Toggle checked={prefs.evening} onChange={(v) => save({ evening: v })} label="Evening reminder" />
+            </div>
+          </Row>
+          <Row label="Before blocks start" hint="Calendar blocks (yours, the planner’s, Google). Checked every 15 minutes, so it arrives roughly this early.">
+            <div className="flex items-center gap-2">
+              <Select className="w-[110px]" value={String(prefs.upcomingLead)} onChange={(e) => save({ upcomingLead: Number(e.target.value) })} aria-label="Minutes before">
+                {[0, 5, 10, 15, 30].map((m) => (
+                  <option key={m} value={m}>
+                    {m === 0 ? 'Just before' : `${m} min`}
+                  </option>
+                ))}
+              </Select>
+              <Toggle checked={prefs.upcoming} onChange={(v) => save({ upcoming: v })} label="Before blocks start" />
+            </div>
+          </Row>
+          <Row label="Exams" hint="When the heads-up window opens (set your pace), and the evening before.">
+            <Toggle checked={prefs.exams} onChange={(v) => save({ exams: v })} label="Exam alerts" />
+          </Row>
+          <Row label="Still open today" hint="Only if something due today isn’t done yet.">
+            <div className="flex items-center gap-2">
+              <Input type="time" className="w-[110px]" value={prefs.deadlinesTime} onChange={(e) => e.target.value && save({ deadlinesTime: e.target.value })} />
+              <Toggle checked={prefs.deadlines} onChange={(v) => save({ deadlines: v })} label="Still open today" />
+            </div>
+          </Row>
+          <Row label="Subscription renewals" hint="The day before a subscription charges (name only, no amount).">
+            <Toggle checked={prefs.renewals} onChange={(v) => save({ renewals: v })} label="Renewal alerts" />
+          </Row>
+          <Row label="Sunday: plan next week">
+            <div className="flex items-center gap-2">
+              <Input type="time" className="w-[110px]" value={prefs.weeklyTime} onChange={(e) => e.target.value && save({ weeklyTime: e.target.value })} />
+              <Toggle checked={prefs.weekly} onChange={(v) => save({ weekly: v })} label="Weekly planning" />
+            </div>
+          </Row>
+          <Row label="Quiet hours" hint="No alerts in this window (the morning brief keeps its own time).">
+            <div className="flex items-center gap-2">
+              <Input type="time" className="w-[110px]" aria-label="Quiet from" value={prefs.quietFrom} onChange={(e) => e.target.value && save({ quietFrom: e.target.value })} />
+              <span className="text-muted">–</span>
+              <Input type="time" className="w-[110px]" aria-label="Quiet until" value={prefs.quietTo} onChange={(e) => e.target.value && save({ quietTo: e.target.value })} />
             </div>
           </Row>
         </>

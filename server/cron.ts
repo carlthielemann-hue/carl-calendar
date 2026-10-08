@@ -3,9 +3,10 @@ import { buildEveningReminder, buildMorningBrief } from '@/domain/brief'
 import { deriveWorkItems } from '@/domain/workItems'
 import { dateKey, expandEvents, fromDateKey } from '@/lib/dates'
 import type { Env } from './env'
-import { notify } from './push'
+import { notify, queue, wake } from './push'
+import { computeAlerts, pruneSent, DEFAULT_ALERT_PREFS, type AlertOcc, type AlertPrefs } from '@/domain/alerts'
 import { loadState } from './records'
-import { getMeta, setMeta, wallClock } from './util'
+import { getMeta, logIntegration, setMeta, wallClock } from './util'
 import { syncGoogle } from './google'
 import { plan, plannerProposalId } from '@/domain/planner'
 import { fitnessDemands } from '@/domain/fitness'
@@ -14,13 +15,31 @@ import type { CalEvent } from '@/lib/types'
 import { writeRecord } from './records'
 import type { AppStateLike } from './state'
 
-export interface NotifyPrefs {
+export interface NotifyPrefs extends AlertPrefs {
   morning: boolean
   morningTime: string
   evening: boolean
   eveningTime: string
 }
-export const DEFAULT_PREFS: NotifyPrefs = { morning: true, morningTime: '07:00', evening: true, eveningTime: '20:15' }
+export const DEFAULT_PREFS: NotifyPrefs = { morning: true, morningTime: '07:00', evening: true, eveningTime: '20:15', ...DEFAULT_ALERT_PREFS }
+
+/** Calendar occurrences (local, non-demo + Google) between two instants, for alerts and widgets. */
+export async function occurrencesBetween(env: Env, s: AppStateLike, from: Date, to: Date): Promise<AlertOcc[]> {
+  const local = expandEvents(s.events.filter((e) => !e.isDemo), from, to).map((o) => ({ key: o.key, title: o.event.title, start: o.start, end: o.end, allDay: o.event.allDay }))
+  const { results } = await env.DB.prepare("SELECT cal_id || ':' || event_id AS id, data FROM gcal_events WHERE start >= ? AND start < ?").bind(dateKey(addDays(from, -1)), dateKey(addDays(to, 1))).all<{ id: string; data: string }>()
+  const google = results
+    .map((r) => ({ id: r.id, e: JSON.parse(r.data) as { title: string; start: string; end: string; allDay?: boolean } }))
+    .map(({ id, e }) => ({ key: `g:${id}:${e.start}`, title: e.title, start: new Date(e.start), end: new Date(e.end), allDay: e.allDay }))
+    .filter((o) => o.end > from && o.start < to)
+  return [...local, ...google]
+}
+
+export const clockIn = (tz: string) => (d: Date) => wallClock(d, tz).slice(11, 16)
+
+/** Open things that need you today (overdue + due today) — shown as the app icon badge. */
+export function badgeCount(s: AppStateLike, today: string) {
+  return deriveWorkItems(s).filter((i) => !i.done && i.due && i.due <= today).length
+}
 
 const mins = (hm: string) => Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3, 5))
 
@@ -89,6 +108,24 @@ export async function scheduled(env: Env) {
     sent.evening = today
   }
   await setMeta(env, 'notify_sent', sent)
+
+  // Smaller alerts: upcoming blocks, exams, renewals, open deadlines, Sunday planning.
+  try {
+    const st = await loadState(env)
+    const now = new Date()
+    const alertSent = (await getMeta<Record<string, string>>(env, 'alert_sent')) ?? {}
+    const occs = await occurrencesBetween(env, st, new Date(now.getTime() - 3600_000), new Date(now.getTime() + 2 * 3600_000))
+    const alerts = computeAlerts({ now, wall: nowWall, clock: clockIn(tz), occs, items: deriveWorkItems(st), exams: st.exams ?? [], subjects: st.subjects ?? [], subscriptions: st.subscriptions ?? [], study: { ...DEFAULT_STUDY_PREFS, ...((st.settings as { study?: typeof DEFAULT_STUDY_PREFS }).study ?? {}) }, prefs, sent: alertSent })
+    for (const a of alerts) {
+      await queue(env, a.kind, a)
+      alertSent[a.key] = today
+    }
+    if (alerts.length) await wake(env, alerts.map((a) => a.kind).join(','))
+    await setMeta(env, 'alert_sent', pruneSent(alertSent, today))
+    await setMeta(env, 'badge', badgeCount(st, today))
+  } catch (e) {
+    await logIntegration(env, 'push', false, `alerts failed: ${(e as Error).message}`.slice(0, 300))
+  }
   await env.DB.prepare('DELETE FROM notifications WHERE created_at < ?').bind(new Date(Date.now() - 14 * 86400000).toISOString()).run()
   await env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(new Date().toISOString()).run()
 }

@@ -199,6 +199,79 @@ await step('push key, prefs and a queued test notification', async () => {
   const brief = await api('/brief')
   assert.match(brief.body.body, /Shutdown/)
 })
+await step('alerts: prefs, several notifications reach each device', async () => {
+  const p = await api('/notify/prefs', { method: 'PUT', json: { upcomingLead: 15, quietFrom: '23:00', deadlines: false, upcomingLead_bad: 1 } })
+  assert.equal(p.body.upcomingLead, 15)
+  assert.equal(p.body.quietFrom, '23:00')
+  assert.equal(p.body.deadlines, false)
+  assert.equal(p.body.weekly, true)
+  const since = new Date(Date.now() - 1000).toISOString()
+  await api('/push/test', { method: 'POST' })
+  await api('/push/test', { method: 'POST' })
+  const pending = await api(`/push/pending?since=${encodeURIComponent(since)}`)
+  assert.ok(pending.body.notifications.length >= 2, JSON.stringify(pending.body))
+  const last = pending.body.notifications.at(-1).created_at
+  const again = await api(`/push/pending?since=${encodeURIComponent(last)}`)
+  assert.equal(again.body.notifications.length, 0)
+  assert.equal(typeof (await api('/badge')).body.badge, 'number')
+})
+await step('the 15-minute cron sends a "before block" alert once', async () => {
+  await api('/notify/prefs', { method: 'PUT', json: { quietFrom: '00:00', quietTo: '00:00', upcoming: true, upcomingLead: 15 } })
+  const id = 'ev-alert-test'
+  const start = new Date(Date.now() + 20 * 60_000)
+  const ev = { id, title: 'Alert test block', start: start.toISOString(), end: new Date(start.getTime() + 3600_000).toISOString(), category: 'tps', source: 'local', createdAt: new Date().toISOString() }
+  await api('/sync', { method: 'POST', json: { device: 'mac', changes: [{ coll: 'events', id, data: JSON.stringify(ev), baseRev: 0, updatedAt: new Date().toISOString() }] } })
+  const since = new Date(Date.now() - 1000).toISOString()
+  const fire = () => fetch(`${BASE}/cdn-cgi/local/explorer/api/local/scheduled?worker=command-center`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cron: '*/15 * * * *' }) })
+  const r = await fire()
+  assert.ok(r.ok, `scheduled trigger: HTTP ${r.status} ${await r.text()}`)
+  await fire()
+  const pending = await api(`/push/pending?since=${encodeURIComponent(since)}`)
+  const hits = pending.body.notifications.filter((n) => n.title.startsWith('Alert test block'))
+  assert.equal(hits.length, 1, JSON.stringify(pending.body.notifications))
+  assert.match(hits[0].body, /Starts in (19|20) min/)
+  const integ = await api('/integrations')
+  assert.ok(!JSON.stringify(integ.body).includes('alerts failed'), JSON.stringify(integ.body).slice(0, 400))
+})
+await step('widgets: read-only token, payload, Scriptable script runs, revoke', async () => {
+  assert.equal((await fetch(`${BASE}/api/widget`)).status, 401)
+  const t = await api('/widget/tokens', { method: 'POST', json: { label: 'Test phone' } })
+  assert.match(t.body.token, /^ccw_/)
+  const r = await fetch(`${BASE}/api/widget`, { headers: { Authorization: `Bearer ${t.body.token}` } })
+  assert.equal(r.status, 200)
+  const w = await r.json()
+  for (const k of ['date', 'next', 'top3', 'overdue', 'dueToday', 'countdown', 'workout', 'goal']) assert.ok(k in w, k)
+  assert.equal(w.money, null)
+  // the token is not a session
+  assert.equal((await fetch(`${BASE}/api/sync`, { headers: { Authorization: `Bearer ${t.body.token}` } })).status, 401)
+  // run the generated Scriptable script against a minimal mock of Scriptable's API
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../src/features/widgets/scriptable.ts', import.meta.url), 'utf8')
+  const body = src.slice(src.indexOf('String.raw`') + 11, src.lastIndexOf('`'))
+  for (const family of ['small', 'medium', 'large', 'accessoryRectangular', 'accessoryInline', 'accessoryCircular']) {
+    const texts = []
+    let set = null
+    const node = () => ({ addText: (v) => (texts.push(v), { centerAlignText() {} }), addStack: () => node(), addSpacer() {}, layoutVertically() {}, centerAlignContent() {}, setPadding() {} })
+    class ListWidget { constructor() { Object.assign(this, node()) } presentMedium() {} }
+    class Request { constructor(url) { this.url = url } async loadJSON() { const res = await fetch(this.url, { headers: this.headers }); this.response = { statusCode: res.status }; return res.json() } }
+    const store = {}
+    const FileManager = { local: () => ({ documentsDirectory: () => '/d', joinPath: (a, b) => `${a}/${b}`, writeString: (p, v) => (store[p] = v), readString: (p) => store[p], fileExists: (p) => p in store }) }
+    const Color = Object.assign(function () {}, { dynamic: () => ({}) })
+    const Font = { systemFont: () => ({}), boldSystemFont: () => ({}), semiboldSystemFont: () => ({}) }
+    const Script = { setWidget: (w) => (set = w), complete() {} }
+    const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor
+    await new AsyncFunction('BASE', 'TOKEN', 'ListWidget', 'Request', 'FileManager', 'Color', 'Font', 'Script', 'config', body)(BASE, t.body.token, ListWidget, Request, FileManager, Color, Font, Script, { widgetFamily: family, runsInWidget: true })
+    assert.ok(set, `${family}: widget set`)
+    assert.ok(set.url.endsWith('/#/home'))
+    assert.ok(texts.length > 0, `${family}: drew text`)
+    assert.ok(!texts.some((x) => /Can’t reach|HTTP 401/.test(String(x))), `${family}: ${texts.join(' | ')}`)
+  }
+  const list = await api('/widget/tokens')
+  assert.equal(list.body.tokens.length, 1)
+  assert.ok(!('hash' in list.body.tokens[0]))
+  await api(`/widget/tokens/${t.body.id}`, { method: 'DELETE' })
+  assert.equal((await fetch(`${BASE}/api/widget`, { headers: { Authorization: `Bearer ${t.body.token}` } })).status, 401)
+})
 await step('Google reports not configured instead of pretending', async () => {
   const s = await api('/google/status')
   assert.equal(s.body.configured, false)

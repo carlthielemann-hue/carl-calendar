@@ -192,12 +192,27 @@ Money and Goals tools plus `search_swipes` / `save_swipe`. Money and grades stay
 you turn them on in Settings → AI connections → “What AI can see”. To save ads from your iPhone, follow Swipe vault →
 *Save from phone* (a one-time Shortcut).
 
+### Notifications and widgets
+
+* **Pop-ups**: Settings → Notifications → *Enable on this device* — on iPhone only from the Home
+  Screen app (Share → Add to Home Screen, iOS 16.4+), on Mac in Safari/Chrome. Besides the morning
+  brief and evening reminder you can switch on: before blocks start, exams, still-open-today,
+  subscription renewals, Sunday planning, and set quiet hours. The cron runs every 15 minutes, so
+  "before blocks" arrives within that window. Every subscribed device gets every alert.
+* **App icon badge**: overdue + due-today count on the Home Screen icon (needs notifications on).
+* **Widgets**: Settings → Widgets → *Create script*, then paste it into the free
+  [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app and add a Scriptable widget
+  (home screen small/medium/large, lock screen). It uses its own read-only key
+  (`GET /api/widget`, revocable, stored hashed) — never your password or session. Money is off on
+  widgets unless you turn it on; grades never show. On macOS 14+ the same iPhone widget can sit on
+  the Mac desktop.
+
 ## Local development
 
 ```bash
 cp .dev.vars.example .dev.vars    # then fill in OWNER_PASSWORD etc. (never committed)
 npm run server:dev                # https://localhost:8787 with local D1/R2/KV
-npm run test:server               # 21 API/MCP checks   (NODE_TLS_REJECT_UNAUTHORIZED=0)
+npm run test:server               # 24 API/MCP/alerts/widget checks   (NODE_TLS_REJECT_UNAUTHORIZED=0)
 npm run test:sync                 # 2-device sync e2e   (BASE_URL=https://localhost:8787)
 npm run test:v3                   # V3 workflows e2e
 ```

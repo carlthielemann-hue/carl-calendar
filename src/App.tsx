@@ -16,6 +16,9 @@ import { useUI } from '@/store/ui'
 import { ConfirmHost } from '@/components/ConfirmHost'
 import { FocusMode } from '@/features/mission/FocusMode'
 import { boot } from '@/lib/boot'
+import { setAppBadge } from '@/lib/push'
+import { useWorkItems } from '@/lib/work'
+import { dateKey } from '@/lib/dates'
 
 const page = <T,>(f: () => Promise<{ default: T }>) => lazy(f as never)
 const ROUTES: Record<string, ReturnType<typeof lazy>> = {
@@ -153,10 +156,19 @@ function PageFallback() {
   )
 }
 
+function useBadge() {
+  const items = useWorkItems()
+  useEffect(() => {
+    const today = dateKey(new Date())
+    setAppBadge(items.filter((i) => !i.done && i.due && i.due <= today).length)
+  }, [items])
+}
+
 export default function App() {
   useTheme()
   useGlobalShortcuts()
   useEffect(boot, [])
+  useBadge()
   const loc = useUI((s) => s.loc)
   const theme = useApp((s) => s.settings.theme)
   const key = loc.space === 'settings' || (loc.space === 'home' && !loc.page) ? loc.space : `${loc.space}/${loc.page}`

@@ -21,6 +21,8 @@ connect Google Calendar, get a 07:00 push brief, and let Claude/ChatGPT work wit
 
 **Autopilot planner** (`src/domain/planner.ts`): from exam paces, ongoing subjects and gym routines it places study/gym blocks into free time around your calendar. Only same-day clashes are fixed automatically (with Undo); everything else is a proposal you review in Plan tomorrow, the evening reminder and the morning brief. It only ever touches blocks it created itself — never your own or Google events, never locked blocks.
 
+**Pop-ups and widgets**: push alerts (morning brief, evening planning, before blocks start, exams, still-open-today, renewals, Sunday planning, quiet hours), an app-icon badge, and iPhone home/lock-screen widgets via Scriptable with a read-only key — see [docs/DEPLOY.md](docs/DEPLOY.md#notifications-and-widgets).
+
 Everything is connected, not copied: a planned analysis is one record that shows up in the Lab, in Tasks, on Home and (if scheduled) on the calendar, and counts toward the practice quota when done. A deliverable lives in its client project and appears in Tasks only when it's your move. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ### Keyboard
@@ -60,7 +62,7 @@ npm run lint
 npm test             # domain + store unit tests (vitest)
 npm run test:e2e     # headless Chromium end-to-end test against a running server (BASE_URL=…)
 npm run test:v3      # V3 workflows end to end (BASE_URL=…)
-npm run test:v4      # Mission, planner, focus mode — plus test:school, test:fitness, test:money, test:goals, test:vault
+npm run test:v4      # Mission, planner, focus mode — plus test:school, test:fitness, test:money, test:goals, test:vault, test:widgets (signed in, against the Worker)
 
 # with the Worker running locally (npm run server:dev):
 npm run test:server  # API, sync conflicts, files, MCP OAuth + permissions (NODE_TLS_REJECT_UNAUTHORIZED=0)

@@ -50,3 +50,11 @@ export async function disablePush() {
   await api('/push/unsubscribe', { method: 'POST', json: { endpoint: sub.endpoint } }).catch(() => {})
   await sub.unsubscribe()
 }
+
+/** App-icon badge (home-screen app on iPhone, installed web app on Mac): overdue + due today. */
+export function setAppBadge(n: number) {
+  const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> }
+  if (!nav.setAppBadge || inSandboxedFrame()) return
+  if ('Notification' in window && Notification.permission !== 'granted') return
+  void (n > 0 ? nav.setAppBadge(n) : nav.clearAppBadge?.())?.catch(() => {})
+}

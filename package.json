@@ -24,7 +24,8 @@
     "test:fitness": "node tests/fitness.mjs",
     "test:money": "node tests/money.mjs",
     "test:goals": "node tests/goals.mjs",
-    "test:vault": "node tests/vault.mjs"
+    "test:vault": "node tests/vault.mjs",
+    "test:widgets": "node tests/widgets.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

@@ -27,6 +27,7 @@ import { AccountSection } from '@/features/settings/Account'
 import { AiConnectionsSection } from '@/features/settings/AiConnections'
 import { DockSection } from '@/features/settings/Dock'
 import { CloudGoogleSection } from '@/features/settings/CloudGoogle'
+import { WidgetsSection } from '@/features/settings/Widgets'
 import { NotificationsSection } from '@/features/settings/Notifications'
 import { useCloud } from '@/lib/cloud'
 import { isAccountMode } from '@/store/mode'
@@ -417,6 +418,8 @@ export default function SettingsPage() {
         {account && cloudUp ? <CloudGoogleSection /> : <GoogleSection />}
 
         <NotificationsSection />
+
+        <WidgetsSection />
 
         <BriefSection />
 

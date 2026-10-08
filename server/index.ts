@@ -9,15 +9,16 @@ import { OAuthProvider, AuthorizationError } from '@cloudflare/workers-oauth-pro
 import { Hono, type Context } from 'hono'
 import { runAi, AiError } from './ai'
 import { currentSession, login, logout, OWNER_ID, readCookie } from './auth'
-import { DEFAULT_PREFS, morningBrief, plannerRun, scheduled, type NotifyPrefs } from './cron'
+import { badgeCount, clockIn, DEFAULT_PREFS, morningBrief, occurrencesBetween, plannerRun, scheduled, type NotifyPrefs } from './cron'
+import { buildWidget } from '@/domain/widget'
 import type { Env } from './env'
 import * as google from './google'
 import { createManusTask, getManusTask } from './manus'
 import { DEFAULT_MCP_AREAS, DEFAULT_MCP_PERMISSIONS, mcpFetch, toolList, type McpAreas, type McpPermissions } from './mcp'
 import { consentPage, HTML_HEADERS, loginPage, messagePage } from './pages'
-import { notify, pendingNotification, pushConfigured } from './push'
+import { notify, pendingNotifications, pushConfigured } from './push'
 import { applyChange, currentRev, type PushChange, loadState } from './records'
-import { getMeta, json, nowIso, setMeta, wallClock } from './util'
+import { b64url, getMeta, json, nowIso, randomId, setMeta, sha256, wallClock } from './util'
 
 type C = Context<{ Bindings: Env }>
 const app = new Hono<{ Bindings: Env }>()
@@ -60,6 +61,37 @@ app.post('/api/login-form', async (c) => {
 })
 
 app.post('/api/logout', async (c) => json({ ok: true }, 200, { 'Set-Cookie': await logout(c.env, c.req.raw) }))
+
+/* ---------------- home-screen widget (own read-only token, not the session) ---------------- */
+
+interface WidgetToken {
+  id: string
+  hash: string
+  label: string
+  createdAt: string
+  lastUsed?: string
+}
+const tokenHash = async (t: string) => b64url(await sha256(t))
+
+app.get('/api/widget', async (c) => {
+  const raw = (c.req.header('Authorization') ?? '').replace(/^Bearer\s+/i, '') || c.req.query('t') || ''
+  if (!raw.startsWith('ccw_')) return json({ error: 'Missing widget token — create one in Settings → Widgets.' }, 401)
+  const tokens = (await getMeta<WidgetToken[]>(c.env, 'widget_tokens')) ?? []
+  const h = await tokenHash(raw)
+  const tok = tokens.find((t) => t.hash === h)
+  if (!tok) return json({ error: 'This widget token was revoked or is wrong.' }, 401)
+  if (!tok.lastUsed || Date.now() - Date.parse(tok.lastUsed) > 10 * 60_000) {
+    tok.lastUsed = nowIso()
+    await setMeta(c.env, 'widget_tokens', tokens)
+  }
+  const tz = c.env.APP_TIMEZONE || 'Europe/Berlin'
+  const now = new Date()
+  const s = await loadState(c.env)
+  const prefs = (await getMeta<{ money?: boolean }>(c.env, 'widget_prefs')) ?? {}
+  const occs = await occurrencesBetween(c.env, s, new Date(now.getTime() - 12 * 3600_000), new Date(now.getTime() + 24 * 3600_000))
+  const payload = buildWidget({ s, now, wall: wallClock(now, tz), clock: clockIn(tz), occs, money: !!prefs.money })
+  return json(payload, 200, { 'Cache-Control': 'no-store' })
+})
 
 // Everything below requires a session.
 app.use('/api/*', async (c, next) => {
@@ -263,14 +295,61 @@ app.post('/api/push/unsubscribe', async (c) => {
   return json({ ok: true })
 })
 app.get('/api/push/devices', async (c) => json({ count: (await c.env.DB.prepare('SELECT COUNT(*) AS n FROM push_subs').first<{ n: number }>())?.n ?? 0 }))
-app.post('/api/push/test', async (c) => json(await notify(c.env, 'test', { title: 'Command Center', body: 'Notifications are working. You’ll get one brief at 07:00 and an optional planning reminder in the evening.', url: '/#/home' })))
-app.get('/api/push/pending', async (c) => json({ notification: await pendingNotification(c.env) }))
+app.post('/api/push/test', async (c) => json(await notify(c.env, 'test', { title: 'Command Center', body: 'Notifications are working on this device.', url: '/#/home' })))
+app.get('/api/push/pending', async (c) => {
+  const list = await pendingNotifications(c.env, c.req.query('since'))
+  return json({ notifications: list, notification: list[list.length - 1] ?? null, badge: (await getMeta<number>(c.env, 'badge')) ?? null })
+})
+app.get('/api/badge', async (c) => {
+  const tz = c.env.APP_TIMEZONE || 'Europe/Berlin'
+  return json({ badge: badgeCount(await loadState(c.env), wallClock(new Date(), tz).slice(0, 10)) })
+})
+app.get('/api/widget/tokens', async (c) => {
+  const tokens = (await getMeta<WidgetToken[]>(c.env, 'widget_tokens')) ?? []
+  const prefs = (await getMeta<{ money?: boolean }>(c.env, 'widget_prefs')) ?? {}
+  return json({ tokens: tokens.map((t) => ({ id: t.id, label: t.label, createdAt: t.createdAt, lastUsed: t.lastUsed })), money: !!prefs.money })
+})
+app.post('/api/widget/tokens', async (c) => {
+  const b = (await c.req.json().catch(() => ({}))) as { label?: string }
+  const tokens = (await getMeta<WidgetToken[]>(c.env, 'widget_tokens')) ?? []
+  if (tokens.length >= 10) return json({ error: 'Up to 10 widget tokens — revoke an old one first.' }, 400)
+  const token = `ccw_${randomId(24)}`
+  const rec: WidgetToken = { id: randomId(6), hash: await tokenHash(token), label: (b.label ?? 'iPhone').slice(0, 40) || 'iPhone', createdAt: nowIso() }
+  await setMeta(c.env, 'widget_tokens', [...tokens, rec])
+  return json({ token, id: rec.id, label: rec.label })
+})
+app.delete('/api/widget/tokens/:id', async (c) => {
+  const tokens = (await getMeta<WidgetToken[]>(c.env, 'widget_tokens')) ?? []
+  await setMeta(c.env, 'widget_tokens', tokens.filter((t) => t.id !== c.req.param('id')))
+  return json({ ok: true })
+})
+app.put('/api/widget/prefs', async (c) => {
+  const b = (await c.req.json().catch(() => ({}))) as { money?: boolean }
+  await setMeta(c.env, 'widget_prefs', { money: !!b.money })
+  return json({ money: !!b.money })
+})
 app.get('/api/notify/prefs', async (c) => json({ ...DEFAULT_PREFS, ...((await getMeta<NotifyPrefs>(c.env, 'notify_prefs')) ?? {}) }))
 app.put('/api/notify/prefs', async (c) => {
   const b = (await c.req.json().catch(() => ({}))) as Partial<NotifyPrefs>
   const hm = (v: unknown, d: string) => (typeof v === 'string' && /^\d{2}:\d{2}$/.test(v) ? v : d)
   const cur = { ...DEFAULT_PREFS, ...((await getMeta<NotifyPrefs>(c.env, 'notify_prefs')) ?? {}) }
-  const next: NotifyPrefs = { morning: b.morning ?? cur.morning, evening: b.evening ?? cur.evening, morningTime: hm(b.morningTime, cur.morningTime), eveningTime: hm(b.eveningTime, cur.eveningTime) }
+  const bool = (k: keyof NotifyPrefs) => (typeof b[k] === 'boolean' ? (b[k] as boolean) : (cur[k] as boolean))
+  const next: NotifyPrefs = {
+    morning: bool('morning'),
+    evening: bool('evening'),
+    upcoming: bool('upcoming'),
+    exams: bool('exams'),
+    renewals: bool('renewals'),
+    deadlines: bool('deadlines'),
+    weekly: bool('weekly'),
+    morningTime: hm(b.morningTime, cur.morningTime),
+    eveningTime: hm(b.eveningTime, cur.eveningTime),
+    deadlinesTime: hm(b.deadlinesTime, cur.deadlinesTime),
+    weeklyTime: hm(b.weeklyTime, cur.weeklyTime),
+    quietFrom: hm(b.quietFrom, cur.quietFrom),
+    quietTo: hm(b.quietTo, cur.quietTo),
+    upcomingLead: typeof b.upcomingLead === 'number' && b.upcomingLead >= 0 && b.upcomingLead <= 120 ? Math.round(b.upcomingLead) : cur.upcomingLead,
+  }
   await setMeta(c.env, 'notify_prefs', next)
   return json(next)
 })
