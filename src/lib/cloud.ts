@@ -63,6 +63,11 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
 
 /** Ask the backend who we are. Never throws. */
 export async function checkCloud() {
+  // The single-file preview has no backend; its host's /api is not ours.
+  if (import.meta.env.MODE === 'single') {
+    useCloud.setState({ available: false, signedIn: false, features: null, lastCheck: new Date().toISOString() })
+    return useCloud.getState()
+  }
   try {
     const r = await fetch('/api/session', { credentials: 'same-origin' })
     if (!r.ok || !(r.headers.get('content-type') ?? '').includes('json')) throw new Error('no backend')
