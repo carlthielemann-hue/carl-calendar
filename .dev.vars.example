@@ -1,0 +1,14 @@
+# Copy to .dev.vars for `npm run server:dev`. Never commit .dev.vars.
+OWNER_PASSWORD=change-me
+# 32+ random characters, e.g. `openssl rand -base64 48`
+ENCRYPTION_KEY=
+# `node scripts/vapid.mjs`
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_JWK=
+VAPID_SUBJECT=mailto:you@example.com
+# Optional
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+MANUS_API_KEY=

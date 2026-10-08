@@ -3,7 +3,9 @@
 A personal operating system for school, The Profit Script (TPS) and creative practice.
 **One app, three workspaces, one execution system.** Less planning. More execution.
 
-Desktop-first, dark by default, built for phones too. Runs fully in the browser — no account, no backend, no API keys needed.
+Desktop-first, dark by default, built for phones too. Works fully in the browser out of the box;
+deploy the included Cloudflare Worker (free plan) to sync your real data between Mac and iPhone,
+connect Google Calendar, get a 07:00 push brief, and let Claude/ChatGPT work with your data over MCP.
 
 ## Workspaces
 
@@ -11,7 +13,7 @@ Desktop-first, dark by default, built for phones too. Runs fully in the browser 
 | --- | --- |
 | **Home** | Now / up next · top three (from any workspace) · client work needing attention · practice progress · weekly targets |
 | **Personal** | Today · Calendar (day/week/month, recurrence, drag & resize) · Tasks (incl. items from TPS & Lab) · **Plan tomorrow** (5-minute evening flow with capacity check) · Weekly planning |
-| **TPS Business** | Overview · Clients (health, per-state counts, next action) · Client workspace (projects, deliverables, units agreed/done/delivered/approved, tasks, links, history) · Deliverables board with configurable stages · Pipeline (CRM-lite with touch log) · Weekly scorecard · Integrations |
+| **TPS Business** | Overview · Clients (health, per-state counts, next action) · Client workspace (overview, brand intelligence, research, asset library, feedback, performance & learnings, activity) · Deliverables board with configurable stages · **AI Studio** (10 client-aware workflows, exact-context preview, drafts → research/concepts/deliverables/tasks) · Pipeline (CRM-lite with touch log, Upwork links, proposal tracking) · X content planner · Weekly scorecard · Integrations (live status) |
 | **Creative Lab** | Overview · Practice planner (Sunday flow, templates, calendar blocks) · Analyses (quick or deep, custom templates, video timestamps) · Swipe library (search, tags, favorites, screenshots) · Insights (linked to ads, analyses and client deliverables) · Practice history |
 
 Everything is connected, not copied: a planned analysis is one record that shows up in the Lab, in Tasks, on Home and (if scheduled) on the calendar, and counts toward the practice quota when done. A deliverable lives in its client project and appears in Tasks only when it's your move. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -20,6 +22,15 @@ Everything is connected, not copied: a planned analysis is one record that shows
 
 `⌘K`/`Ctrl K` search everything & quick add · `G` then `H` / `P` / `B` / `L` switch workspace · `1–6` pages · `N` new task · `E` new event · `?` all shortcuts.
 Calendar: `T` today · `D`/`W`/`M` views · `←`/`→`. Tasks: `/` focus quick add.
+
+## Your data: local/demo vs account
+
+- **Local / demo** — the browser-only store. First open fills it with clearly labelled sample data.
+- **Account** — your real data on your own server, synced across devices, offline-safe. It starts
+  empty; demo data can't be added to it. Settings → Account & sync → **Set up account…** imports
+  your existing browser data (demo excluded by default, backup offered, original left untouched).
+
+Deploying the server: **[docs/DEPLOY.md](docs/DEPLOY.md)**.
 
 ## Demo mode
 
@@ -43,28 +54,31 @@ npm run typecheck
 npm run lint
 npm test             # domain + store unit tests (vitest)
 npm run test:e2e     # headless Chromium end-to-end test against a running server (BASE_URL=…)
+npm run test:v3      # V3 workflows end to end (BASE_URL=…)
+
+# with the Worker running locally (npm run server:dev):
+npm run test:server  # API, sync conflicts, files, MCP OAuth + permissions (NODE_TLS_REJECT_UNAUTHORIZED=0)
+npm run test:sync    # two devices: import, sync, offline conflict + restore (BASE_URL=https://localhost:8787)
 ```
 
 ## Google Calendar (optional)
 
-The integration is implemented client-side with Google Identity Services + the official Calendar REST API. It needs only a public **OAuth Client ID** — no client secret, no server.
+**With the server (recommended):** server-side OAuth, read-only by default, choose which calendars
+to mirror, incremental sync every 15 minutes, Europe/Berlin. Editing needs a second explicit
+consent and every change to an existing Google event asks for confirmation. Setup in
+[docs/DEPLOY.md](docs/DEPLOY.md#4-google-calendar).
 
-1. [Google Cloud Console](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com) → create a project → enable **Google Calendar API**.
-2. OAuth consent screen → External → add your Google account as a test user.
-3. Credentials → Create OAuth client ID → **Web application** → add the URL you run the app at under *Authorised JavaScript origins* (e.g. `http://localhost:5173`).
-4. Paste the Client ID in **Settings → Google Calendar** (or put it in `.env.local` as `VITE_GOOGLE_CLIENT_ID`) and click **Connect**.
+**Browser-only fallback:** Settings → Google Calendar with a public OAuth Client ID (Google
+Identity Services, token in memory only, ≈1 hour). Authorise the origin you run the app at under
+*Authorised JavaScript origins*. Doesn't work inside sandboxed embeds like the hosted preview.
 
-How it behaves:
-
-- **Sync is read-only.** Events from your primary calendar (−30 / +120 days, recurring series expanded by Google) are mirrored and replaced on each sync, keyed by Google event id — re-syncing can't create duplicates.
-- Google is only changed when **you** create, edit, drag or delete a Google event. Editing one occurrence of a Google series changes only that occurrence.
-- Demo data is never uploaded. Local events stay local unless you choose "Save to Google Calendar" when creating.
-- Access tokens live in memory only (≈1 hour). After a reload use **Reconnect & sync**.
-- Google sign-in won't work inside sandboxed embeds (like the hosted preview); run it from an origin you authorised.
+Either way: syncing only reads; re-syncs can't duplicate (keyed by Google event id); demo data is
+never uploaded; nothing is deleted or bulk-changed on connect.
 
 ## Stack
 
-Vite · React 18 · TypeScript · Tailwind CSS v4 · Radix primitives (shadcn-style components) · Lucide icons · Zustand (persisted, schema v2 with migration) · date-fns · Sonner · Vitest · Playwright.
+Vite · React 18 · TypeScript · Tailwind CSS v4 · Radix primitives (shadcn-style components) · Lucide icons · Zustand (persisted, schema v3 with migrations) · date-fns · Sonner · Vitest · Playwright.
+Server: Cloudflare Workers · Hono · D1 · R2 · KV · `@cloudflare/workers-oauth-provider` · `@anthropic-ai/sdk` (optional).
 
 Calendar views are custom-built (no heavy calendar library) so they match the design and support drag/resize precisely.
 
@@ -74,7 +88,10 @@ src/
   pages/            Home, Settings, personal/*, tps/*, lab/*
   features/         overview cards, calendar grids, tasks, events, tps/*, lab/*, scorecard, palette
   components/       app shell (workspace switcher, sidebars), ui primitives
-  lib/              dates & recurrence, availability, quick-add parser, Google client, media (IndexedDB), work-item glue
-  store/            app state (persisted) + UI/routing state + backup
-docs/ARCHITECTURE.md
+  lib/              dates & recurrence, quick-add parser, Google clients, media, sync engine, import wizard, push, work-item glue
+  store/            app state (persisted) + data mode + UI/routing state + backup
+server/             Cloudflare Worker: API, sync, MCP, OAuth, Google, push, cron
+migrations/         D1 schema
+tests/              e2e (smoke, v3, sync) and server integration tests
+docs/ARCHITECTURE.md · docs/DEPLOY.md
 ```

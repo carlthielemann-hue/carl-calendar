@@ -2,7 +2,8 @@ import type { OAuthHelpers } from '@cloudflare/workers-oauth-provider'
 
 export interface Env {
   DB: D1Database
-  FILES: R2Bucket
+  /** Optional — remove the r2_buckets entry to run without cloud file storage */
+  FILES?: R2Bucket
   OAUTH_KV: KVNamespace
   ASSETS: Fetcher
   OAUTH_PROVIDER: OAuthHelpers

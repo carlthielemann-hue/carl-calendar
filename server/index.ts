@@ -24,7 +24,7 @@ const app = new Hono<{ Bindings: Env }>()
 
 const features = (env: Env) => ({
   sync: true,
-  files: true,
+  files: !!env.FILES,
   google: google.googleConfigured(env),
   googleConnected: false,
   push: pushConfigured(env),
@@ -106,6 +106,9 @@ app.get('/api/export', async (c) => {
 /* ---------------- files (R2) ---------------- */
 
 const MAX_FILE = 25 * 1024 * 1024
+// R2 is optional: without the binding, files stay on each device (IndexedDB).
+app.use('/api/files/*', async (c, next) => (c.env.FILES ? next() : json({ error: 'Cloud file storage is not enabled (no R2 bucket). Files are kept on this device.' }, 503)))
+app.use('/api/files', async (c, next) => (c.env.FILES ? next() : json({ error: 'Cloud file storage is not enabled (no R2 bucket). Files are kept on this device.' }, 503)))
 app.post('/api/files', async (c) => {
   const name = (c.req.query('name') ?? 'file').replace(/[^\w.\- ()]+/g, '_').slice(0, 120)
   const len = Number(c.req.header('Content-Length') ?? 0)
@@ -114,19 +117,22 @@ app.post('/api/files', async (c) => {
   if (body.byteLength > MAX_FILE) return json({ error: 'Files are limited to 25 MB' }, 413)
   const key = `f/${crypto.randomUUID()}/${name}`
   const mime = c.req.header('Content-Type') ?? 'application/octet-stream'
-  await c.env.FILES.put(key, body, { httpMetadata: { contentType: mime } })
+  await c.env.FILES!.put(key, body, { httpMetadata: { contentType: mime } })
   await c.env.DB.prepare('INSERT INTO files (key, name, mime, size, created_at) VALUES (?, ?, ?, ?, ?)').bind(key, name, mime, body.byteLength, nowIso()).run()
   return json({ key })
 })
 app.get('/api/files/*', async (c) => {
   const key = decodeURIComponent(c.req.path.slice('/api/files/'.length))
-  const obj = await c.env.FILES.get(key)
+  const obj = await c.env.FILES!.get(key)
   if (!obj) return json({ error: 'Not found' }, 404)
-  return new Response(obj.body, { headers: { 'Content-Type': obj.httpMetadata?.contentType ?? 'application/octet-stream', 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' } })
+  // Uploaded files never run as part of the app: sandboxed, no sniffing.
+  return new Response(obj.body, {
+    headers: { 'Content-Type': obj.httpMetadata?.contentType ?? 'application/octet-stream', 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "sandbox; default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'" },
+  })
 })
 app.delete('/api/files/*', async (c) => {
   const key = decodeURIComponent(c.req.path.slice('/api/files/'.length))
-  await c.env.FILES.delete(key)
+  await c.env.FILES!.delete(key)
   await c.env.DB.prepare('DELETE FROM files WHERE key = ?').bind(key).run()
   return json({ ok: true })
 })

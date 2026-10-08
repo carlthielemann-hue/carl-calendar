@@ -5,6 +5,7 @@
  * Binary files never go into localStorage.
  */
 import { useEffect, useState } from 'react'
+import { isAccountMode } from '@/store/mode'
 import type { Asset } from '@/domain/entities'
 import { cloud } from './cloud'
 import { deleteMedia, getMedia, saveMedia } from './media'
@@ -13,7 +14,8 @@ export const MAX_UPLOAD = 25 * 1024 * 1024
 
 export async function storeAssetFile(file: File): Promise<Pick<Asset, 'storage' | 'blobId' | 'mime' | 'size'>> {
   if (file.size > MAX_UPLOAD) throw new Error(`${file.name} is over 25 MB — save a link to it instead.`)
-  if (cloud.isSignedIn()) {
+  // Only the real account uses cloud storage; local/demo files stay on this device.
+  if (isAccountMode() && cloud.isSignedIn()) {
     const key = await cloud.uploadFile(file)
     return { storage: 'cloud', blobId: key, mime: file.type, size: file.size }
   }

@@ -1,7 +1,7 @@
 # Command Center — architecture
 
 One application, three workspaces (Personal, TPS Business, Creative Lab), one data model.
-This document describes how it fits together and what production needs.
+This document describes how it fits together. Deployment: [DEPLOY.md](DEPLOY.md).
 
 ## 1. Shape of the app
 
@@ -9,12 +9,12 @@ This document describes how it fits together and what production needs.
 App shell (Sidebar + workspace switcher + ⌘K + editors/drawers)
 ├── Home                     cross-workspace snapshot
 ├── Personal   /personal/*   today · calendar · tasks · plan tomorrow · weekly planning
-├── TPS        /tps/*        overview · clients(/:id) · deliverables(/:id) · pipeline · scorecard · integrations
+├── TPS        /tps/*        overview · clients(/:id/:tab) · deliverables(/:id) · studio(/:client/:tab) · pipeline · content · scorecard · integrations
 ├── Lab        /lab/*        overview · planner · analyses(/:id) · library(/:id) · insights(/:id) · history
 └── Settings   /settings
 ```
 
-* **Routing** — hash routes `#/<space>/<page>/<id>` (`src/store/ui.ts`). Hash routing keeps the app
+* **Routing** — hash routes `#/<space>/<page>/<id>/<sub>` (`src/store/ui.ts`). Hash routing keeps the app
   deployable as static files and working inside embeds. Each workspace remembers its last page.
 * **Navigation** — workspace switcher (top-left), contextual sidebar per workspace, "Shared" links
   (Today/Tasks/Calendar) from every workspace, `G` then `H/P/B/L` to switch, `1–6` for pages,
@@ -76,56 +76,99 @@ Users can rename/add/reorder stages; the app only reasons about the stage *kind*
 * Carry-over adds last week's shortfall (capped at one week's target) for metrics that opt in.
 * Output vs effort is a property of each metric.
 
-## 3. Persistence
+## 3. Client knowledge, AI Studio and the creative chain (V3)
 
-* Records: `localStorage` via zustand `persist` (`command-center:v1` key, schema **version 2**).
-* Media (screenshots/videos): IndexedDB, downscaled on import (`src/lib/media.ts`).
-* Migration v1 → v2 (`migrateState`): `event.taskId` → `event.link`, `task.eventId` dropped
-  (the event owns the link), top-three ids → refs, new collections added. Covered by tests.
-* Backup: Settings → Export/Import (`src/store/backup.ts`), versioned and migrated on import.
-* Demo data: every sample record carries `isDemo`; "Remove demo data" deletes them and strips
-  links that pointed at them. Starter metrics and stage definitions are configuration, not demo.
+* **Client workspace** tabs: Overview · Brand (13 structured sections) · Research (draft/approved,
+  origin manual/AI/Manus/MCP) · Assets (uploads with previews, links) · Feedback (revision/approval
+  log per deliverable) · Performance (manual metrics + verdicts → insights) · Activity.
+* **Context packs** (`src/domain/context.ts`, shared by the app and the MCP server) assemble exactly
+  what an AI sees for a client. Only *approved* research is included unless explicitly selected.
+  The Studio shows the full prompt before anything leaves the app.
+* **Workflows** (`src/domain/aiWorkflows.ts`): 10 built-ins with editable templates
+  (`{{client}}`, `{{context}}`, `{{input.key}}`). Outputs are stored as `aiOutputs` drafts and can
+  become research drafts, concepts, deliverables, tasks or notes; `savedAs` records where they went.
+  Nothing is ever sent to a client.
+* **Chain**: Ad → Analysis → Insight (`links`) → Concept (`insightIds`) → Deliverable
+  (`deliverableId`). `insightChain` (`src/domain/chain.ts`) takes the union of direct and
+  concept-mediated deliverables, so applied-work counts never double up.
 
-## 4. Tests
+## 4. Persistence and sync
+
+Two data sets, chosen per device (`src/store/mode.ts`):
+
+| Mode | Store key | Contents | Synced |
+| --- | --- | --- | --- |
+| Local / demo | `command-center:v1` | V1/V2 data and sample data | no |
+| Account | `command-center:account` | your real data; starts empty, demo blocked | yes |
+
+* Store schema **version 3**; `migrateState` runs v1 → v2 → v3 (deliverable feedback becomes
+  `FeedbackEntry` records, workflows seeded). Covered by tests.
+* **Import wizard** (`src/lib/migration.ts`, Settings → Account & sync) reads the local store
+  without modifying it, excludes demo records by default, offers a JSON backup, and seeds the
+  account store.
+* **Sync** (`src/lib/sync.ts`, shared mapping in `src/domain/syncSchema.ts`): every array item,
+  map entry and config singleton is one server record with a monotonically increasing revision.
+  The client keeps `[rev, hash]` per record from the last sync, pulls changes since its revision
+  (skipping records it has edited but not pushed), then pushes everything whose hash changed with
+  the revision it was based on. The server resolves concurrent edits last-writer-wins by change
+  time and stores the loser in `conflicts` (restorable from Settings). Offline edits stay local and
+  sync on reconnect/focus/every minute.
+* Files: account mode uploads to R2 (`/api/files`, served sandboxed); local mode and deployments
+  without R2 keep media in IndexedDB (`src/lib/media.ts`).
+* Backups: local JSON export/import (version 3, older versions migrated) and a server export of
+  every record (`/api/export`).
+
+## 5. Backend (`server/`, Cloudflare Worker)
+
+| Module | Responsibility |
+| --- | --- |
+| `index.ts` | Hono routes, session middleware, OAuth provider wiring, scheduled handler |
+| `auth.ts` | owner password → HttpOnly session cookie (60 days), login rate limit (8 failures / 15 min / IP) |
+| `records.ts` | revisioned record store, conflict logging, server-side writes (MCP) |
+| `mcp.ts` | MCP JSON-RPC over Streamable HTTP; scoped tools; permission + hidden-client checks |
+| `google.ts` | server OAuth (refresh token AES-GCM encrypted), calendar selection, incremental sync, confirmed writes |
+| `push.ts`, `cron.ts` | VAPID Web Push (payload-free), 07:00 brief and evening reminder (never after shutdown) |
+| `ai.ts`, `manus.ts` | optional paid API calls, usage + integration logging |
+
+**MCP security**: OAuth 2.1 with PKCE and dynamic client registration
+(`@cloudflare/workers-oauth-provider`); the owner signs in and approves each client on a consent
+page; scopes `mcp:read` / `mcp:write`. Write tools need `mcp:write` *and* the "Allow saving drafts"
+toggle; `update_deliverable_status` additionally needs the "status changes" toggle and a second
+call with `confirm: true` after a preview. Every call is logged; grants are listed and revocable.
+
+**Never in the browser**: OAuth client secrets, refresh tokens, API keys, VAPID private key — all
+are Worker secrets. The browser only holds the session cookie.
+
+## 6. Tests
 
 * `npm test` — vitest: stage transitions, metric counting, snapshots/carry-over, pace, work items,
-  availability, migration, cross-links on delete, demo removal, backup round-trip.
-* `npm run test:e2e` — Playwright smoke test of the real UI across all three workspaces, persistence,
-  and mobile layouts (needs a running server; `BASE_URL=…`).
+  availability, migrations v1→v2→v3, sync schema round-trip/diff, sync hashing, creative-chain
+  counting, demo-free import, cross-links on delete, demo removal, backup round-trip.
+* `npm run test:e2e` — Playwright smoke test of the UI across all three workspaces, persistence,
+  and mobile layouts.
+* `npm run test:v3` — V3 workflows: brand intel, research + upload, AI context → deliverable,
+  task from deliverable, scheduling, reload, export/erase/recover, Google edit/delete guard.
+* `npm run test:server` — API + MCP against `wrangler dev`: auth, sync + conflicts, files, OAuth
+  (DCR + PKCE + consent), tools, permissions, revocation, push queue, unconfigured providers.
+* `npm run test:sync` — two browsers (Mac + iPhone viewport): import wizard, cross-device sync,
+  offline conflict + restore, demo blocked in the account.
 
-## 5. Decisions and risks
+## 7. Decisions and risks
 
 | Decision / risk | Why / mitigation |
 | --- | --- |
-| Vite SPA instead of Next.js | Everything runs client-side today; static build deploys anywhere and powers the single-file preview. When a backend is needed (Phase E) it can be a separate API/edge functions, or the app can move into Next.js without changing the domain layer. |
-| One store, many slices | Simple and fast at personal scale (thousands of records). The domain layer (`src/domain`) is pure and portable to a server. |
-| localStorage limits (~5 MB) | Media is in IndexedDB; activity log is capped at 800 entries. Cloud persistence removes the limit. |
-| Single device | Data doesn't sync between Mac and iPhone until Phase E. Export/import is the stop-gap. |
-| Google Calendar from the browser | Token model, no secret, access token in memory only. Server-side OAuth (refresh tokens) arrives with Phase E. |
-| Deleting a client cascades | Projects/deliverables are deleted, every link to them is removed; requires a two-step confirm. |
+| Cloudflare Worker + D1 instead of Supabase | One deployable unit serving app + API + MCP + cron on a free plan; the pure domain layer is shared by both sides. |
+| Single owner, password auth | It's a personal system. No multi-tenant model, no billing. Rate-limited login, HttpOnly cookie. |
+| Last-writer-wins per record | Simple and predictable at one-person scale; the losing version is always kept and restorable. |
+| Free-plan CPU limit (10 ms/request) | Fine for normal use; Workers Paid ($5/mo) if very large data ever trips it. |
+| Google consent in "Testing" | Refresh tokens expire after 7 days; publish the consent screen (unverified is fine for yourself). |
+| Manus API shapes | From public docs, not yet verified against a live account. |
+| ChatGPT write access by plan | Unclear for Plus/Pro in developer mode; read tools work regardless. |
 
-## 6. Production (Phase E) — proposed, not built
+## 8. Integrations
 
-Nothing here is deployed or paid for yet. Recommended path, all with free tiers — **confirm before
-creating accounts**:
-
-1. **Hosting**: static deploy (Vercel / Netlify / Cloudflare Pages). Gives HTTPS, a stable origin for
-   Google OAuth, and installability (manifest is already in `public/`).
-2. **Auth + database**: Supabase (Postgres + Auth + row-level security). Tables mirror
-   `src/domain/entities.ts` one-to-one, each row with `user_id` and `updated_at`; RLS policy
-   `user_id = auth.uid()`. Leaves room for team accounts later (`workspace_members`).
-3. **Sync**: keep the local store as a cache (offline-first); push changes per record with
-   `updated_at` last-write-wins, pull deltas on focus/realtime. Media → Supabase Storage.
-4. **Backups**: managed Postgres backups + the existing JSON export.
-5. **Morning briefing**: a scheduled function at 07:00 local time builds the text with
-   `buildMorningBrief` (`src/domain/brief.ts`, already pure) and sends one Web Push (VAPID) to the
-   installed PWA. iOS needs the app added to the home screen (iOS 16.4+). One notification a day,
-   no per-task pings.
-6. **Google Calendar as source of truth**: server-side OAuth with refresh tokens, incremental sync
-   via `syncToken`, conflict rule "Google wins for Google events", never auto-delete.
-
-## 7. Integrations (Phase F)
-
-See TPS → Integrations in the app. Summary: Google Calendar is implemented; Upwork (GraphQL API,
-key application, scopes fixed at registration, 24h caching limit) and X (pay-per-use since Feb 2026)
-are researched, not built. Nothing will ever send proposals, posts or messages automatically.
+See TPS → Integrations in the app (live status from the server). Google Calendar, MCP (Claude and
+ChatGPT), Claude/OpenAI API and Manus are built; Upwork (GraphQL API, key application, scopes fixed
+at registration, 24h caching limit) and X (pay-per-use since Feb 2026) are researched with manual
+tracking in Pipeline and the Content planner. Nothing ever sends proposals, posts or messages
+automatically.
