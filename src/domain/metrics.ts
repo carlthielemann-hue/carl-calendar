@@ -1,4 +1,5 @@
 import { addDays } from 'date-fns'
+import type { WorkoutSession } from './entities'
 import type { Analysis, Assignment, Deliverable, FocusLog, Insight, Metric, Opportunity, WeekScore } from './entities'
 import type { CalEvent, Task } from '@/lib/types'
 
@@ -12,6 +13,7 @@ export interface MetricData {
   /** For study hours: planner blocks */
   events?: CalEvent[]
   assignments?: Assignment[]
+  workouts?: WorkoutSession[]
 }
 
 const inRange = (iso: string | undefined, from: Date, to: Date) => {
@@ -63,6 +65,8 @@ export function metricActual(m: Metric, data: MetricData, weekStart: Date, score
         .reduce((a, e) => a + (new Date(e.end).getTime() - new Date(e.start).getTime()) / 60000, 0)
       return Math.round((m / 60) * 10) / 10
     }
+    case 'workouts_completed':
+      return (data.workouts ?? []).filter((w) => w.endedAt && inRange(w.endedAt, from, to)).length
     case 'homework_done':
       return (data.assignments ?? []).filter((a) => a.done && inRange(a.completedAt, from, to)).length
     default:
@@ -82,6 +86,7 @@ export const AUTO_METRICS: { key: Metric['source']['key']; label: string; unit: 
   { key: 'insights_created', label: 'Insights saved', unit: 'count', kind: 'output', workspace: 'lab', hint: 'New insights added to the knowledge base.' },
   { key: 'tasks_completed', label: 'Tasks completed', unit: 'count', kind: 'output', workspace: 'personal', hint: 'Tasks ticked off this week.' },
   { key: 'study_hours', label: 'Study hours', unit: 'hours', kind: 'effort', workspace: 'personal', hint: 'Planner study blocks that happened (not marked missed).' },
+  { key: 'workouts_completed', label: 'Workouts', unit: 'count', kind: 'effort', workspace: 'personal', hint: 'Finished gym sessions this week.' },
   { key: 'homework_done', label: 'Homework done', unit: 'count', kind: 'output', workspace: 'personal', hint: 'Homework ticked off this week.' },
 ]
 

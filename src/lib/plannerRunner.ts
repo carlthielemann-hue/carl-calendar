@@ -11,6 +11,7 @@ import { plan, plannerProposalId, type Demand, type PlannerWarning } from '@/dom
 export { plannerProposalId }
 import type { Exam } from '@/domain/entities'
 import { expandEvents } from './dates'
+import { fitnessDemands } from '@/domain/fitness'
 import { applyProposal } from './proposals'
 import { useApp } from '@/store/app'
 
@@ -38,7 +39,11 @@ export function runPlanner(now = new Date()) {
       exams: s.exams,
       prefs: s.settings.study,
       shutdown: s.settings.shutdownTime,
-      extraDemands: extraSources.flatMap((f) => f()),
+      extraDemands: [
+        ...fitnessDemands({ now, occs: expandEvents(s.events, startOfDay(now), addDays(now, 8)), routines: s.routines, workouts: s.workouts }),
+        ...extraSources.flatMap((f) => f()),
+      ],
+      routines: s.routines,
     })
     usePlanner.setState({ warnings: out.warnings, needsPace: out.needsPace, lastRun: now.toISOString() })
 
@@ -56,7 +61,7 @@ export function runPlanner(now = new Date()) {
     const stale = st.proposals.filter((p) => p.source === 'planner' && p.status === 'pending' && !p.id.startsWith('auto-') && p.id !== id)
     for (const p of stale) st.drop('proposals', p.id)
     if (out.items.length && !st.proposals.some((p) => p.id === id)) {
-      st.put('proposals', { id, kind: 'planner', source: 'planner', title: 'Planner: study plan', createdAt: now.toISOString(), status: 'pending', items: out.items.map((i) => ({ ...i, selected: true })) })
+      st.put('proposals', { id, kind: 'planner', source: 'planner', title: 'Planner: your plan', createdAt: now.toISOString(), status: 'pending', items: out.items.map((i) => ({ ...i, selected: true })) })
     }
     // Keep 30 days of history.
     const cutoff = addDays(now, -30).toISOString()
@@ -73,7 +78,7 @@ export function startPlanner() {
   let timer: ReturnType<typeof setTimeout> | undefined
   let prev = useApp.getState()
   useApp.subscribe((s) => {
-    const relevant = s.events !== prev.events || s.exams !== prev.exams || s.subjects !== prev.subjects || s.settings.study !== prev.settings.study || s.settings.shutdownTime !== prev.settings.shutdownTime || s.google.events !== prev.google.events
+    const relevant = s.events !== prev.events || s.exams !== prev.exams || s.subjects !== prev.subjects || s.settings.study !== prev.settings.study || s.settings.shutdownTime !== prev.settings.shutdownTime || s.google.events !== prev.google.events || s.routines !== prev.routines || s.workouts !== prev.workouts
     prev = s
     if (!relevant || running) return
     clearTimeout(timer)

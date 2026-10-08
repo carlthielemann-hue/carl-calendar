@@ -16,6 +16,10 @@ import type {
   Exam,
   Assignment,
   Grade,
+  Exercise,
+  Routine,
+  WorkoutSession,
+  BodyweightEntry,
   DayPlan,
   Deliverable,
   FeedbackEntry,
@@ -79,6 +83,10 @@ export interface Data {
   exams: Exam[]
   assignments: Assignment[]
   grades: Grade[]
+  exercises: Exercise[]
+  routines: Routine[]
+  workouts: WorkoutSession[]
+  bodyweight: BodyweightEntry[]
   /* Shared */
   metrics: Metric[]
   scorecards: Record<string, WeekScore>

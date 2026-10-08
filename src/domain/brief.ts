@@ -21,7 +21,7 @@ export function buildMorningBrief(input: { date: Date; top: WorkItem[]; occurren
   if (practice.length) lines.push(`Practice: ${practice.length} analysis${practice.length > 1 ? 'es' : ''} planned`)
   const overdue = items.filter((i) => !i.done && i.due && today && i.due < today).length
   if (overdue) lines.push(`At risk: ${overdue} overdue`)
-  if (input.study?.length) lines.push(`Study: ${input.study.slice(0, 3).join(' · ')}`)
+  if (input.study?.length) lines.push(`Planned: ${input.study.slice(0, 3).join(' · ')}`)
   for (const h of input.headsUp ?? []) lines.push(`Heads-up: ${h}`)
   if (input.movedOvernight) lines.push(`Planner moved ${input.movedOvernight} block${input.movedOvernight > 1 ? 's' : ''} that clashed`)
   if (input.pendingChanges) lines.push(`${input.pendingChanges} planner change${input.pendingChanges > 1 ? 's' : ''} to review`)

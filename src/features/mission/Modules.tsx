@@ -1,5 +1,7 @@
 import { differenceInMinutes, format } from 'date-fns'
-import { AlertTriangle, Bot, CalendarClock, Check, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { AlertTriangle, Bot, CalendarClock, Check, Dumbbell, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { bodyweightSeries } from '@/domain/fitness'
+import { startWorkout } from '@/features/fitness/actions'
 import { undoAuto, usePlanner } from '@/lib/plannerRunner'
 import { useMemo, useState } from 'react'
 import * as Popover from '@radix-ui/react-popover'
@@ -18,6 +20,7 @@ export const MISSION_MODULES = [
   { id: 'countdowns', label: 'Countdowns' },
   { id: 'week', label: 'This week' },
   { id: 'autopilot', label: 'Autopilot log' },
+  { id: 'fitness', label: 'Training' },
   { id: 'clients', label: 'Client work' },
   { id: 'practice', label: 'Creative practice' },
 ] as const
@@ -267,6 +270,48 @@ export function CountdownsCard({ now }: { now: Date }) {
           ))}
         </ul>
       )}
+    </Card>
+  )
+}
+
+/** Today's training at a glance. */
+export function TrainingCard({ now }: { now: Date }) {
+  const routines = useApp((s) => s.routines)
+  const workouts = useApp((s) => s.workouts)
+  const bw = useApp((s) => s.bodyweight)
+  const wso = useApp((s) => s.settings.weekStartsOn)
+  const go = useUI((s) => s.go)
+  const active = routines.filter((r) => r.active)
+  if (!active.length && !workouts.length && !bw.length) return null
+  const today = dateKey(now)
+  const todays = active.filter((r) => r.days.includes(now.getDay()))
+  const open = workouts.find((w) => !w.endedAt)
+  const done = workouts.some((w) => w.endedAt && w.date === today)
+  const wk = dateKey(weekStart(now, wso))
+  const count = workouts.filter((w) => w.endedAt && w.date >= wk).length
+  const planned = active.reduce((a, r) => a + r.days.length, 0)
+  const avg = bodyweightSeries(bw).at(-1)?.avg
+  return (
+    <Card className="flex h-full flex-col">
+      <CardHeader title="Training" icon={<Dumbbell />} action={<button onClick={() => go('/fitness/today')} className="text-[12px] text-muted hover:text-fg">Fitness →</button>} />
+      <div className="flex flex-1 flex-col gap-3 px-4 pb-4">
+        <div className="text-[15px] font-medium">{open ? `${open.title} in progress` : done ? 'Trained today ✓' : todays.length ? `${todays.map((r) => r.name).join(' / ')} day` : 'Rest day'}</div>
+        {!done && (open || todays.length > 0) && (
+          <button onClick={() => (open ? go(`/fitness/log/${open.id}`) : startWorkout(todays[0]))} className="inline-flex h-9 w-fit items-center gap-2 rounded-lg bg-fg px-3.5 text-[13px] font-medium text-bg">
+            {open ? 'Resume' : `Start ${todays[0].name}`}
+          </button>
+        )}
+        <div className="mt-auto flex gap-4 text-[12.5px] text-muted">
+          <span>
+            <span className="font-semibold text-fg tnum">{count}</span>/{planned || '–'} this week
+          </span>
+          {avg !== undefined && (
+            <span>
+              <span className="font-semibold text-fg tnum">{avg}</span> kg avg
+            </span>
+          )}
+        </div>
+      </div>
     </Card>
   )
 }

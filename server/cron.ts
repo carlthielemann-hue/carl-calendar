@@ -8,6 +8,7 @@ import { loadState } from './records'
 import { getMeta, setMeta, wallClock } from './util'
 import { syncGoogle } from './google'
 import { plan, plannerProposalId } from '@/domain/planner'
+import { fitnessDemands } from '@/domain/fitness'
 import { DEFAULT_STUDY_PREFS, type Proposal } from '@/domain/entities'
 import type { CalEvent } from '@/lib/types'
 import { writeRecord } from './records'
@@ -37,7 +38,7 @@ export async function morningBrief(env: Env, now = new Date()) {
   const shutdown = (s.settings as { shutdownTime?: string }).shutdownTime ?? '20:30'
   const pendingChanges = (s.proposals ?? []).filter((p) => p.status === 'pending').reduce((n, p) => n + p.items.length, 0)
   const study = local
-    .filter((o) => o.event.origin === 'planner' && o.event.category === 'school' && !o.event.allDay)
+    .filter((o) => o.event.origin === 'planner' && (o.event.category === 'school' || o.event.category === 'gym') && !o.event.allDay)
     .map((o) => `${o.event.title.split(':')[0]} ${o.start.toTimeString().slice(0, 5)}`)
   const movedOvernight = (s.proposals ?? []).filter((p) => p.id.startsWith('auto-') && p.status === 'approved' && p.createdAt.slice(0, 10) === today).reduce((n, p) => n + p.items.length, 0)
   const headsUp = (await plannerRun(env, s, today, { dryRun: true })).needsPace.map((e) => `set your pace for ${s.subjects.find((x) => x.id === e.subjectId)?.name ?? ''} ${e.title} (${e.date})`.replace('  ', ' '))
@@ -102,7 +103,9 @@ export async function plannerRun(env: Env, s: AppStateLike, today: string, opts:
   const { results } = await env.DB.prepare('SELECT data FROM gcal_events WHERE start >= ?').bind(dateKey(addDays(fromDateKey(today), -1))).all<{ data: string }>()
   const googleBusy = results.map((r) => JSON.parse(r.data) as { start: string; end: string; allDay?: boolean }).filter((e) => !e.allDay).map((e) => ({ start: new Date(e.start), end: new Date(e.end) }))
   const settings = s.settings as { shutdownTime?: string; study?: typeof DEFAULT_STUDY_PREFS }
-  const out = plan({ now, events: s.events.filter((e) => !e.isDemo), busyExtra: googleBusy, subjects: s.subjects ?? [], exams: s.exams ?? [], prefs: settings.study, shutdown: settings.shutdownTime ?? '20:30' })
+  const events = s.events.filter((e) => !e.isDemo)
+  const extraDemands = fitnessDemands({ now, occs: expandEvents(events, fromDateKey(today), addDays(fromDateKey(today), 8)), routines: s.routines ?? [], workouts: s.workouts ?? [] })
+  const out = plan({ now, events, busyExtra: googleBusy, subjects: s.subjects ?? [], exams: s.exams ?? [], prefs: settings.study, shutdown: settings.shutdownTime ?? '20:30', extraDemands, routines: s.routines ?? [] })
   if (opts.dryRun) return out
   const iso = new Date().toISOString()
   // today's clashes
@@ -127,7 +130,7 @@ export async function plannerRun(env: Env, s: AppStateLike, today: string, opts:
   const id = plannerProposalId(out.items.map((i) => i.id))
   for (const p of s.proposals ?? []) if (p.source === 'planner' && p.status === 'pending' && !p.id.startsWith('auto-') && p.id !== id) await writeRecord(env, 'proposals', p.id, null)
   if (out.items.length && !(s.proposals ?? []).some((p) => p.id === id)) {
-    const p: Proposal = { id, kind: 'planner', source: 'planner', title: 'Planner: study plan', createdAt: iso, status: 'pending', items: out.items.map((i) => ({ ...i, selected: true })) }
+    const p: Proposal = { id, kind: 'planner', source: 'planner', title: 'Planner: your plan', createdAt: iso, status: 'pending', items: out.items.map((i) => ({ ...i, selected: true })) }
     await writeRecord(env, 'proposals', id, p)
   }
   return out

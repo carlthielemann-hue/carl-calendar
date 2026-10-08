@@ -36,6 +36,10 @@ export type EntityType =
   | 'exam'
   | 'assignment'
   | 'grade'
+  | 'exercise'
+  | 'routine'
+  | 'workout'
+  | 'weighin'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -278,6 +282,7 @@ export type AutoMetricKey =
   | 'tasks_completed'
   | 'study_hours'
   | 'homework_done'
+  | 'workouts_completed'
 
 export interface MetricSource {
   type: 'manual' | 'auto'
@@ -628,3 +633,71 @@ export interface StudyPrefs {
   leadSmall: number
 }
 export const DEFAULT_STUDY_PREFS: StudyPrefs = { from: '09:00', sessionMinutes: 60, maxSchoolDay: 120, maxFreeDay: 240, bufferMinutes: 15, leadBig: 21, leadSmall: 10 }
+
+/* ---------------- Fitness (V4.2) ---------------- */
+
+export const MUSCLES = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'full body'] as const
+export type Muscle = (typeof MUSCLES)[number]
+export const EQUIPMENT = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'other'] as const
+export type Equipment = (typeof EQUIPMENT)[number]
+
+export interface Exercise {
+  id: string
+  name: string
+  muscle: Muscle
+  equipment: Equipment
+  /** kg added per progression step (default 2.5 barbell, 2 dumbbell, 5 machine) */
+  step?: number
+  builtIn?: boolean
+  notes?: string
+  createdAt: string
+}
+
+export interface RoutineExercise {
+  exerciseId: string
+  sets: number
+  repMin: number
+  repMax: number
+  restSec?: number
+}
+
+/** One day of a split, e.g. "Push". `days` = weekdays it's planned on (0 = Sunday). */
+export interface Routine {
+  id: string
+  name: string
+  exercises: RoutineExercise[]
+  days: number[]
+  minutes: number
+  active: boolean
+  order: number
+  createdAt: string
+}
+
+export interface WorkoutSet {
+  reps: number
+  weight: number
+  done: boolean
+}
+
+export interface WorkoutSession {
+  id: string
+  routineId?: string
+  title: string
+  /** yyyy-MM-dd */
+  date: string
+  startedAt: string
+  endedAt?: string
+  entries: { exerciseId: string; sets: WorkoutSet[]; note?: string }[]
+  note?: string
+  /** planner block this workout fulfils */
+  eventId?: string
+  createdAt: string
+}
+
+export interface BodyweightEntry {
+  id: string
+  date: string
+  kg: number
+  note?: string
+  createdAt: string
+}

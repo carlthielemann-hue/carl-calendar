@@ -20,7 +20,8 @@
     "test:v3": "node tests/v3.mjs",
     "setup:secrets": "node scripts/setup-secrets.mjs",
     "test:v4": "node tests/v4.mjs",
-    "test:school": "node tests/school.mjs"
+    "test:school": "node tests/school.mjs",
+    "test:fitness": "node tests/fitness.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

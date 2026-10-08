@@ -43,6 +43,11 @@ const ROUTES: Record<string, ReturnType<typeof lazy>> = {
   'school/assignments': page(() => import('@/pages/school/Assignments')),
   'school/grades': page(() => import('@/pages/school/Grades')),
   'school/subjects': page(() => import('@/pages/school/Subjects')),
+  'fitness/today': page(() => import('@/pages/fitness/Today')),
+  'fitness/routines': page(() => import('@/pages/fitness/Routines')),
+  'fitness/progress': page(() => import('@/pages/fitness/Progress')),
+  'fitness/bodyweight': page(() => import('@/pages/fitness/Bodyweight')),
+  'fitness/log': page(() => import('@/pages/fitness/Logger')),
   settings: page(() => import('@/pages/Settings')),
 }
 /** Routes whose ":id" segment opens a dedicated detail page */

@@ -63,6 +63,8 @@ function searchIndex(s: AppState): { ref: Ref; text: string }[] {
     ...s.exams.map((e) => ({ ref: `exam:${e.id}` as Ref, text: `${e.title} ${e.topics ?? ''} ${s.subjects.find((x) => x.id === e.subjectId)?.name ?? ''} exam test klausur` })),
     ...s.assignments.map((a) => ({ ref: `assignment:${a.id}` as Ref, text: `${a.title} ${s.subjects.find((x) => x.id === a.subjectId)?.name ?? ''} homework` })),
     ...s.subjects.map((x) => ({ ref: `subject:${x.id}` as Ref, text: `${x.name} subject` })),
+    ...s.routines.map((x) => ({ ref: `routine:${x.id}` as Ref, text: `${x.name} routine workout gym` })),
+    ...s.workouts.filter((w) => w.endedAt).map((x) => ({ ref: `workout:${x.id}` as Ref, text: `${x.title} workout ${x.date}` })),
   ]
 }
 
@@ -84,6 +86,8 @@ const GROUP_LABEL: Record<string, string> = {
   exam: 'Exams',
   assignment: 'Homework',
   subject: 'Subjects',
+  routine: 'Routines',
+  workout: 'Workouts',
 }
 
 /** "@research hooks" → only research; "@client" etc. match type keys or group labels. */

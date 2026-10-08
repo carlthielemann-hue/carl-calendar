@@ -169,6 +169,18 @@ export function describeRef(s: AppState, r: string): { label: string; sub?: stri
       const o = s.grades.find((x) => x.id === p.id)
       return o ? { label: `${o.points} points`, sub: 'Grade', path: '/school/grades' } : null
     }
+    case 'routine': {
+      const o = s.routines.find((x) => x.id === p.id)
+      return o ? { label: o.name, sub: 'Routine', path: '/fitness/routines' } : null
+    }
+    case 'workout': {
+      const o = s.workouts.find((x) => x.id === p.id)
+      return o ? { label: o.title, sub: `Workout · ${o.date}`, path: `/fitness/log/${o.id}` } : null
+    }
+    case 'exercise': {
+      const o = s.exercises.find((x) => x.id === p.id)
+      return o ? { label: o.name, sub: 'Exercise', path: '/fitness/progress' } : null
+    }
     case 'countdown': {
       const o = s.countdowns.find((x) => x.id === p.id)
       return o ? { label: o.title, sub: `Countdown · ${o.date}`, path: '/home' } : null

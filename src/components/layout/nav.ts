@@ -1,5 +1,9 @@
 import {
   BarChart3,
+  Dumbbell,
+  ListChecks,
+  Scale,
+  TrendingUp,
   BookOpen,
   Briefcase,
   CalendarClock,
@@ -45,6 +49,7 @@ export const SPACE_DEFS: SpaceDef[] = [
   { id: 'tps', label: 'TPS Business', short: 'TPS', icon: Briefcase, color: '#9d84f7', key: 'B' },
   { id: 'lab', label: 'Creative Lab', short: 'Lab', icon: FlaskConical, color: '#3fb5c4', key: 'L' },
   { id: 'school', label: 'School', short: 'School', icon: GraduationCap, color: '#5b8def', key: 'S' },
+  { id: 'fitness', label: 'Fitness', short: 'Fitness', icon: Dumbbell, color: '#4cc38a', key: 'F' },
 ]
 
 export interface PageDef {
@@ -85,6 +90,12 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'assignments', label: 'Homework', icon: NotebookPen },
     { page: 'grades', label: 'Grades', icon: BarChart3 },
     { page: 'subjects', label: 'Subjects', icon: BookOpen },
+  ],
+  fitness: [
+    { page: 'today', label: 'Today', icon: LayoutDashboard },
+    { page: 'routines', label: 'Routines', icon: ListChecks },
+    { page: 'progress', label: 'Progress', icon: TrendingUp },
+    { page: 'bodyweight', label: 'Bodyweight', icon: Scale },
   ],
 }
 

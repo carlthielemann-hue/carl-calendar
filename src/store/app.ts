@@ -11,6 +11,7 @@ import { BUILTIN_TEMPLATES, DEFAULT_PRACTICE_TEMPLATES, STARTER_METRICS } from '
 import { buildWorkspaceDemo } from '@/domain/demo'
 import { BUILTIN_WORKFLOWS } from '@/domain/aiWorkflows'
 import { DEFAULT_STUDY_PREFS } from '@/domain/entities'
+import { BUILTIN_EXERCISES } from '@/domain/fitness'
 import { isAccountMode, storeKey } from './mode'
 import type {
   AdRef,
@@ -25,6 +26,10 @@ import type {
   Exam,
   Assignment,
   Grade,
+  Exercise,
+  Routine,
+  WorkoutSession,
+  BodyweightEntry,
   EntityType,
   FeedbackEntry,
   PerformanceEntry,
@@ -91,6 +96,10 @@ export interface Collections {
   exams: Exam
   assignments: Assignment
   grades: Grade
+  exercises: Exercise
+  routines: Routine
+  workouts: WorkoutSession
+  bodyweight: BodyweightEntry
 }
 export type CollKey = keyof Collections
 export const COLL_REF: Record<CollKey, EntityType> = {
@@ -108,6 +117,10 @@ export const COLL_REF: Record<CollKey, EntityType> = {
   exams: 'exam',
   assignments: 'assignment',
   grades: 'grade',
+  exercises: 'exercise',
+  routines: 'routine',
+  workouts: 'workout',
+  bodyweight: 'weighin',
 }
 
 interface Actions {
@@ -228,6 +241,10 @@ function initialData(): Data {
     exams: [],
     assignments: [],
     grades: [],
+    exercises: BUILTIN_EXERCISES,
+    routines: [],
+    workouts: [],
+    bodyweight: [],
     settings: DEFAULT_SETTINGS,
     google: { connected: false, calendarId: 'primary', events: [] },
     hasDemoData: true,
@@ -697,7 +714,7 @@ export const useApp = create<AppState>()(
           set({
             events: [], tasks: [], topThree: {}, weekly: {}, dayPlans: {}, clients: [], projects: [], deliverables: [], opportunities: [],
             ads: [], analyses: [], plans: [], insights: [], scorecards: {}, focusLogs: [], activity: [], hasDemoData: false,
-            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [],
+            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [],
           }),
       }
     },
@@ -780,6 +797,10 @@ function migrateV2(p: Record<string, unknown>): Record<string, unknown> {
     exams: [],
     assignments: [],
     grades: [],
+    exercises: BUILTIN_EXERCISES,
+    routines: [],
+    workouts: [],
+    bodyweight: [],
   }
 }
 

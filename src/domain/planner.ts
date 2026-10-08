@@ -61,6 +61,8 @@ export interface PlanInput {
   extraDemands?: Demand[]
   /** How far ahead ongoing subjects are planned (days) */
   horizon?: number
+  /** Workout routines: blocks for deleted routines or removed days are cleaned up */
+  routines?: { id: string; days: number[]; active: boolean }[]
 }
 
 export interface PlanOutput {
@@ -208,6 +210,9 @@ export function plan(input: PlanInput): PlanOutput {
     } else if (link.startsWith('subject:')) {
       const s = subjectById.get(link.slice(8))
       if (!s || s.mode !== 'ongoing' || !s.ongoing?.days.includes(o.start.getDay())) why = 'no longer a study day for this subject'
+    } else if (link.startsWith('routine:') && input.routines) {
+      const r = input.routines.find((x) => x.id === link.slice(8))
+      if (!r || !r.active || !r.days.includes(o.start.getDay())) why = 'no longer a training day for this routine'
     }
     if (why) {
       const action: ProposalAction = { type: 'delete-event', eventId: o.event.id }

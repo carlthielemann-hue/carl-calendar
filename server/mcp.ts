@@ -8,6 +8,7 @@ import { addDays } from 'date-fns'
 import { buildContextPack } from '@/domain/context'
 import { DEFAULT_STUDY_PREFS } from '@/domain/entities'
 import { examStatus, gradeAverage } from '@/domain/school'
+import { bodyweightSeries, personalRecords } from '@/domain/fitness'
 import type { Concept, Insight, Ref } from '@/domain/entities'
 import { metricActual, pace } from '@/domain/metrics'
 import { stageOf, courtOf, deliverableHealth } from '@/domain/stages'
@@ -84,6 +85,9 @@ function visible(s0: AppStateLike, perms: McpPermissions): AppStateLike {
     exams: areas.school ? (s0.exams ?? []) : [],
     assignments: areas.school ? (s0.assignments ?? []) : [],
     grades: areas.school && areas.grades ? (s0.grades ?? []) : [],
+    routines: areas.fitness ? (s0.routines ?? []) : [],
+    workouts: areas.fitness ? (s0.workouts ?? []) : [],
+    bodyweight: areas.fitness ? (s0.bodyweight ?? []) : [],
   }
   if (!perms.hiddenClients.length) return s
   const hidden = new Set(perms.hiddenClients)
@@ -317,6 +321,30 @@ const TOOLS: Tool[] = [
           const g = s.grades.filter((y) => y.subjectId === x.id)
           return { subject: x.name, average_points: gradeAverage(g), grades: g.map((y) => ({ kind: y.kind, points: y.points, weight: y.weight, date: y.date })) }
         }),
+      }
+    },
+  },
+  {
+    name: 'get_fitness_overview',
+    title: 'Fitness overview',
+    description: 'Training split, recent workouts with sets, personal records per exercise and bodyweight trend (7-day average). Use for training questions or to suggest progression.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    level: 'read',
+    run: async (_a, ctx) => {
+      if (!areaAllowed(ctx.perms, 'fitness')) throw new ToolError('Fitness access is turned off in Command Center → Settings → AI connections.')
+      const s = await ctx.state()
+      const name = new Map((s.exercises ?? []).map((e) => [e.id, e.name]))
+      const done = s.workouts.filter((w) => w.endedAt)
+      const prs = personalRecords(done)
+      const bw = bodyweightSeries(s.bodyweight)
+      return {
+        routines: s.routines.filter((r) => r.active).map((r) => ({ name: r.name, days: r.days, exercises: r.exercises.map((e) => `${name.get(e.exerciseId)} ${e.sets}×${e.repMin}-${e.repMax}`) })),
+        recent_workouts: done
+          .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+          .slice(0, 10)
+          .map((w) => ({ date: w.date, title: w.title, exercises: w.entries.map((e) => ({ exercise: name.get(e.exerciseId), sets: e.sets.map((x) => `${x.weight}kg×${x.reps}`) })) })),
+        personal_records: [...prs].map(([id, r]) => ({ exercise: name.get(id), heaviest: r.weight?.detail ?? null, best_e1rm_kg: r.e1rm?.value ?? null })),
+        bodyweight: { latest_avg_kg: bw.at(-1)?.avg ?? null, last_14: bw.slice(-14) },
       }
     },
   },

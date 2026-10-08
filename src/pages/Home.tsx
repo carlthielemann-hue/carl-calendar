@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { toggleWorkItem } from '@/lib/work'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { AtRiskCard, AutopilotCard, CountdownsCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
+import { AtRiskCard, AutopilotCard, CountdownsCard, TrainingCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
 import { startFocus } from '@/features/mission/focus'
 import type { Occurrence } from '@/lib/types'
 import { NowNext } from '@/features/overview/NowNext'
@@ -148,6 +148,7 @@ export default function Home() {
   const risks = useRisks(now)
   const show = useMissionVisible()
   const open = top.filter((t) => !t.done).length
+  const training = useApp((s) => show('fitness') && (s.routines.some((r) => r.active) || s.workouts.length > 0 || s.bodyweight.length > 0))
 
   const focusOn = (current: Occurrence | undefined) => {
     if (current) {
@@ -193,13 +194,18 @@ export default function Home() {
             <Targets now={now} />
           </div>
         )}
+        {show('fitness') && (
+          <div className="order-7 min-w-0 empty:hidden lg:col-span-4">
+            <TrainingCard now={now} />
+          </div>
+        )}
         {show('clients') && (
-          <div className="order-7 min-w-0 lg:col-span-7">
+          <div className={cn('order-7 min-w-0', training ? 'lg:col-span-5' : 'lg:col-span-7')}>
             <ClientAttention now={now} />
           </div>
         )}
         {show('practice') && (
-          <div className="order-8 min-w-0 lg:col-span-5">
+          <div className={cn('order-8 min-w-0', training ? 'lg:col-span-3' : 'lg:col-span-5')}>
             <PracticeCard now={now} />
           </div>
         )}
