@@ -1,0 +1,11 @@
+{
+  "name": "Command Center",
+  "short_name": "Command",
+  "description": "Personal, TPS Business and Creative Lab in one execution system.",
+  "start_url": "./#/home",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

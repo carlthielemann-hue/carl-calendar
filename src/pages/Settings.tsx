@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns'
-import { AlertTriangle, CalendarDays, Check, Database, Download, ExternalLink, FlaskConical, Loader2, RefreshCw, RotateCcw, SlidersHorizontal, Trash2, Upload } from 'lucide-react'
+import { AlertTriangle, Bell, CalendarDays, Layers, Check, Database, Download, ExternalLink, FlaskConical, Loader2, RefreshCw, RotateCcw, SlidersHorizontal, Trash2, Upload } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -11,6 +11,13 @@ import type { CalendarView, Settings, ThemePref } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { DEFAULT_SETTINGS, useApp } from '@/store/app'
 import { storageAvailable } from '@/store/storage'
+import { exportSnapshot, importSnapshot } from '@/store/backup'
+import { buildMorningBrief } from '@/domain/brief'
+import { dateKey } from '@/lib/dates'
+import { useDayOccurrences } from '@/lib/hooks'
+import { useWorkItems } from '@/lib/work'
+import { useTop } from '@/features/overview/TopThree'
+import { WorkflowDialog } from '@/pages/tps/Deliverables'
 
 function Section({ icon, title, sub, children }: { icon: ReactNode; title: string; sub?: string; children: ReactNode }) {
   return (
@@ -184,6 +191,44 @@ function GoogleSection() {
   )
 }
 
+
+function BriefSection() {
+  const now = new Date()
+  const top = useTop(dateKey(now))
+  const occs = useDayOccurrences(now)
+  const items = useWorkItems()
+  const shutdown = useApp((s) => s.settings.shutdownTime)
+  const [workflow, setWorkflow] = useState(false)
+  const brief = buildMorningBrief({ date: now, top, occurrences: occs, dueToday: items.filter((i) => i.due === dateKey(now)), shutdown })
+  return (
+    <>
+      <Section icon={<Bell />} title="Morning briefing" sub="One notification a day with the essentials. No task-by-task pings.">
+        <div className="px-5 py-4">
+          <div className="mx-auto max-w-[360px] rounded-2xl border border-line bg-panel-2 p-3.5 shadow-pop">
+            <div className="flex items-center gap-2 text-[11px] text-faint">
+              <span className="grid h-4 w-4 place-items-center rounded bg-fg text-[9px] font-bold text-bg">C</span> Command Center · 07:00
+            </div>
+            <div className="mt-1.5 text-[13px] font-semibold">{brief.title}</div>
+            <div className="mt-0.5 whitespace-pre-line text-[12.5px] leading-relaxed text-fg-2">{brief.body}</div>
+          </div>
+          <p className="mt-3 text-center text-[12px] text-muted">Preview from today’s data.</p>
+        </div>
+        <Row label="Status" hint="Reliable push needs the app hosted over HTTPS, installed to your home screen, and a small server to send at 07:00 — that’s the production phase.">
+          <span className="rounded-full border border-line px-2.5 py-1 text-[12px] text-muted">Not active yet</span>
+        </Row>
+      </Section>
+      <Section icon={<Layers />} title="TPS workflow" sub="The stages deliverables move through.">
+        <Row label="Deliverable stages" hint="Rename, reorder or add stages. Each maps to a meaning (done, sent, feedback, revisions, approved).">
+          <Button variant="secondary" onClick={() => setWorkflow(true)}>
+            Edit stages
+          </Button>
+        </Row>
+      </Section>
+      <WorkflowDialog open={workflow} onOpenChange={setWorkflow} />
+    </>
+  )
+}
+
 export default function SettingsPage() {
   const s = useApp((st) => st.settings)
   const update = useApp((st) => st.updateSettings)
@@ -195,8 +240,7 @@ export default function SettingsPage() {
   const set = <K extends keyof Settings>(k: K) => (v: Settings[K]) => update({ [k]: v } as Partial<Settings>)
 
   const exportData = () => {
-    const { events, tasks, topThree, weekly, settings } = useApp.getState()
-    const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), events, tasks, topThree, weekly, settings }, null, 2)
+    const json = JSON.stringify(exportSnapshot(), null, 2)
     if (google.inSandboxedFrame()) {
       // Embedded previews block downloads — copy instead.
       navigator.clipboard
@@ -215,16 +259,7 @@ export default function SettingsPage() {
 
   const importData = async (file: File) => {
     try {
-      const data = JSON.parse(await file.text())
-      if (!Array.isArray(data.events) || !Array.isArray(data.tasks)) throw new Error('Not a Command Center export')
-      useApp.setState((st) => ({
-        events: data.events,
-        tasks: data.tasks,
-        topThree: data.topThree ?? {},
-        weekly: data.weekly ?? {},
-        settings: { ...st.settings, ...data.settings },
-        hasDemoData: data.events.some((e: { isDemo?: boolean }) => e.isDemo),
-      }))
+      importSnapshot(JSON.parse(await file.text()))
       toast.success('Data imported')
     } catch (e) {
       toast.error(`Import failed: ${(e as Error).message}`)
@@ -330,7 +365,9 @@ export default function SettingsPage() {
 
         <GoogleSection />
 
-        <Section icon={<Database />} title="Data & storage" sub="Everything lives in this browser’s local storage. Nothing is sent to a server.">
+        <BriefSection />
+
+        <Section icon={<Database />} title="Data & storage" sub="Everything lives in this browser (records in local storage, ad media in IndexedDB). Nothing is sent to a server.">
           <Row
             label="Storage status"
             hint={persistent ? `Saved locally · ${storageSize()} · ${counts.e} events, ${counts.t} tasks` : 'Browser storage is blocked here — changes last until you close the tab.'}
@@ -343,8 +380,8 @@ export default function SettingsPage() {
           <Row label="Sync" hint="Local data does not sync between devices. Connect Google Calendar to share events across devices; use export/import to move tasks.">
             <span className="text-[12px] text-muted">{googleConnected ? 'Events via Google' : 'Local only'}</span>
           </Row>
-          <Row label="Show demo data" hint="Hide sample events and tasks without deleting them.">
-            <Toggle checked={s.showDemoEvents} onChange={set('showDemoEvents')} label="Show demo data" />
+          <Row label="Show demo calendar events" hint="Hide sample events on the calendar without deleting them. Use “Remove demo data” to clear everything sample.">
+            <Toggle checked={s.showDemoEvents} onChange={set('showDemoEvents')} label="Show demo calendar events" />
           </Row>
           <div className="flex flex-wrap gap-2 px-5 py-3.5">
             <ConfirmButton
@@ -352,7 +389,7 @@ export default function SettingsPage() {
               onConfirm={() => {
                 useApp.getState().resetDemo()
                 update({ showDemoEvents: true })
-                toast.success('Demo data reset', { description: 'Sample events and tasks restored. Your own items were kept.' })
+                toast.success('Demo data reset', { description: 'Sample events, tasks, clients and ads restored. Your own items were kept.' })
               }}
             >
               <FlaskConical className="h-3.5 w-3.5" /> Reset demo data
@@ -362,7 +399,7 @@ export default function SettingsPage() {
                 confirmLabel="Remove sample data? Click again"
                 onConfirm={() => {
                   useApp.getState().clearDemo()
-                  toast.success('Demo data removed', { description: 'Your own events and tasks were kept.' })
+                  toast.success('Demo data removed', { description: 'Every sample record is gone. Your own items were kept.' })
                 }}
               >
                 Remove demo data

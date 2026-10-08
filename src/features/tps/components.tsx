@@ -247,6 +247,7 @@ function DrawerBody({ d, onClose }: { d: Deliverable; onClose: () => void }) {
             <button
               key={s.id}
               title={s.name}
+              aria-label={`Move to stage ${s.name}`}
               onClick={() => st.moveDeliverableTo(d.id, s.id)}
               className="h-1.5 flex-1 rounded-full transition-colors"
               style={{ background: i <= kindIdx ? KIND_COLOR[stage.kind] : 'var(--line-strong)' }}

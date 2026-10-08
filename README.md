@@ -1,30 +1,31 @@
 # Command Center
 
-A personal command center for school, TPS client work, training and life.
-**Less planning. More execution.**
+A personal operating system for school, The Profit Script (TPS) and creative practice.
+**One app, three workspaces, one execution system.** Less planning. More execution.
 
-Desktop-first, dark by default, works on mobile. Runs fully in the browser — no account, no backend, no API keys needed.
+Desktop-first, dark by default, built for phones too. Runs fully in the browser — no account, no backend, no API keys needed.
 
-## What's inside
+## Workspaces
 
-| Page | What it does |
+| Workspace | Pages |
 | --- | --- |
-| **Overview** | Live clock, *Now / Up next* with time remaining, today's top three, today's timeline with a now-line and free gaps, week at a glance, shutdown countdown (default 20:30). |
-| **Calendar** | Day / week / month views, create / edit / delete, recurring events (daily, weekdays, weekly on chosen days, monthly, optional end date), "this event" vs. "whole series" edits, drag to move, drag the bottom edge to resize. |
-| **Tasks** | Quick add with natural language (`Write hooks tomorrow 17:00 !1 #tps`), Today / Upcoming / All / Completed views, category filter, sorting, star up to three daily priorities, link a task to a calendar block. |
-| **Weekly planning** | A 20-minute reset: review last week (computed from your data), clear carry-over tasks, set three weekly priorities, see fixed commitments + school deadlines, one-click TPS focus blocks in free windows before shutdown. |
-| **Settings** | Theme, default view, shutdown time, week start, time format, visible hours, category colours, demo data reset/remove, export/import, Google Calendar connection, storage status. |
+| **Home** | Now / up next · top three (from any workspace) · client work needing attention · practice progress · weekly targets |
+| **Personal** | Today · Calendar (day/week/month, recurrence, drag & resize) · Tasks (incl. items from TPS & Lab) · **Plan tomorrow** (5-minute evening flow with capacity check) · Weekly planning |
+| **TPS Business** | Overview · Clients (health, per-state counts, next action) · Client workspace (projects, deliverables, units agreed/done/delivered/approved, tasks, links, history) · Deliverables board with configurable stages · Pipeline (CRM-lite with touch log) · Weekly scorecard · Integrations |
+| **Creative Lab** | Overview · Practice planner (Sunday flow, templates, calendar blocks) · Analyses (quick or deep, custom templates, video timestamps) · Swipe library (search, tags, favorites, screenshots) · Insights (linked to ads, analyses and client deliverables) · Practice history |
+
+Everything is connected, not copied: a planned analysis is one record that shows up in the Lab, in Tasks, on Home and (if scheduled) on the calendar, and counts toward the practice quota when done. A deliverable lives in its client project and appears in Tasks only when it's your move. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ### Keyboard
 
-`⌘K`/`Ctrl K` command palette · `N` new task · `E` new event · `1–5` switch page · `?` all shortcuts
-Calendar: `T` today · `D`/`W`/`M` views · `←`/`→` navigate. Tasks: `/` focus quick add.
+`⌘K`/`Ctrl K` search everything & quick add · `G` then `H` / `P` / `B` / `L` switch workspace · `1–6` pages · `N` new task · `E` new event · `?` all shortcuts.
+Calendar: `T` today · `D`/`W`/`M` views · `←`/`→`. Tasks: `/` focus quick add.
 
 ## Demo mode
 
-On first open the app is filled with **sample data** (clearly labelled as demo): a weekday school timetable, TPS deep-work blocks, gym, basketball, rest, and example tasks. It's generated relative to the current week. Nothing in it is a real commitment.
+On first open the app is filled with **sample data** (clearly labelled as demo): a weekday school timetable, TPS deep-work blocks, gym, basketball, rest, example tasks, sample clients/deliverables/leads (names marked “sample”), and a sample swipe library with analyses and insights. It's generated relative to the current week. Nothing in it is a real commitment.
 
-Everything is editable and saved in this browser's `localStorage`. Settings → Data lets you hide, reset or remove the demo data, or export/import everything as JSON.
+Everything is editable and saved in this browser (`localStorage`, ad media in IndexedDB). Settings → Data lets you reset or remove the demo data, or export/import everything as JSON. Weekly targets start from editable starter metrics.
 
 ## Run it
 
@@ -40,7 +41,8 @@ Checks:
 ```bash
 npm run typecheck
 npm run lint
-npm run test:e2e     # headless Chromium smoke test against a running server (BASE_URL=…)
+npm test             # domain + store unit tests (vitest)
+npm run test:e2e     # headless Chromium end-to-end test against a running server (BASE_URL=…)
 ```
 
 ## Google Calendar (optional)
@@ -62,15 +64,17 @@ How it behaves:
 
 ## Stack
 
-Vite · React 18 · TypeScript · Tailwind CSS v4 · Radix primitives (shadcn-style components) · Lucide icons · Zustand (persisted to localStorage) · date-fns · Sonner.
+Vite · React 18 · TypeScript · Tailwind CSS v4 · Radix primitives (shadcn-style components) · Lucide icons · Zustand (persisted, schema v2 with migration) · date-fns · Sonner · Vitest · Playwright.
 
 Calendar views are custom-built (no heavy calendar library) so they match the design and support drag/resize precisely.
 
 ```
 src/
-  pages/            Overview, Calendar, Tasks, Planning, Settings
-  features/         overview cards, calendar grids, task row/editor, event editor/detail, command palette
-  components/ui     Button, Input, Dialog, Sheet, Segmented, Checkbox, …
-  lib/              dates + recurrence expansion, quick-add parser, demo data, Google client, event actions
-  store/            app state (persisted) + UI state
+  domain/           entities, refs, stage transitions, metrics, work items, morning brief, demo (pure, tested)
+  pages/            Home, Settings, personal/*, tps/*, lab/*
+  features/         overview cards, calendar grids, tasks, events, tps/*, lab/*, scorecard, palette
+  components/       app shell (workspace switcher, sidebars), ui primitives
+  lib/              dates & recurrence, availability, quick-add parser, Google client, media (IndexedDB), work-item glue
+  store/            app state (persisted) + UI/routing state + backup
+docs/ARCHITECTURE.md
 ```

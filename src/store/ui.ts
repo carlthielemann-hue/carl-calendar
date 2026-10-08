@@ -61,7 +61,6 @@ interface UIState {
   taskDefaults: Partial<Task> | null
   paletteOpen: boolean
   shortcutsOpen: boolean
-  switcherOpen: boolean
   go: (path: string) => void
   goSpace: (s: Space) => void
   openDay: (d: Date) => void
@@ -71,7 +70,6 @@ interface UIState {
   editTask: (t: Task | 'new' | null, defaults?: Partial<Task>) => void
   setPalette: (v: boolean) => void
   setShortcuts: (v: boolean) => void
-  setSwitcher: (v: boolean) => void
 }
 
 const fromHash = () => parsePath(typeof window === 'undefined' ? '' : window.location.hash)
@@ -87,7 +85,6 @@ export const useUI = create<UIState>()((set, get) => ({
   taskDefaults: null,
   paletteOpen: false,
   shortcutsOpen: false,
-  switcherOpen: false,
   go: (path) => {
     const loc = parsePath(path)
     const p = toPath(loc)
@@ -115,7 +112,6 @@ export const useUI = create<UIState>()((set, get) => ({
   editTask: (taskEditing, taskDefaults) => set({ taskEditing, taskDefaults: taskDefaults ?? null }),
   setPalette: (paletteOpen) => set({ paletteOpen }),
   setShortcuts: (shortcutsOpen) => set({ shortcutsOpen }),
-  setSwitcher: (switcherOpen) => set({ switcherOpen }),
 }))
 
 if (typeof window !== 'undefined') {

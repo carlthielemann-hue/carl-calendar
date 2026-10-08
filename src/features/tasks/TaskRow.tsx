@@ -116,7 +116,7 @@ export function TaskRow({
         <div className="flex items-center md:hidden md:group-hover:flex md:group-focus-within:flex">
           {showTop && !task.completed && (
             <IconAction
-              label={isTop ? 'Remove from top three' : 'Add to today’s top three'}
+              label={isTop ? 'Remove from top three' : 'Add to top three'}
               onClick={() => toggleTopWithToast(todayKey, `task:${task.id}`)}
               className={isTop ? 'text-[#e5a54b]' : ''}
             >

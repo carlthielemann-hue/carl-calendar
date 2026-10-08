@@ -1,13 +1,15 @@
-import { differenceInMinutes } from 'date-fns'
-import { Power } from 'lucide-react'
-import { Card } from '@/components/ui'
-import { atTime, formatDuration, formatTime } from '@/lib/dates'
+import { addDays, differenceInMinutes } from 'date-fns'
+import { CircleCheck, Moon, Power } from 'lucide-react'
+import { Button, Card } from '@/components/ui'
+import { atTime, dateKey, formatDuration, formatTime } from '@/lib/dates'
+import { useUI } from '@/store/ui'
 import { useApp } from '@/store/app'
 
 export function Shutdown({ now }: { now: Date }) {
   const time = useApp((s) => s.settings.shutdownTime)
   const fmt = useApp((s) => s.settings.timeFormat)
   const update = useApp((s) => s.updateSettings)
+  const planned = useApp((s) => !!s.dayPlans[dateKey(addDays(now, 1))]?.confirmedAt)
   const target = atTime(now, time)
   const mins = differenceInMinutes(target, now)
   const dayStart = atTime(now, '07:00')
@@ -43,6 +45,16 @@ export function Shutdown({ now }: { now: Date }) {
         <div className="h-full rounded-full bg-[color-mix(in_srgb,var(--accent)_70%,transparent)] transition-[width] duration-700" style={{ width: `${pct}%` }} />
       </div>
       <p className="mt-3 text-[12.5px] leading-relaxed text-muted">{msg}</p>
+      {mins <= 90 &&
+        (planned ? (
+          <p className="mt-3 flex items-center gap-1.5 text-[12.5px] text-ok">
+            <CircleCheck className="h-3.5 w-3.5" /> Tomorrow is planned.
+          </p>
+        ) : (
+          <Button variant="secondary" size="sm" className="mt-3" onClick={() => useUI.getState().go('/personal/tomorrow')}>
+            <Moon className="h-3.5 w-3.5" /> Plan tomorrow · 5 min
+          </Button>
+        ))}
     </Card>
   )
 }

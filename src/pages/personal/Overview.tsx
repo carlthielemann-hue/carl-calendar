@@ -31,15 +31,23 @@ export default function Overview() {
       <DemoBanner />
       <OverviewHeader summary={parts.join(' · ')} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="flex min-w-0 flex-col gap-4 lg:col-span-7 xl:col-span-8">
-          <NowNext occs={occs} now={now} />
-          <Timeline occs={occs} now={now} />
+        <div className="contents lg:col-span-7 lg:flex lg:min-w-0 lg:flex-col lg:gap-4 xl:col-span-8">
+          <div className="order-1 min-w-0">
+            <NowNext occs={occs} now={now} />
+          </div>
+          <div className="order-3 min-w-0">
+            <Timeline occs={occs} now={now} />
+          </div>
         </div>
-        <div className="flex min-w-0 flex-col gap-4 lg:col-span-5 xl:col-span-4">
-          <TopThree now={now} />
-          <Shutdown now={now} />
+        <div className="contents lg:col-span-5 lg:flex lg:min-w-0 lg:flex-col lg:gap-4 xl:col-span-4">
+          <div className="order-2 min-w-0">
+            <TopThree now={now} />
+          </div>
+          <div className="order-4 min-w-0">
+            <Shutdown now={now} />
+          </div>
         </div>
-        <div className="min-w-0 lg:col-span-12">
+        <div className="order-5 min-w-0 lg:col-span-12">
           <WeekGlance now={now} />
         </div>
       </div>

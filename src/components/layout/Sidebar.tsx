@@ -1,5 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
 import { CalendarDays, Check, CheckSquare, ChevronsUpDown, LayoutDashboard, Plus, Search, Settings } from 'lucide-react'
+import { useState } from 'react'
 import { Kbd } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
@@ -21,8 +22,8 @@ function SpaceMark({ space, size = 28 }: { space: Space; size?: number }) {
 
 export function WorkspaceSwitcher({ compact = false }: { compact?: boolean }) {
   const loc = useUI((s) => s.loc)
-  const open = useUI((s) => s.switcherOpen)
-  const setOpen = useUI((s) => s.setSwitcher)
+  // Local state: desktop and mobile each render a switcher, so they must not share open state.
+  const [open, setOpen] = useState(false)
   const goSpace = useUI((s) => s.goSpace)
   const current = loc.space === 'settings' ? 'home' : loc.space
   const d = spaceDef(current)
