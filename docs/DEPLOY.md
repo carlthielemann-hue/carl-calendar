@@ -185,12 +185,19 @@ Paid plan ($5/month) lifts the limit. Nothing paid is required to start.
 git pull && npm install && npm run deploy   # applies new D1 migrations automatically
 ```
 
+### After updating to V4
+
+Nothing new to set up — no new secrets, no new migrations. New in the AI connectors: School, Fitness,
+Money and Goals tools plus `search_swipes` / `save_swipe`. Money and grades stay hidden from AI until
+you turn them on in Settings → AI connections → “What AI can see”. To save ads from your iPhone, follow Swipe vault →
+*Save from phone* (a one-time Shortcut).
+
 ## Local development
 
 ```bash
 cp .dev.vars.example .dev.vars    # then fill in OWNER_PASSWORD etc. (never committed)
 npm run server:dev                # https://localhost:8787 with local D1/R2/KV
-npm run test:server               # 20 API/MCP checks   (NODE_TLS_REJECT_UNAUTHORIZED=0)
+npm run test:server               # 21 API/MCP checks   (NODE_TLS_REJECT_UNAUTHORIZED=0)
 npm run test:sync                 # 2-device sync e2e   (BASE_URL=https://localhost:8787)
 npm run test:v3                   # V3 workflows e2e
 ```

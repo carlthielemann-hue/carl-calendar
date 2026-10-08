@@ -1,7 +1,7 @@
 # Command Center
 
-A personal operating system for school, The Profit Script (TPS) and creative practice.
-**One app, three workspaces, one execution system.** Less planning. More execution.
+A personal operating system for school, The Profit Script (TPS), training, money and creative practice.
+**One app, one mission screen, one execution system.** Less planning. More execution.
 
 Desktop-first, dark by default, built for phones too. Works fully in the browser out of the box;
 deploy the included Cloudflare Worker (free plan) to sync your real data between Mac and iPhone,
@@ -11,10 +11,15 @@ connect Google Calendar, get a 07:00 push brief, and let Claude/ChatGPT work wit
 
 | Workspace | Pages |
 | --- | --- |
-| **Home** | Now / up next · top three (from any workspace) · client work needing attention · practice progress · weekly targets |
+| **Mission** | Now / next · the mission (top three) · at risk · countdowns · this week · autopilot (planner changes, undo) · training · money · goals · clients · practice — modules can be hidden/reordered · **Focus mode** (fullscreen timer) · **Goals** (month / quarter / year, auto-tracked from your records) |
 | **Personal** | Today · Calendar (day/week/month, recurrence, drag & resize) · Tasks (incl. items from TPS & Lab) · **Plan tomorrow** (5-minute evening flow with capacity check) · Weekly planning |
 | **TPS Business** | Overview · Clients (health, per-state counts, next action) · Client workspace (overview, brand intelligence, research, asset library, feedback, performance & learnings, activity) · Deliverables board with configurable stages · **AI Studio** (10 client-aware workflows, exact-context preview, drafts → research/concepts/deliverables/tasks) · Pipeline (CRM-lite with touch log, Upwork links, proposal tracking) · X content planner · Weekly scorecard · Integrations (live status) |
-| **Creative Lab** | Overview · Practice planner (Sunday flow, templates, calendar blocks) · Analyses (quick or deep, custom templates, video timestamps) · Swipe library (search, tags, favorites, screenshots) · Insights (linked to ads, analyses and client deliverables) · Practice history |
+| **School** | Overview · Exams (big/small, heads-up 21/10 days before, you set the pace) · Homework · Grades (points, averages) · Subjects (ongoing = daily study, or test-only) |
+| **Fitness** | Today (quick weigh-in, start workout) · Logger (steppers, last time, double-progression suggestion, PRs) · Routines (splits, days) · Progress (e1RM curves, records) · Bodyweight (7-day average) |
+| **Money** | Overview (month, savings rate, put-away status) · Ledger (quick add `−12.99 spotify`, CSV import from German banks, export) · Split (default 30% reserves / 50% invest / 20% spend, adjustable) · Subscriptions · Savings goals · *Hide amounts* per device |
+| **Creative Lab** | Overview · Practice planner (Sunday flow, templates, calendar blocks) · Analyses (quick or deep, custom templates, video timestamps) · Swipe vault (platform/awareness/funnel fields, transcripts, boards, client reference boards, save-from-phone, duplicate check) · Insights (linked to ads, analyses and client deliverables) · Practice history |
+
+**Autopilot planner** (`src/domain/planner.ts`): from exam paces, ongoing subjects and gym routines it places study/gym blocks into free time around your calendar. Only same-day clashes are fixed automatically (with Undo); everything else is a proposal you review in Plan tomorrow, the evening reminder and the morning brief. It only ever touches blocks it created itself — never your own or Google events, never locked blocks.
 
 Everything is connected, not copied: a planned analysis is one record that shows up in the Lab, in Tasks, on Home and (if scheduled) on the calendar, and counts toward the practice quota when done. A deliverable lives in its client project and appears in Tasks only when it's your move. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -55,10 +60,11 @@ npm run lint
 npm test             # domain + store unit tests (vitest)
 npm run test:e2e     # headless Chromium end-to-end test against a running server (BASE_URL=…)
 npm run test:v3      # V3 workflows end to end (BASE_URL=…)
+npm run test:v4      # Mission, planner, focus mode — plus test:school, test:fitness, test:money, test:goals, test:vault
 
 # with the Worker running locally (npm run server:dev):
 npm run test:server  # API, sync conflicts, files, MCP OAuth + permissions (NODE_TLS_REJECT_UNAUTHORIZED=0)
-npm run test:sync    # two devices: import, sync, offline conflict + restore (BASE_URL=https://localhost:8787)
+npm run test:sync    # run on a fresh local DB (rm -rf .wrangler/state) — two devices: import, sync, offline conflict + restore (BASE_URL=https://localhost:8787)
 ```
 
 ## Google Calendar (optional)

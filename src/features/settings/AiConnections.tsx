@@ -144,7 +144,7 @@ export function AiConnectionsSection() {
           </Row>
           <div className="px-5 py-3.5">
             <div className="text-[13px] font-medium">What AI can see</div>
-            <p className="mb-2 text-[12px] text-muted">Checked on your server for every request. Grades and money are off by default. (These areas fill up as School, Fitness and Money are added.)</p>
+            <p className="mb-2 text-[12px] text-muted">Checked on your server for every request. Grades and money are off by default.</p>
             <div className="grid gap-1.5 sm:grid-cols-2">
               {AREAS.map((a) => (
                 <div key={a.key} className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2">

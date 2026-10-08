@@ -7,7 +7,10 @@ This document describes how it fits together. Deployment: [DEPLOY.md](DEPLOY.md)
 
 ```
 App shell (Sidebar + workspace switcher + ⌘K + editors/drawers)
-├── Home                     cross-workspace snapshot
+├── Mission  /home(/goals)   mission screen (modules) · focus mode · goals
+├── School     /school/*     overview · exams · homework · grades · subjects
+├── Fitness    /fitness/*    today · logger(/:id) · routines · progress · bodyweight
+├── Money      /money/*      overview · ledger · split · subscriptions · savings
 ├── Personal   /personal/*   today · calendar · tasks · plan tomorrow · weekly planning
 ├── TPS        /tps/*        overview · clients(/:id/:tab) · deliverables(/:id) · studio(/:client/:tab) · pipeline · content · scorecard · integrations
 ├── Lab        /lab/*        overview · planner · analyses(/:id) · library(/:id) · insights(/:id) · history
@@ -41,6 +44,13 @@ All entities live in one persisted store (`src/store/app.ts`, types in `src/doma
 | Metric / WeekScore | definition / per-week snapshot of targets + manual values | — |
 | FocusLog | logged focus minutes | `occurrenceKey` (dedupe), `link` |
 | ActivityEntry | append-only history | `ref` |
+| Countdown | date that matters | — |
+| Proposal | planner/AI change set (`items` with `undo`), pending → applied/rejected | refs of touched events |
+| Subject / Exam / Assignment / Grade | school; exam `size` big/small, `pace` set by you | `subjectId` |
+| Exercise / Routine / WorkoutSession / BodyweightEntry | training; built-in exercises `exb-*` | `routineId`, `exerciseId` |
+| Transaction / MoneyAccount / Subscription / SavingsGoal / AllocationMove | private money planner; amounts converted to EUR at your saved rates | `clientId` for business income |
+| Goal | horizon + period + measure (manual, milestones, revenue, savings, lift, bodyweight, grade, metric) | measure ids |
+| Board | named set of swipes | `adIds`, optional `clientId` → “Reference ads” context |
 
 ### Derived, never stored
 
@@ -92,6 +102,25 @@ Users can rename/add/reorder stages; the app only reasons about the stage *kind*
   (`deliverableId`). `insightChain` (`src/domain/chain.ts`) takes the union of direct and
   concept-mediated deliverables, so applied-work counts never double up.
 
+## 3b. V4: mission, planner and life areas
+
+* **Pure domain modules, shared by app and Worker**: `mission.ts` (risks, countdowns), `planner.ts`,
+  `school.ts`, `fitness.ts` (e1RM/Epley, double progression, PRs), `money.ts` (month summary,
+  split buckets, CSV parsing), `goals.ts` (period math, progress + status vs elapsed time).
+* **Planner** — demands (exam pace, ongoing subjects, routine days) → free slots from
+  `expandEvents` with buffers → proposals with content-addressed ids (idempotent reruns). Safety:
+  only `origin:'planner'`, local, unlocked events are ever moved or removed. In the app it runs on
+  change (`lib/plannerRunner.ts`); on the server nightly from 03:00 and on `POST /api/planner/run`.
+  Same-day clashes apply immediately with undo data; the rest waits as one pending proposal.
+* **Briefs** — morning: at-risk, planned blocks, heads-ups, what the planner moved/needs review.
+  Evening: pending changes count. Both respect shutdown.
+* **Privacy** — Money and grades are off for AI by default (MCP area permissions `school`, `grades`,
+  `fitness`, `money`, enforced in `visible()`); goals measured by money/grades read “(private)”.
+  *Hide amounts* is device-local (`LOCAL_SETTINGS`), never synced.
+* **Swipe vault** — capture via `/?url=…` (iPhone Shortcut) or the PWA share target, read once in
+  `boot.ts` then stripped from the URL; duplicates by normalised URL; media in R2 when enabled
+  (`cloud:<key>` ids cached in IndexedDB), else device-local.
+
 ## 4. Persistence and sync
 
 Two data sets, chosen per device (`src/store/mode.ts`):
@@ -125,9 +154,9 @@ Two data sets, chosen per device (`src/store/mode.ts`):
 | `index.ts` | Hono routes, session middleware, OAuth provider wiring, scheduled handler |
 | `auth.ts` | owner password → HttpOnly session cookie (60 days), login rate limit (8 failures / 15 min / IP) |
 | `records.ts` | revisioned record store, conflict logging, server-side writes (MCP) |
-| `mcp.ts` | MCP JSON-RPC over Streamable HTTP; scoped tools; permission + hidden-client checks |
+| `mcp.ts` | MCP JSON-RPC over Streamable HTTP; scoped tools; permission, area and hidden-client checks. V4 tools: `get_school_overview`, `get_grades`, `get_fitness_overview`, `get_money_summary`, `get_goals`, `search_swipes`, `save_swipe` |
 | `google.ts` | server OAuth (refresh token AES-GCM encrypted), calendar selection, incremental sync, confirmed writes |
-| `push.ts`, `cron.ts` | VAPID Web Push (payload-free), 07:00 brief and evening reminder (never after shutdown) |
+| `push.ts`, `cron.ts` | VAPID Web Push (payload-free), 07:00 brief and evening reminder (never after shutdown), nightly planner run |
 | `ai.ts`, `manus.ts` | optional paid API calls, usage + integration logging |
 
 **MCP security**: OAuth 2.1 with PKCE and dynamic client registration
@@ -148,6 +177,9 @@ are Worker secrets. The browser only holds the session cookie.
   and mobile layouts.
 * `npm run test:v3` — V3 workflows: brand intel, research + upload, AI context → deliverable,
   task from deliverable, scheduling, reload, export/erase/recover, Google edit/delete guard.
+* `npm run test:v4` / `test:school` / `test:fitness` / `test:money` / `test:goals` / `test:vault` —
+  V4 areas end to end (mission modules, planner proposals + undo, focus mode, exam pacing, logger
+  progression, CSV import + split, goal tracking, phone capture + boards).
 * `npm run test:server` — API + MCP against `wrangler dev`: auth, sync + conflicts, files, OAuth
   (DCR + PKCE + consent), tools, permissions, revocation, push queue, unconfigured providers.
 * `npm run test:sync` — two browsers (Mac + iPhone viewport): import wizard, cross-device sync,
