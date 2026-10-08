@@ -19,7 +19,7 @@
       "binding": "DB",
       "database_name": "command-center",
       // Replace with the id printed by `wrangler d1 create command-center`
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "ad5e3460-720f-4593-84f1-d7a2183ff730",
       "migrations_dir": "migrations"
     }
   ],
@@ -28,7 +28,7 @@
   // "r2_buckets": [{ "binding": "FILES", "bucket_name": "command-center-files" }],
   "kv_namespaces": [
     // Replace with the id printed by `wrangler kv namespace create OAUTH_KV`
-    { "binding": "OAUTH_KV", "id": "00000000000000000000000000000000" }
+    { "binding": "OAUTH_KV", "id": "4c3a0cff7fd242a5b85657330d6071da" }
   ],
   "triggers": { "crons": ["*/15 * * * *"] },
   "vars": {
