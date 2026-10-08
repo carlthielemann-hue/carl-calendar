@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { toggleWorkItem } from '@/lib/work'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { AtRiskCard, AutopilotCard, CountdownsCard, MoneyCard, TrainingCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
+import { AtRiskCard, AutopilotCard, CountdownsCard, GoalsCard, MoneyCard, TrainingCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
 import { startFocus } from '@/features/mission/focus'
 import type { Occurrence } from '@/lib/types'
 import { NowNext } from '@/features/overview/NowNext'
@@ -188,6 +188,11 @@ export default function Home() {
         {show('autopilot') && (
           <div className="order-6 min-w-0 empty:hidden lg:col-span-12">
             <AutopilotCard />
+          </div>
+        )}
+        {show('goals') && (
+          <div className="order-6 min-w-0 empty:hidden lg:col-span-12">
+            <GoalsCard now={now} />
           </div>
         )}
         {show('week') && (

@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Target,
   PieChart,
   PiggyBank,
   Repeat,
@@ -65,6 +66,7 @@ export interface PageDef {
 }
 
 export const PAGES: Partial<Record<Space, PageDef[]>> = {
+  home: [{ page: 'goals', label: 'Goals', icon: Target }],
   personal: [
     { page: 'overview', label: 'Today', icon: LayoutDashboard },
     { page: 'calendar', label: 'Calendar', icon: CalendarDays },

@@ -10,6 +10,7 @@ import { DEFAULT_MONEY_SETTINGS, DEFAULT_STUDY_PREFS } from '@/domain/entities'
 import { bucketStatus, monthSummary, savingsRate, subscriptionTotals } from '@/domain/money'
 import { examStatus, gradeAverage } from '@/domain/school'
 import { bodyweightSeries, personalRecords } from '@/domain/fitness'
+import { goalProgress } from '@/domain/goals'
 import type { Concept, Insight, Ref } from '@/domain/entities'
 import { metricActual, pace } from '@/domain/metrics'
 import { stageOf, courtOf, deliverableHealth } from '@/domain/stages'
@@ -380,6 +381,39 @@ const TOOLS: Tool[] = [
         put_away_rate_pct: savingsRate(s.transactions, settings, month),
         subscriptions: { ...subscriptionTotals(s.subscriptions, settings.rates), list: s.subscriptions.filter((x) => x.active).map((x) => ({ name: x.name, amount: x.amount, currency: x.currency, cycle: x.cycle })) },
         savings_goals: s.savingsGoals.map((g) => ({ name: g.name, target: g.target, saved: g.saved, by: g.targetDate ?? null })),
+      }
+    },
+  },
+  {
+    name: 'get_goals',
+    title: 'Get goals',
+    description: 'Active monthly, quarterly and yearly goals with computed progress, pace (ahead/on track/behind) and milestones.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    level: 'read',
+    run: async (_a, ctx) => {
+      const s = await ctx.state()
+      const now = new Date(wallClock(new Date(), ctx.env.APP_TIMEZONE || 'Europe/Berlin'))
+      const areas = { ...DEFAULT_MCP_AREAS, ...ctx.perms.areas }
+      return {
+        goals: s.goals
+          .filter((g) => g.status === 'active')
+          .map((g) => {
+            const p = goalProgress(g, s, now)
+            const privateMoney = (g.measure.type === 'revenue' || g.measure.type === 'savings') && !areas.money
+            const privateGrade = g.measure.type === 'grade' && !(areas.school && areas.grades)
+            const hidden = privateMoney || privateGrade
+            return {
+              title: g.title,
+              timeframe: `${g.horizon} ${g.period}`,
+              area: g.area,
+              status: p.status,
+              percent: p.pct,
+              time_elapsed_percent: p.elapsed,
+              progress: hidden ? '(private — not shared with AI)' : p.label,
+              milestones: g.milestones.map((m) => ({ title: m.title, done: m.done })),
+              why: g.why ?? null,
+            }
+          }),
       }
     },
   },

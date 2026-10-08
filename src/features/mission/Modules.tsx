@@ -1,5 +1,8 @@
 import { differenceInMinutes, format } from 'date-fns'
-import { AlertTriangle, Bot, CalendarClock, Check, Dumbbell, Plus, SlidersHorizontal, Wallet, X } from 'lucide-react'
+import { AlertTriangle, Bot, CalendarClock, Check, Dumbbell, Plus, SlidersHorizontal, Target, Wallet, X } from 'lucide-react'
+import { currentPeriod } from '@/domain/goals'
+import { STATUS } from '@/features/goals/GoalCard'
+import { useGoalProgress } from '@/features/goals/hooks'
 import { bodyweightSeries } from '@/domain/fitness'
 import { bucketStatus, monthSummary, nextCharge, savingsRate } from '@/domain/money'
 import { Amount, eur } from '@/features/money/ui'
@@ -25,6 +28,7 @@ export const MISSION_MODULES = [
   { id: 'autopilot', label: 'Autopilot log' },
   { id: 'fitness', label: 'Training' },
   { id: 'money', label: 'Money pulse' },
+  { id: 'goals', label: 'Goals' },
   { id: 'clients', label: 'Client work' },
   { id: 'practice', label: 'Creative practice' },
 ] as const
@@ -363,6 +367,45 @@ export function MoneyCard({ now }: { now: Date }) {
           <Amount value={spend?.left ?? 0} whole className={cn('text-[17px] font-semibold', (spend?.left ?? 0) < 0 && 'text-danger')} />
         </div>
       </div>
+    </Card>
+  )
+}
+
+/** Active goals for this month and quarter. */
+export function GoalsCard({ now }: { now: Date }) {
+  const goals = useApp((s) => s.goals)
+  const go = useUI((s) => s.go)
+  const list = goals.filter((g) => g.status === 'active' && (g.period === currentPeriod('month', now) || g.period === currentPeriod('quarter', now) || g.period === currentPeriod('year', now)))
+  const rows = useGoalProgress(list)
+  if (!rows.length) return null
+  const order = { month: 0, quarter: 1, year: 2 }
+  return (
+    <Card>
+      <CardHeader title="Goals" icon={<Target />} action={<button onClick={() => go('/home/goals')} className="text-[12px] text-muted hover:text-fg">All goals →</button>} />
+      <ul className="grid gap-x-6 gap-y-3 px-4 pb-4 sm:grid-cols-2">
+        {rows
+          .sort((a, b) => order[a.goal.horizon] - order[b.goal.horizon])
+          .slice(0, 6)
+          .map(({ goal, p }) => (
+            <li key={goal.id}>
+              <div className="flex items-baseline justify-between gap-2 text-[12.5px]">
+                <span className="truncate text-fg-2">
+                  {goal.title} <span className="text-[11px] text-faint">{goal.horizon === 'month' ? 'this month' : goal.horizon === 'quarter' ? 'this quarter' : 'this year'}</span>
+                </span>
+                <span className="shrink-0 tnum" style={{ color: STATUS[p.status].color }}>
+                  {p.pct}%
+                </span>
+              </div>
+              <div className="relative mt-1.5 h-1 overflow-hidden rounded-full bg-line">
+                <div className="h-full rounded-full" style={{ width: `${p.pct}%`, background: STATUS[p.status].color }} />
+                {p.status !== 'done' && <div className="absolute top-0 h-full w-[2px] bg-fg/40" style={{ left: `${p.elapsed}%` }} />}
+              </div>
+              <div className="mt-1 text-[11px]" style={{ color: STATUS[p.status].color }}>
+                {STATUS[p.status].label}
+              </div>
+            </li>
+          ))}
+      </ul>
     </Card>
   )
 }

@@ -22,7 +22,8 @@
     "test:v4": "node tests/v4.mjs",
     "test:school": "node tests/school.mjs",
     "test:fitness": "node tests/fitness.mjs",
-    "test:money": "node tests/money.mjs"
+    "test:money": "node tests/money.mjs",
+    "test:goals": "node tests/goals.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

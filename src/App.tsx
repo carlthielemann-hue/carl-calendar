@@ -53,6 +53,7 @@ const ROUTES: Record<string, ReturnType<typeof lazy>> = {
   'money/split': page(() => import('@/pages/money/Split')),
   'money/subscriptions': page(() => import('@/pages/money/Subscriptions')),
   'money/savings': page(() => import('@/pages/money/Savings')),
+  'home/goals': page(() => import('@/pages/home/Goals')),
   settings: page(() => import('@/pages/Settings')),
 }
 /** Routes whose ":id" segment opens a dedicated detail page */
@@ -172,7 +173,7 @@ export default function App() {
         <MobileTopBar />
         <div key={key + (loc.id ?? '')} className="animate-in px-4 pt-4 pb-24 sm:px-6 md:px-8 md:pt-7 md:pb-10">
           <Suspense fallback={<PageFallback />}>
-            {loc.space === 'home' ? <Home /> : Page ? <Page /> : <NotFound />}
+            {loc.space === 'home' && !loc.page ? <Home /> : Page ? <Page /> : <NotFound />}
           </Suspense>
         </div>
       </main>

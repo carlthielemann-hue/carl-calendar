@@ -134,7 +134,7 @@ export function Sidebar() {
       </button>
 
       <nav className="flex flex-col gap-0.5" aria-label="Workspace">
-        <NavItem active={loc.space === 'home'} onClick={() => go('/home')} icon={spaceDef('home').icon} label="Mission" />
+        <NavItem active={loc.space === 'home' && !loc.page} onClick={() => go('/home')} icon={spaceDef('home').icon} label="Mission" />
         {pages.length > 0 && <div className="mt-3 mb-1 px-2.5 text-[11px] font-medium uppercase tracking-wide text-faint">{spaceDef(loc.space).label}</div>}
         {pages.map((p, i) => (
           <NavItem

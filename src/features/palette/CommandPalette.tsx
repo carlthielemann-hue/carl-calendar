@@ -66,6 +66,7 @@ function searchIndex(s: AppState): { ref: Ref; text: string }[] {
     ...s.exams.map((e) => ({ ref: `exam:${e.id}` as Ref, text: `${e.title} ${e.topics ?? ''} ${s.subjects.find((x) => x.id === e.subjectId)?.name ?? ''} exam test klausur` })),
     ...s.assignments.map((a) => ({ ref: `assignment:${a.id}` as Ref, text: `${a.title} ${s.subjects.find((x) => x.id === a.subjectId)?.name ?? ''} homework` })),
     ...s.subjects.map((x) => ({ ref: `subject:${x.id}` as Ref, text: `${x.name} subject` })),
+    ...s.goals.map((x) => ({ ref: `goal:${x.id}` as Ref, text: `${x.title} ${x.why ?? ''} goal ${x.period}` })),
     ...s.routines.map((x) => ({ ref: `routine:${x.id}` as Ref, text: `${x.name} routine workout gym` })),
     ...s.workouts.filter((w) => w.endedAt).map((x) => ({ ref: `workout:${x.id}` as Ref, text: `${x.title} workout ${x.date}` })),
   ]
@@ -89,6 +90,7 @@ const GROUP_LABEL: Record<string, string> = {
   exam: 'Exams',
   assignment: 'Homework',
   subject: 'Subjects',
+  goal: 'Goals',
   routine: 'Routines',
   workout: 'Workouts',
 }
@@ -247,12 +249,13 @@ function PaletteBody({ close }: { close: () => void }) {
       )
     }
     for (const sp of SPACE_DEFS) {
-      const pages = PAGES[sp.id] ?? [{ page: '', label: sp.label, icon: sp.icon }]
+      const pages = sp.id === 'home' ? [{ page: '', label: 'Mission', icon: sp.icon }, ...(PAGES.home ?? [])] : (PAGES[sp.id] ?? [{ page: '', label: sp.label, icon: sp.icon }])
       for (const p of pages) {
-        const label = sp.id === 'home' ? 'Home' : `${sp.short} › ${p.label}`
+        const label = sp.id === 'home' ? p.label : `${sp.short} › ${p.label}`
         if (query && !label.toLowerCase().includes(query)) continue
         if (!query && sp.id !== 'home' && p.page !== 'overview' && sp.id !== ui.loc.space) continue
-        list.push({ id: `nav-${sp.id}-${p.page}`, group: 'Go to', icon: <p.icon />, label, run: () => (close(), ui.go(`/${sp.id}/${p.page}`)) })
+        if (!query && sp.id === 'home' && p.page) continue
+        list.push({ id: `nav-${sp.id}-${p.page}`, group: 'Go to', icon: <p.icon />, label, run: () => (close(), ui.go(p.page ? `/${sp.id}/${p.page}` : `/${sp.id}`)) })
       }
     }
     if (dockAvailable() && query)

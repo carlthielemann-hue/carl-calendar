@@ -193,6 +193,10 @@ export function describeRef(s: AppState, r: string): { label: string; sub?: stri
       const o = s.savingsGoals.find((x) => x.id === p.id)
       return o ? { label: o.name, sub: 'Savings goal', path: '/money/savings' } : null
     }
+    case 'goal': {
+      const o = s.goals.find((x) => x.id === p.id)
+      return o ? { label: o.title, sub: `Goal · ${o.period}`, path: '/home/goals' } : null
+    }
     case 'countdown': {
       const o = s.countdowns.find((x) => x.id === p.id)
       return o ? { label: o.title, sub: `Countdown · ${o.date}`, path: '/home' } : null

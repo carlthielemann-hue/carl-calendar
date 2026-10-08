@@ -43,6 +43,7 @@ export type EntityType =
   | 'transaction'
   | 'subscription'
   | 'savingsgoal'
+  | 'goal'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -808,4 +809,44 @@ export const MONEY_CATEGORIES: Record<MoneyScope, Record<'in' | 'out', string[]>
     in: ['Allowance', 'Job', 'Gift', 'Refund', 'Other'],
     out: ['Food', 'Eating out', 'Transport', 'Going out', 'Clothes', 'Gym & health', 'Phone & internet', 'Subscriptions', 'Gifts', 'Travel', 'Other'],
   },
+}
+
+/* ---------------- Goals (V4.4) ---------------- */
+
+export type GoalHorizon = 'month' | 'quarter' | 'year'
+export type GoalArea = 'tps' | 'school' | 'fitness' | 'money' | 'personal' | 'lab'
+
+/** How progress is measured — always computed from your data, except `manual`. */
+export type GoalMeasure =
+  | { type: 'milestones' }
+  | { type: 'manual'; current: number; target: number; unit: string }
+  | { type: 'metric'; metricId: string; target: number }
+  | { type: 'revenue'; target: number }
+  | { type: 'savings'; savingsGoalId: string }
+  | { type: 'lift'; exerciseId: string; target: number }
+  | { type: 'bodyweight'; target: number; start: number }
+  | { type: 'grade'; subjectId?: string; target: number }
+
+export interface Milestone {
+  id: string
+  title: string
+  done: boolean
+  doneAt?: string
+  due?: string
+}
+
+export interface Goal {
+  id: string
+  title: string
+  horizon: GoalHorizon
+  /** "2026-10" · "2026-Q4" · "2026" */
+  period: string
+  area: GoalArea
+  why?: string
+  measure: GoalMeasure
+  milestones: Milestone[]
+  /** Optional bigger goal this one contributes to */
+  parentId?: string
+  status: 'active' | 'done' | 'dropped'
+  createdAt: string
 }
