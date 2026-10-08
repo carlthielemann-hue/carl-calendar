@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { CalendarPlus, CheckSquare, CornerDownLeft, Keyboard, Lightbulb, Moon, PanelRight, Plus, Search, Settings, UserPlus } from 'lucide-react'
 import { dock, dockAvailable, getDockPrefs } from '@/lib/dock'
+import { openAiWithHint } from '@/features/dock/DockBar'
 import { useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { CategoryBadge } from '@/components/Category'
@@ -223,12 +224,12 @@ function PaletteBody({ close }: { close: () => void }) {
         list.push({ id: `nav-${sp.id}-${p.page}`, group: 'Go to', icon: <p.icon />, label, run: () => (close(), ui.go(`/${sp.id}/${p.page}`)) })
       }
     }
-    if (dockAvailable() && getDockPrefs().ready)
+    if (dockAvailable() && query)
       for (const t of ['Claude', 'ChatGPT', 'Manus', 'Undock'] as const) {
-        const label = t === 'Undock' ? 'Undock AI sidebar' : `Dock ${t} sidebar`
-        if (query && !label.toLowerCase().includes(query)) continue
-        if (!query) continue
-        list.push({ id: `dock-${t}`, group: 'AI', icon: <PanelRight />, label, run: () => (close(), dock(t)) })
+        if (t === 'Undock' && !getDockPrefs().ready) continue
+        const label = t === 'Undock' ? 'Undock AI sidebar' : `Open ${t}${getDockPrefs().ready ? ' (docked)' : ''}`
+        if (!label.toLowerCase().includes(query)) continue
+        list.push({ id: `ai-${t}`, group: 'AI', icon: <PanelRight />, label, run: () => (close(), t === 'Undock' ? dock(t) : openAiWithHint(t)) })
       }
     if (!query || 'settings'.includes(query)) list.push({ id: 'settings', group: 'Go to', icon: <Settings />, label: 'Settings', run: () => (close(), ui.go('/settings')) })
     if (!query || 'theme dark light'.includes(query))

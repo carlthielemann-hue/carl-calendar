@@ -17,7 +17,7 @@ export function DockSection() {
   const p = useDockPrefs()
   if (!isMac()) return null
   return (
-    <Section icon={<PanelRight />} title="Docked AI sidebar (Mac)" sub="One click tiles Command Center on the left and Claude, ChatGPT or Manus on the right — using their desktop apps and your existing subscriptions.">
+    <Section icon={<PanelRight />} title="Docked AI sidebar (Mac)" sub="Optional. The AI buttons already open the desktop apps; this extra step makes them snap into a sidebar next to Command Center.">
       <div className="px-5 py-3.5 text-[12.5px] leading-relaxed text-fg-2">
         <div className="mb-1.5 text-[13px] font-medium text-fg">One-time setup (≈3 minutes)</div>
         <ol className="list-decimal space-y-1 pl-4">
@@ -50,7 +50,7 @@ export function DockSection() {
           </Button>
         </div>
       </div>
-      <Row label="Shortcut installed" hint="Shows the Dock buttons at the bottom of the sidebar.">
+      <Row label="Shortcut installed" hint="Without it, the AI buttons simply open the apps. With it, they also snap them into a right-hand sidebar.">
         <Toggle checked={p.ready} onChange={(v) => setDockPrefs({ ready: v })} label="Shortcut installed" />
       </Row>
       <Row label="Command Center runs in" hint="So the script resizes the right window. Detected automatically; an installed Command Center app window is found on its own.">

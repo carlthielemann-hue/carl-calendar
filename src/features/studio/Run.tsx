@@ -6,7 +6,8 @@ import { renderTemplate } from '@/domain/aiWorkflows'
 import { buildContextPack } from '@/domain/context'
 import type { AiOutput, AiProvider, AiWorkflow, ContextKey } from '@/domain/entities'
 import { api, useCloud } from '@/lib/cloud'
-import { dock, dockAvailable, useDockPrefs } from '@/lib/dock'
+import { dockAvailable, useDockPrefs } from '@/lib/dock'
+import { openAiWithHint } from '@/features/dock/DockBar'
 import { cn, uid } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
@@ -105,10 +106,10 @@ export function RunPanel({ clientId, workflow }: { clientId: string; workflow: A
   const manusReady = cloudState.signedIn && cloudState.features?.manus
   const short = prompt.length < 6000
   const dockPrefs = useDockPrefs()
-  const docked = dockAvailable() && dockPrefs.ready
+  const docked = dockAvailable()
   const sendDocked = async (t: 'Claude' | 'ChatGPT' | 'Manus') => {
     const ok = await copy(prompt)
-    dock(t)
+    openAiWithHint(t)
     if (ok) toast.success(`Prompt copied — paste it into ${t} (⌘V)`, { description: 'Then paste the answer back here to keep it as a draft.' })
     else toast.error('Copy is blocked here — use Review and copy the text manually.')
   }
@@ -223,8 +224,12 @@ export function RunPanel({ clientId, workflow }: { clientId: string; workflow: A
               </div>
               <p className="mt-1.5 text-[11.5px] text-faint">
                 {docked
-                  ? 'Copies the prompt and docks the desktop app on the right — just paste.'
-                  : `${short ? 'Opens the website in a new tab, pre-filled.' : 'Long prompt: copy first, then paste into the new tab.'}${dockAvailable() ? ' Prefer the desktop apps? Set up the docked sidebar in Settings.' : ''}`}{' '}
+                  ? dockPrefs.ready
+                    ? 'Copies the prompt and docks the desktop app on the right — just paste.'
+                    : 'Copies the prompt and opens the desktop app — just paste (⌘V).'
+                  : short
+                    ? 'Opens the website in a new tab, pre-filled.'
+                    : 'Long prompt: copy first, then paste into the new tab.'}{' '}
                 Or connect Command Center to Claude/ChatGPT via MCP so they can read this context themselves (Settings → AI connections).</p>
             </div>
             <div>

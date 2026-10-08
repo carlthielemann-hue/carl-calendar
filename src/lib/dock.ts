@@ -75,3 +75,35 @@ export function dockUrl(target: DockTarget, prefs = getDockPrefs()) {
 export function dock(target: DockTarget) {
   window.location.href = dockUrl(target)
 }
+
+/* ---------- open the desktop app directly (no setup) ---------- */
+
+export type AiApp = 'Claude' | 'ChatGPT' | 'Manus'
+/** Desktop apps register these URL schemes; the browser asks once before opening them. */
+const SCHEMES: Partial<Record<AiApp, string>> = { Claude: 'claude://', ChatGPT: 'chatgpt://' }
+export const AI_WEB: Record<AiApp, string> = { Claude: 'https://claude.ai/new', ChatGPT: 'https://chatgpt.com/', Manus: 'https://manus.im/app' }
+
+/**
+ * Click → the app. Docked if the Dock AI shortcut is set up; otherwise the desktop app via its
+ * URL scheme (Mac), otherwise the website. Returns false when it fell back to the website.
+ */
+export function openAi(app: AiApp, onFallbackHint?: () => void): boolean {
+  if (dockAvailable() && getDockPrefs().ready) {
+    dock(app)
+    return true
+  }
+  const scheme = SCHEMES[app]
+  if (!scheme || !dockAvailable()) {
+    window.open(AI_WEB[app], '_blank', 'noopener')
+    return false
+  }
+  let left = false
+  const mark = () => (left = true)
+  window.addEventListener('blur', mark, { once: true })
+  window.location.href = scheme
+  setTimeout(() => {
+    window.removeEventListener('blur', mark)
+    if (!left) onFallbackHint?.()
+  }, 2500)
+  return true
+}
