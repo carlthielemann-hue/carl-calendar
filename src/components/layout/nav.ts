@@ -16,6 +16,8 @@ import {
   Moon,
   Plug,
   ScanSearch,
+  Sparkles,
+  PenLine,
   User,
   Users,
 } from 'lucide-react'
@@ -56,7 +58,9 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'overview', label: 'Overview', icon: LayoutDashboard },
     { page: 'clients', label: 'Clients', icon: Users },
     { page: 'deliverables', label: 'Deliverables', icon: Layers },
+    { page: 'studio', label: 'AI Studio', icon: Sparkles },
     { page: 'pipeline', label: 'Pipeline', icon: Columns3 },
+    { page: 'content', label: 'Content (X)', icon: PenLine },
     { page: 'scorecard', label: 'Scorecard', icon: Gauge },
     { page: 'integrations', label: 'Integrations', icon: Plug },
   ],
