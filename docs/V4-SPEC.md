@@ -1,7 +1,8 @@
 # Command Center V4 — spec for sign-off
 
-Status: **draft, not built**. Order: V4.0 Foundations → V4.1 School → V4.2 Fitness → V4.3 Money →
-V4.4 Goals → V4.5 Swipe Vault → V4.6 Ask Command Center.
+Status: **draft, not built**. Order: V4.0 Foundations + **Mission screen** → V4.1 **Planner engine
+(Autopilot)** + School → V4.2 Fitness → V4.3 Money → V4.4 Goals → V4.5 Swipe Vault → V4.6 Ask
+Command Center.
 This document details V4.0, V4.1 and V4.3; the rest stay as scoped in the roadmap and get their
 own short spec before they start.
 
@@ -28,6 +29,22 @@ calendar or anything external without your approval · AI sees nothing sensitive
 - Settings → "Workspaces": show/hide each space (hidden spaces disappear from nav, Home and the brief).
 - Phone bottom nav becomes: Home · Today · Capture (+) · **Spaces** (sheet with all spaces) · Search.
 
+### Mission screen (replaces Home)
+One command screen for what matters — not a second dashboard. Big type, dark, phone-first.
+Modules appear as their phases land; each can be hidden.
+
+| Module | Shows |
+| --- | --- |
+| **Now / Next** | current block with live countdown, next block; **Start focus** → fullscreen timer that logs focus time and marks the block done |
+| **Today's mission** | top three (any workspace) with progress; one-tap complete |
+| **At risk** (red) | overdue work, client deadlines ≤ 48 h, exams whose study hours don't fit, set-aside money still to move, workouts missed this week |
+| **Countdowns** | Abitur, next exams, deliverable deadlines, savings-goal dates |
+| **This week** | scorecard pace bars, goal progress rings, study/training hours |
+| **Autopilot log** | what the planner changed and why, each with **Undo** |
+| **Money pulse** | (only if Money is on and amounts not hidden) month net, savings rate, still to put away |
+
+The morning push brief mirrors the screen: mission, at-risk items, what Autopilot changed overnight.
+
 ### Proposals (one approval pattern for everything)
 `Proposal { id, kind: 'study-plan' | 'ai-suggestion', title, createdAt, status: pending|approved|rejected|partly, items: ProposalItem[] }`
 `ProposalItem { id, action: 'create-event' | 'create-task' | …, payload, selected: boolean }`
@@ -51,7 +68,30 @@ parent record (sets inside a workout session) to keep sync fast and conflicts ra
 
 ---
 
-## V4.1 School Planner (≈2 sessions)
+## V4.1 Planner engine (Autopilot) + School Planner (≈3 sessions)
+
+### Planner engine — schedules that adjust themselves
+Generalises the study scheduler to every kind of **planner-owned block**: study sessions, TPS
+deep-work blocks for deliverables, Creative Lab practice, workouts.
+
+- **What it may move**: only blocks it created (`origin: planner`). Never your own events, the
+  school timetable, basketball, or Google events. Blocks you **lock** (📌) are never moved.
+- **Priority score** per item = urgency (time to deadline vs work left) × importance (your
+  priority, client work, linked to a goal, Abitur weighting) × slip penalty (already moved or missed).
+- **Triggers**: a block passes without being done · new deadline/exam/deliverable · calendar
+  change · priority change · nightly run on the server (before the morning brief).
+- **Rules**: study windows, daily maxima, shutdown 20:30, buffers, rest day, max N changes per day
+  so the week doesn't churn; tomorrow's plan stays stable after you confirm it in Plan Tomorrow
+  unless something urgent appears.
+- **Modes** (Settings → Planner): **Autopilot** — changes its own blocks and logs each change with a
+  reason and Undo; **Ask me** — same changes arrive as a Proposal to accept. Default: Ask me for the
+  first week, then you decide.
+- **Explanations**: every change has a one-line reason, e.g. *"Moved Mathe review 15:00 → 17:00 —
+  basketball moved to 15:30."* Shown on the Mission screen and in the brief.
+- **Can't fit** → never silently drops work: it goes to *At risk* with options (start earlier, raise
+  the daily max, lower the estimate, drop something lower priority).
+
+### School Planner
 
 ### Data
 | Entity | Fields |
@@ -136,6 +176,7 @@ records with a tax adviser or proper tool.
 - **V4.6 Ask Command Center** — in-app chat with source links and the permissions above; paid API with a monthly cap.
 
 ## Open questions for you
+0. Planner mode to start with: **Ask me** (suggests, you accept) or straight **Autopilot**?
 1. Default set-aside rules: start with **Tax reserve 25 % + Savings 20 %** of business income, editable?
 2. Study windows default **Mon–Fri 15:00–20:00, Sat–Sun 10:00–18:00**, max **2 h / 4 h** per day — right?
 3. Do you want the Abitur grade projection in V4.1, or later?
