@@ -493,7 +493,26 @@ export const useApp = create<AppState>()(
           }))
           return metric
         },
-        updateMetric: (id, patch) => set((s) => ({ metrics: replace(s.metrics, id, patch) })),
+        updateMetric: (id, patch) =>
+          set((s) => {
+            const m = s.metrics.find((x) => x.id === id)
+            if (!m) return {}
+            const current = dateKey(weekStart(new Date(), s.settings.weekStartsOn))
+            let scorecards = s.scorecards
+            // Archiving removes the metric from the running week onward; past weeks stay intact.
+            if (patch.archived !== undefined && patch.archived !== m.archived) {
+              scorecards = Object.fromEntries(
+                Object.entries(s.scorecards).map(([wk, sc]) => {
+                  if (wk < current) return [wk, sc]
+                  const targets = { ...sc.targets }
+                  if (patch.archived) delete targets[id]
+                  else targets[id] = patch.defaultTarget ?? m.defaultTarget
+                  return [wk, { ...sc, targets }]
+                }),
+              )
+            }
+            return { metrics: replace(s.metrics, id, patch), scorecards }
+          }),
         ensureWeek: (wk) => {
           const s = get()
           if (s.scorecards[wk]) return s.scorecards[wk]

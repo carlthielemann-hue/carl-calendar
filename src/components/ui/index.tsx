@@ -251,7 +251,7 @@ export function Sheet({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in md:bg-black/20" />
-        <DialogPrimitive.Content className="fixed inset-y-2 right-2 z-50 flex w-[calc(100vw-16px)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-line bg-elevated shadow-pop outline-none data-[state=open]:animate-slide">
+        <DialogPrimitive.Content onOpenAutoFocus={(e) => e.preventDefault()} className="fixed inset-y-2 right-2 z-50 flex w-[calc(100vw-16px)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-line bg-elevated shadow-pop outline-none data-[state=open]:animate-slide">
           <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
           {children}
