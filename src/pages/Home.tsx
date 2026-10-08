@@ -164,7 +164,7 @@ export default function Home() {
       <MissionHeader now={now} open={open} risks={risks} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         {show('now') && (
-          <div className="order-1 min-w-0 lg:col-span-8">
+          <div className="order-1 min-w-0 lg:col-span-8 lg:[&>*]:h-full">
             <NowNext occs={occs} now={now} onFocus={focusOn} />
           </div>
         )}
@@ -174,7 +174,7 @@ export default function Home() {
           </div>
         )}
         {show('mission') && (
-          <div className="order-3 min-w-0 lg:col-span-5">
+          <div className="order-3 min-w-0 lg:col-span-5 lg:[&>*]:h-full">
             <TopThree now={now} title="Today’s mission" />
           </div>
         )}
