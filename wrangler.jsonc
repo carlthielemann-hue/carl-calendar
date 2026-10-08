@@ -23,7 +23,9 @@
       "migrations_dir": "migrations"
     }
   ],
-  "r2_buckets": [{ "binding": "FILES", "bucket_name": "command-center-files" }],
+  // Optional cloud file storage (needs R2 enabled on the account, which asks for a card).
+  // To turn on: `npx wrangler r2 bucket create command-center-files`, then uncomment.
+  // "r2_buckets": [{ "binding": "FILES", "bucket_name": "command-center-files" }],
   "kv_namespaces": [
     // Replace with the id printed by `wrangler kv namespace create OAUTH_KV`
     { "binding": "OAUTH_KV", "id": "00000000000000000000000000000000" }
