@@ -1,4 +1,4 @@
-import { Check, ClipboardCopy, ExternalLink, Eye, Loader2, Play, Send } from 'lucide-react'
+import { Check, ClipboardCopy, ExternalLink, Eye, Loader2, PanelRight, Play, Send } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Card, Field, Input, Select, Textarea } from '@/components/ui'
@@ -6,6 +6,7 @@ import { renderTemplate } from '@/domain/aiWorkflows'
 import { buildContextPack } from '@/domain/context'
 import type { AiOutput, AiProvider, AiWorkflow, ContextKey } from '@/domain/entities'
 import { api, useCloud } from '@/lib/cloud'
+import { dock, dockAvailable, useDockPrefs } from '@/lib/dock'
 import { cn, uid } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
@@ -103,6 +104,14 @@ export function RunPanel({ clientId, workflow }: { clientId: string; workflow: A
   const apiReady = cloudState.signedIn && (cloudState.features?.ai.anthropic || cloudState.features?.ai.openai)
   const manusReady = cloudState.signedIn && cloudState.features?.manus
   const short = prompt.length < 6000
+  const dockPrefs = useDockPrefs()
+  const docked = dockAvailable() && dockPrefs.ready
+  const sendDocked = async (t: 'Claude' | 'ChatGPT' | 'Manus') => {
+    const ok = await copy(prompt)
+    dock(t)
+    if (ok) toast.success(`Prompt copied — paste it into ${t} (⌘V)`, { description: 'Then paste the answer back here to keep it as a draft.' })
+    else toast.error('Copy is blocked here — use Review and copy the text manually.')
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -195,14 +204,28 @@ export function RunPanel({ clientId, workflow }: { clientId: string; workflow: A
                 >
                   <ClipboardCopy className="h-3.5 w-3.5" /> Copy prompt
                 </Button>
-                <a href={short ? `https://claude.ai/new?q=${encodeURIComponent(prompt)}` : 'https://claude.ai/new'} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-[13px] text-fg-2 hover:bg-hover">
-                  Claude <ExternalLink className="h-3 w-3" />
-                </a>
-                <a href={short ? `https://chatgpt.com/?q=${encodeURIComponent(prompt)}` : 'https://chatgpt.com/'} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-[13px] text-fg-2 hover:bg-hover">
-                  ChatGPT <ExternalLink className="h-3 w-3" />
-                </a>
+                {docked ? (
+                  (['Claude', 'ChatGPT', 'Manus'] as const).map((t) => (
+                    <Button key={t} variant="secondary" onClick={() => sendDocked(t)}>
+                      <PanelRight className="h-3.5 w-3.5" /> {t}
+                    </Button>
+                  ))
+                ) : (
+                  <>
+                    <a href={short ? `https://claude.ai/new?q=${encodeURIComponent(prompt)}` : 'https://claude.ai/new'} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-[13px] text-fg-2 hover:bg-hover">
+                      claude.ai <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <a href={short ? `https://chatgpt.com/?q=${encodeURIComponent(prompt)}` : 'https://chatgpt.com/'} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 text-[13px] text-fg-2 hover:bg-hover">
+                      chatgpt.com <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </>
+                )}
               </div>
-              <p className="mt-1.5 text-[11.5px] text-faint">{short ? 'Short prompts open pre-filled.' : 'Long prompt: copy first, then paste into the new chat.'} Or connect Command Center to Claude/ChatGPT via MCP so they can read this context themselves (Settings → AI connections).</p>
+              <p className="mt-1.5 text-[11.5px] text-faint">
+                {docked
+                  ? 'Copies the prompt and docks the desktop app on the right — just paste.'
+                  : `${short ? 'Opens the website in a new tab, pre-filled.' : 'Long prompt: copy first, then paste into the new tab.'}${dockAvailable() ? ' Prefer the desktop apps? Set up the docked sidebar in Settings.' : ''}`}{' '}
+                Or connect Command Center to Claude/ChatGPT via MCP so they can read this context themselves (Settings → AI connections).</p>
             </div>
             <div>
               <Textarea rows={5} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Paste the AI’s answer here to keep it…" aria-label="AI answer" />
