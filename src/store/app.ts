@@ -10,6 +10,7 @@ import type { CalEvent, Settings, Task, WeeklyPlan } from '@/lib/types'
 import { BUILTIN_TEMPLATES, DEFAULT_PRACTICE_TEMPLATES, STARTER_METRICS } from '@/domain/defaults'
 import { buildWorkspaceDemo } from '@/domain/demo'
 import { BUILTIN_WORKFLOWS } from '@/domain/aiWorkflows'
+import { isAccountMode, storeKey } from './mode'
 import type {
   AdRef,
   AiOutput,
@@ -47,7 +48,7 @@ import type { Data, GoogleState } from '@/domain/state'
 export type { Data, GoogleState }
 
 export const MAX_TOP = 3
-export const STORE_KEY = 'command-center:v1'
+export const STORE_KEY = storeKey()
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
@@ -235,7 +236,8 @@ export const useApp = create<AppState>()(
         set((s) => ({ activity: [{ id: uid('act-'), at: now(), workspace, text, ref: r }, ...s.activity].slice(0, MAX_ACTIVITY) }))
 
       return {
-        ...initialData(),
+        // Your real account never starts with sample data.
+        ...(isAccountMode() ? emptyData() : initialData()),
 
         /* ---------- generic collections ---------- */
         put: (k, rec) => {
@@ -605,6 +607,7 @@ export const useApp = create<AppState>()(
         removeGoogleEvent: (gid) => set((s) => ({ google: { ...s.google, events: s.google.events.filter((x) => x.googleId !== gid) } })),
 
         resetDemo: () => {
+          if (isAccountMode()) return // demo data never enters the real account
           get().clearDemo()
           const demo = demoState()
           set((s) => ({

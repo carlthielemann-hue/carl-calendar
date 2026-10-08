@@ -1,7 +1,9 @@
 import { toast } from 'sonner'
 import { useApp } from '@/store/app'
 import { fromLocalDT, toLocalDT } from './dates'
+import { confirmAction } from '@/components/ConfirmHost'
 import * as google from './google'
+import { createServerEvent, deleteServerEvent, serverGoogleActive, syncServerGoogle, updateServerEvent } from './cloudGoogle'
 import type { CalEvent, Occurrence } from './types'
 
 export type Scope = 'this' | 'all'
@@ -27,6 +29,11 @@ export async function createEvent(input: EventInput, target: 'local' | 'google' 
   const s = useApp.getState()
   const data = { ...input, start: toLocalDT(input.start), end: toLocalDT(input.end) }
   if (target === 'google') {
+    if (serverGoogleActive()) {
+      await createServerEvent(s.google.calendarId || 'primary', { ...data, link: data.link })
+      toast.success('Event added to Google Calendar')
+      return
+    }
     const { clientId, calendarId } = gcfg()
     await google.createEvent(clientId, calendarId, data)
     await syncGoogle({ silent: true })
@@ -43,6 +50,17 @@ export async function saveEvent(occ: Occurrence, input: EventInput, scope: Scope
   const s = useApp.getState()
   const ev = occ.event
   if (ev.source === 'google') {
+    const ok = await confirmAction({
+      title: 'Change this Google Calendar event?',
+      body: `“${ev.title}” lives in your Google Calendar. Saving updates it there for everyone who can see it.`,
+      confirmLabel: 'Update in Google',
+    })
+    if (!ok) return
+    if (serverGoogleActive()) {
+      await updateServerEvent(ev, { title: input.title, description: input.description, category: input.category, link: input.link, start: toLocalDT(input.start), end: toLocalDT(input.end) })
+      toast.success('Updated in Google Calendar')
+      return
+    }
     const { clientId, calendarId } = gcfg()
     const updated = await google.updateEvent(clientId, ev.googleCalendarId ?? calendarId, ev.googleId!, {
       ...input,
@@ -92,6 +110,18 @@ export async function deleteOccurrence(occ: Occurrence, scope: Scope) {
   const s = useApp.getState()
   const ev = occ.event
   if (ev.source === 'google') {
+    const ok = await confirmAction({
+      title: 'Delete from Google Calendar?',
+      body: `“${ev.title}” will be removed from your Google Calendar${occ.recurring ? ' (this occurrence only)' : ''}. This can’t be undone from here.`,
+      confirmLabel: 'Delete in Google',
+      danger: true,
+    })
+    if (!ok) return
+    if (serverGoogleActive()) {
+      await deleteServerEvent(ev)
+      toast.success('Deleted from Google Calendar')
+      return
+    }
     const { clientId, calendarId } = gcfg()
     await google.deleteEvent(clientId, ev.googleCalendarId ?? calendarId, ev.googleId!)
     s.removeGoogleEvent(ev.googleId!)
@@ -134,6 +164,16 @@ export async function moveOccurrence(occ: Occurrence, start: Date, end: Date) {
 let syncing = false
 export async function syncGoogle({ silent = false, interactive = false } = {}) {
   if (syncing) return
+  if (serverGoogleActive()) {
+    syncing = true
+    try {
+      const st = await syncServerGoogle()
+      if (!silent) toast.success('Google Calendar synced', { description: st.lastError ?? undefined })
+    } finally {
+      syncing = false
+    }
+    return
+  }
   const s = useApp.getState()
   const { clientId, calendarId } = gcfg()
   syncing = true

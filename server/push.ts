@@ -35,8 +35,10 @@ export async function notify(env: Env, kind: string, n: { title: string; body: s
   return { sent }
 }
 
+/** Latest notification from the last 30 minutes. Every subscribed device (Mac, iPhone) asks for it. */
 export async function pendingNotification(env: Env) {
-  const row = await env.DB.prepare('SELECT id, title, body, url FROM notifications WHERE delivered = 0 ORDER BY created_at DESC LIMIT 1').first<{ id: string; title: string; body: string; url: string }>()
-  if (row) await env.DB.prepare('UPDATE notifications SET delivered = 1 WHERE created_at <= (SELECT created_at FROM notifications WHERE id = ?)').bind(row.id).run()
+  const since = new Date(Date.now() - 30 * 60_000).toISOString()
+  const row = await env.DB.prepare('SELECT id, kind, title, body, url FROM notifications WHERE created_at >= ? ORDER BY created_at DESC LIMIT 1').bind(since).first<{ id: string; kind: string; title: string; body: string; url: string }>()
+  if (row) await env.DB.prepare('UPDATE notifications SET delivered = 1 WHERE id = ?').bind(row.id).run()
   return row
 }

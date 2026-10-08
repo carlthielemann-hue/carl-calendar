@@ -27,7 +27,15 @@ export interface PushChange {
   updatedAt: string
 }
 
-export type PushResult = { coll: string; id: string; status: 'ok' | 'conflict_kept_server' | 'conflict_overwrote_server' | 'rejected'; rev?: number; error?: string }
+export type PushResult = {
+  coll: string
+  id: string
+  status: 'ok' | 'conflict_kept_server' | 'conflict_overwrote_server' | 'rejected'
+  rev?: number
+  error?: string
+  /** For conflict_kept_server: the server's version, so the client can adopt it */
+  data?: string | null
+}
 
 /**
  * Apply one client change. Concurrent edits are resolved last-writer-wins by change time, and
@@ -49,7 +57,7 @@ export async function applyChange(env: Env, ch: PushChange, device: string): Pro
     await env.DB.prepare('INSERT INTO conflicts (coll, id, kept, discarded, at) VALUES (?, ?, ?, ?, ?)')
       .bind(ch.coll, ch.id, clientNewer ? ch.data : existing.data, clientNewer ? existing.data : ch.data, nowIso())
       .run()
-    if (!clientNewer) return { coll: ch.coll, id: ch.id, status: 'conflict_kept_server', rev: existing.rev }
+    if (!clientNewer) return { coll: ch.coll, id: ch.id, status: 'conflict_kept_server', rev: existing.rev, data: existing.data }
     const rev = await nextRev(env)
     await upsert(env, ch, rev, device)
     return { coll: ch.coll, id: ch.id, status: 'conflict_overwrote_server', rev }

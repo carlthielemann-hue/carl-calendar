@@ -13,6 +13,8 @@ import { TaskEditor } from '@/features/tasks/TaskEditor'
 import Overview from '@/pages/personal/Overview'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
+import { ConfirmHost } from '@/components/ConfirmHost'
+import { boot } from '@/lib/boot'
 
 const page = <T,>(f: () => Promise<{ default: T }>) => lazy(f as never)
 const ROUTES: Record<string, ReturnType<typeof lazy>> = {
@@ -137,6 +139,7 @@ function PageFallback() {
 export default function App() {
   useTheme()
   useGlobalShortcuts()
+  useEffect(boot, [])
   const loc = useUI((s) => s.loc)
   const theme = useApp((s) => s.settings.theme)
   const key = loc.space === 'home' || loc.space === 'settings' ? loc.space : `${loc.space}/${loc.page}`
@@ -163,6 +166,7 @@ export default function App() {
       <TaskEditor />
       <CommandPalette />
       <Shortcuts />
+      <ConfirmHost />
       <Toaster
         theme={theme === 'system' ? 'system' : theme}
         position="bottom-right"

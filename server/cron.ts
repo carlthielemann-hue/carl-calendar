@@ -56,9 +56,13 @@ export async function scheduled(env: Env) {
   }
   if (prefs.evening && sent.evening !== today && nowMin >= mins(prefs.eveningTime) && nowMin < mins(prefs.eveningTime) + 60) {
     const s = await loadState(env, ['dayPlans', 'config'])
-    const tomorrow = dateKey(addDays(fromDateKey(today), 1))
-    const n = buildEveningReminder({ tomorrowConfirmed: !!s.dayPlans[tomorrow]?.confirmedAt, shutdown: (s.settings as { shutdownTime?: string }).shutdownTime ?? '20:30' })
-    if (n) await notify(env, 'evening', n)
+    const shutdown = (s.settings as { shutdownTime?: string }).shutdownTime ?? '20:30'
+    // Respect the shutdown: a late cron tick never nudges after work has ended.
+    if (nowMin < mins(shutdown)) {
+      const tomorrow = dateKey(addDays(fromDateKey(today), 1))
+      const n = buildEveningReminder({ tomorrowConfirmed: !!s.dayPlans[tomorrow]?.confirmedAt, shutdown })
+      if (n) await notify(env, 'evening', n)
+    }
     sent.evening = today
   }
   await setMeta(env, 'notify_sent', sent)

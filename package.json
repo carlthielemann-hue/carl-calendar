@@ -15,7 +15,8 @@
     "server:dev": "npm run build && wrangler d1 migrations apply command-center --local && wrangler dev --local-protocol https",
     "server:typecheck": "tsc -p tsconfig.server.json",
     "deploy": "npm run build && wrangler d1 migrations apply command-center --remote && wrangler deploy",
-    "test:server": "node tests/server.mjs"
+    "test:server": "node tests/server.mjs",
+    "test:sync": "node tests/sync-e2e.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

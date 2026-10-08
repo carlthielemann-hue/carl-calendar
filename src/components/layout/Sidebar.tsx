@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { Kbd } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
+import { useSync } from '@/lib/sync'
+import { isAccountMode } from '@/store/mode'
 import { useUI, type Space } from '@/store/ui'
 import { PAGES, SPACE_DEFS, spaceDef } from './nav'
 
@@ -103,6 +105,8 @@ function NavItem({ active, onClick, icon: Icon, label, hint }: { active: boolean
   )
 }
 
+const SYNC_LABEL: Record<string, string> = { off: 'starting', idle: 'synced', syncing: 'syncing', offline: 'offline', 'signed-out': 'signed out', error: 'sync issue' }
+
 export function Sidebar() {
   const loc = useUI((s) => s.loc)
   const go = useUI((s) => s.go)
@@ -110,6 +114,8 @@ export function Sidebar() {
   const editTask = useUI((s) => s.editTask)
   const hasDemo = useApp((s) => s.hasDemoData)
   const google = useApp((s) => s.google)
+  const sync = useSync((s) => s.phase)
+  const account = isAccountMode()
   const pages = PAGES[loc.space] ?? []
 
   return (
@@ -163,9 +169,14 @@ export function Sidebar() {
           onClick={() => go('/settings')}
           className="flex w-full items-center gap-2 rounded-lg border border-line bg-panel px-2.5 py-2 text-left transition-colors hover:border-line-strong"
         >
-          <span className={cn('h-1.5 w-1.5 rounded-full', google.connected ? 'bg-ok' : hasDemo ? 'bg-[#ec8a45]' : 'bg-faint')} />
+          <span
+            className={cn(
+              'h-1.5 w-1.5 rounded-full',
+              account ? (sync === 'idle' || sync === 'syncing' ? 'bg-ok' : 'bg-[#e5a54b]') : google.connected ? 'bg-ok' : hasDemo ? 'bg-[#ec8a45]' : 'bg-faint',
+            )}
+          />
           <span className="text-[11.5px] leading-tight text-muted">
-            {hasDemo ? 'Demo mode · sample data' : 'Local mode · this browser'}
+            {account ? `Account · ${SYNC_LABEL[sync]}` : hasDemo ? 'Demo mode · sample data' : 'Local mode · this browser'}
             {google.connected && ' · Google'}
           </span>
         </button>
