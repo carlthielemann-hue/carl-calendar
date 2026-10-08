@@ -70,7 +70,7 @@ export async function deleteMedia(id: string) {
   await tx('readwrite', (s) => s.delete(id))
 }
 
-async function getMedia(id: string): Promise<Blob | undefined> {
+export async function getMedia(id: string): Promise<Blob | undefined> {
   return memory.get(id) ?? (await tx<Blob>('readonly', (s) => s.get(id)))
 }
 

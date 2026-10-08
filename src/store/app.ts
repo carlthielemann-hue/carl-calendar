@@ -9,9 +9,19 @@ import { uid } from '@/lib/utils'
 import type { CalEvent, Settings, Task, WeeklyPlan } from '@/lib/types'
 import { BUILTIN_TEMPLATES, DEFAULT_PRACTICE_TEMPLATES, STARTER_METRICS } from '@/domain/defaults'
 import { buildWorkspaceDemo } from '@/domain/demo'
+import { BUILTIN_WORKFLOWS } from '@/domain/aiWorkflows'
 import type {
   ActivityEntry,
   AdRef,
+  AiOutput,
+  AiWorkflow,
+  Asset,
+  Concept,
+  ContentPost,
+  EntityType,
+  FeedbackEntry,
+  PerformanceEntry,
+  ResearchRecord,
   Analysis,
   AnalysisTemplate,
   Client,
@@ -81,6 +91,15 @@ export interface Data {
   plans: PracticePlan[]
   practiceTemplates: PracticeTemplate[]
   insights: Insight[]
+  /* Client knowledge, AI Studio, content (V3) */
+  research: ResearchRecord[]
+  assets: Asset[]
+  feedback: FeedbackEntry[]
+  performance: PerformanceEntry[]
+  concepts: Concept[]
+  aiOutputs: AiOutput[]
+  workflows: AiWorkflow[]
+  posts: ContentPost[]
   /* Shared */
   metrics: Metric[]
   scorecards: Record<string, WeekScore>
@@ -91,7 +110,34 @@ export interface Data {
   hasDemoData: boolean
 }
 
+/** Simple record collections that share generic create/update/delete. */
+export interface Collections {
+  research: ResearchRecord
+  assets: Asset
+  feedback: FeedbackEntry
+  performance: PerformanceEntry
+  concepts: Concept
+  aiOutputs: AiOutput
+  workflows: AiWorkflow
+  posts: ContentPost
+}
+export type CollKey = keyof Collections
+export const COLL_REF: Record<CollKey, EntityType> = {
+  research: 'research',
+  assets: 'asset',
+  feedback: 'feedback',
+  performance: 'performance',
+  concepts: 'concept',
+  aiOutputs: 'aiOutput',
+  workflows: 'aiOutput',
+  posts: 'post',
+}
+
 interface Actions {
+  // generic collections
+  put: <K extends CollKey>(k: K, rec: Collections[K]) => Collections[K]
+  patch: <K extends CollKey>(k: K, id: string, patch: Partial<Collections[K]>) => void
+  drop: <K extends CollKey>(k: K, id: string) => void
   // events
   addEvent: (e: Omit<CalEvent, 'id' | 'source'> & Partial<Pick<CalEvent, 'source' | 'id'>>) => CalEvent
   updateEvent: (id: string, patch: Partial<CalEvent>) => void
@@ -114,6 +160,7 @@ interface Actions {
   updateProject: (id: string, patch: Partial<Project>) => void
   deleteProject: (id: string) => void
   // deliverables
+  addFeedback: (f: Omit<FeedbackEntry, 'id' | 'at'> & Partial<Pick<FeedbackEntry, 'at'>>) => FeedbackEntry
   addDeliverable: (d: Partial<Deliverable> & { title: string; projectId: string }) => Deliverable
   updateDeliverable: (id: string, patch: Partial<Deliverable>) => void
   moveDeliverableTo: (id: string, stageId: string) => void
@@ -171,7 +218,7 @@ export const emptyWeekly = (): WeeklyPlan => ({ priorities: [], wins: '', lesson
 const now = () => new Date().toISOString()
 const MAX_ACTIVITY = 800
 
-function demoState(): Pick<Data, 'events' | 'tasks' | 'topThree' | 'clients' | 'projects' | 'deliverables' | 'opportunities' | 'ads' | 'analyses' | 'plans' | 'insights' | 'focusLogs'> {
+function demoState(): Pick<Data, 'events' | 'tasks' | 'topThree' | 'clients' | 'projects' | 'deliverables' | 'opportunities' | 'ads' | 'analyses' | 'plans' | 'insights' | 'focusLogs' | 'research' | 'feedback' | 'performance' | 'concepts'> {
   const personal = buildDemoData()
   const ws = buildWorkspaceDemo()
   const today = dateKey(new Date())
@@ -194,9 +241,22 @@ function initialData(): Data {
     metrics: STARTER_METRICS,
     scorecards: {},
     activity: [],
+    assets: [],
+    aiOutputs: [],
+    workflows: BUILTIN_WORKFLOWS,
+    posts: [],
     settings: DEFAULT_SETTINGS,
     google: { connected: false, calendarId: 'primary', events: [] },
     hasDemoData: true,
+  }
+}
+
+/** Empty real-account state: no demo records, default configuration only. */
+export function emptyData(): Data {
+  return {
+    ...initialData(),
+    events: [], tasks: [], topThree: {}, clients: [], projects: [], deliverables: [], opportunities: [], ads: [], analyses: [],
+    plans: [], insights: [], focusLogs: [], research: [], feedback: [], performance: [], concepts: [], hasDemoData: false,
   }
 }
 
@@ -208,6 +268,8 @@ function unlinkEverywhere(s: Data, r: string): Partial<Data> {
     events: s.events.map((e) => (e.link === r ? { ...e, link: undefined } : e)),
     tasks: s.tasks.map((t) => (t.link === r ? { ...t, link: undefined } : t)),
     insights: s.insights.map((i) => (i.links.includes(r as Ref) ? { ...i, links: i.links.filter((l) => l !== r) } : i)),
+    research: s.research.map((x) => (x.links.includes(r as Ref) ? { ...x, links: x.links.filter((l) => l !== r) } : x)),
+    aiOutputs: s.aiOutputs.map((x) => (x.savedAs.includes(r as Ref) ? { ...x, savedAs: x.savedAs.filter((l) => l !== r) } : x)),
     topThree: Object.fromEntries(Object.entries(s.topThree).map(([k, v]) => [k, v.filter((x) => x !== r)])),
   }
 }
@@ -220,6 +282,26 @@ export const useApp = create<AppState>()(
 
       return {
         ...initialData(),
+
+        /* ---------- generic collections ---------- */
+        put: (k, rec) => {
+          set((s) => {
+            const list = s[k] as unknown as { id: string }[]
+            const exists = list.some((x) => x.id === rec.id)
+            return { [k]: exists ? list.map((x) => (x.id === rec.id ? rec : x)) : [rec, ...list] } as Partial<Data>
+          })
+          return rec
+        },
+        patch: (k, id, p) =>
+          set((s) => ({ [k]: (s[k] as unknown as { id: string }[]).map((x) => (x.id === id ? { ...x, ...p } : x)) }) as Partial<Data>),
+        drop: (k, id) =>
+          set((s) => {
+            const r = `${COLL_REF[k]}:${id}`
+            const extra: Partial<Data> = {}
+            if (k === 'concepts') extra.performance = s.performance.map((p) => (p.conceptId === id ? { ...p, conceptId: undefined } : p))
+            if (k === 'assets') extra.research = s.research.map((x) => (x.assetIds.includes(id) ? { ...x, assetIds: x.assetIds.filter((a) => a !== id) } : x))
+            return { ...unlinkEverywhere(s, r), ...extra, [k]: (s[k] as unknown as { id: string }[]).filter((x) => x.id !== id) } as Partial<Data>
+          }),
 
         /* ---------- events ---------- */
         addEvent: (e) => {
@@ -297,6 +379,19 @@ export const useApp = create<AppState>()(
             return { ...next, projects: s.projects.filter((p) => p.id !== id), deliverables: s.deliverables.filter((d) => d.projectId !== id) }
           }),
 
+        /* ---------- feedback ---------- */
+        addFeedback: (f) => {
+          const entry: FeedbackEntry = { id: uid('fb-'), at: now(), ...f }
+          set((s) => ({
+            feedback: [entry, ...s.feedback],
+            deliverables: entry.deliverableId
+              ? s.deliverables.map((d) => (d.id === entry.deliverableId ? { ...d, history: [...d.history, { at: entry.at, text: `${entry.kind === 'approval' ? 'Approval' : entry.kind === 'revision' ? 'Revision request' : 'Feedback'}: ${entry.text.slice(0, 140)}` }] } : d))
+              : s.deliverables,
+          }))
+          log('tps', `${entry.kind === 'revision' ? 'Revision requested' : entry.kind === 'approval' ? 'Approval received' : 'Feedback'}: ${entry.text.slice(0, 80)}`, entry.deliverableId ? ref('deliverable', entry.deliverableId) : ref('client', entry.clientId))
+          return entry
+        },
+
         /* ---------- deliverables ---------- */
         addDeliverable: (d) => {
           const project = get().projects.find((p) => p.id === d.projectId)
@@ -322,10 +417,6 @@ export const useApp = create<AppState>()(
           set((s) => {
             const p = { ...patch }
             if (p.projectId) p.clientId = s.projects.find((x) => x.id === p.projectId)?.clientId
-            if (p.feedback !== undefined) {
-              const d = s.deliverables.find((x) => x.id === id)
-              if (d && p.feedback && p.feedback !== d.feedback) p.history = [...d.history, { at: now(), text: `Feedback: ${p.feedback.slice(0, 140)}` }]
-            }
             return { deliverables: replace(s.deliverables, id, p) }
           }),
         moveDeliverableTo: (id, stageId) => {
@@ -575,6 +666,10 @@ export const useApp = create<AppState>()(
             plans: [...demo.plans.filter((p) => !s.plans.some((x) => x.weekKey === p.weekKey)), ...s.plans],
             insights: [...demo.insights, ...s.insights],
             focusLogs: [...demo.focusLogs, ...s.focusLogs],
+            research: [...demo.research, ...s.research],
+            feedback: [...demo.feedback, ...s.feedback],
+            performance: [...demo.performance, ...s.performance],
+            concepts: [...demo.concepts, ...s.concepts],
             hasDemoData: true,
           }))
         },
@@ -604,6 +699,11 @@ export const useApp = create<AppState>()(
               plans: keep(s.plans),
               insights: keep(s.insights).map((i) => ({ ...i, links: i.links.filter((l) => !demoRefs.has(l)) })),
               focusLogs: keep(s.focusLogs),
+              research: keep(s.research).map((r) => ({ ...r, links: r.links.filter((l) => !demoRefs.has(l)) })),
+              feedback: keep(s.feedback),
+              performance: keep(s.performance).map((p) => ({ ...p, insightIds: p.insightIds.filter((i) => !demoInsightIds.has(i)) })),
+              concepts: keep(s.concepts).map((c) => ({ ...c, insightIds: c.insightIds.filter((i) => !demoInsightIds.has(i)) })),
+              assets: keep(s.assets),
               activity: s.activity.filter((a) => !a.ref || !demoRefs.has(a.ref)),
               hasDemoData: false,
             }
@@ -612,12 +712,13 @@ export const useApp = create<AppState>()(
           set({
             events: [], tasks: [], topThree: {}, weekly: {}, dayPlans: {}, clients: [], projects: [], deliverables: [], opportunities: [],
             ads: [], analyses: [], plans: [], insights: [], scorecards: {}, focusLogs: [], activity: [], hasDemoData: false,
+            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [],
           }),
       }
     },
     {
       name: STORE_KEY,
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => safeStorage),
       migrate: (persisted, version) => migrateState(persisted as Record<string, unknown>, version) as unknown as AppState,
       merge: (persisted, current) => {
@@ -644,7 +745,53 @@ export const useApp = create<AppState>()(
  * - Users still on demo data also get the TPS / Lab demo so the new workspaces aren't empty.
  */
 export function migrateState(p: Record<string, unknown>, version: number): Record<string, unknown> {
-  if (version >= 2) return p
+  if (version < 2) p = migrateV1(p)
+  if (version < 3) p = migrateV2(p)
+  return p
+}
+
+/**
+ * v2 → v3: adds client knowledge, assets, feedback log, performance, concepts, AI Studio and
+ * content collections. A deliverable's single `feedback` text becomes a feedback entry.
+ */
+function migrateV2(p: Record<string, unknown>): Record<string, unknown> {
+  const deliverables = (p.deliverables as (Deliverable & { feedback?: string })[]) ?? []
+  const stages = (p.stages as Stage[]) ?? DEFAULT_STAGES
+  const feedback: FeedbackEntry[] = deliverables
+    .filter((d) => d.feedback?.trim())
+    .map((d) => ({
+      id: `fb-${d.id}`,
+      clientId: d.clientId,
+      projectId: d.projectId,
+      deliverableId: d.id,
+      at: d.lastDeliveredAt ?? d.createdAt,
+      kind: stageOf(stages, d.stageId).kind === 'revisions' ? 'revision' : 'comment',
+      text: d.feedback!.trim(),
+      status: stageOf(stages, d.stageId).kind === 'revisions' ? 'open' : 'addressed',
+      nextAction: d.nextAction,
+      isDemo: d.isDemo,
+    }))
+  const demo = p.hasDemoData ? buildWorkspaceDemo() : null
+  const hasDemoClient = ((p.clients as Client[]) ?? []).some((c) => c.id === 'demo-c1')
+  return {
+    ...p,
+    deliverables: deliverables.map((d) => {
+      const copy = { ...d }
+      delete copy.feedback
+      return copy
+    }),
+    research: demo && hasDemoClient ? demo.research : [],
+    assets: [],
+    feedback,
+    performance: demo && hasDemoClient ? demo.performance : [],
+    concepts: [],
+    aiOutputs: [],
+    workflows: BUILTIN_WORKFLOWS,
+    posts: [],
+  }
+}
+
+function migrateV1(p: Record<string, unknown>): Record<string, unknown> {
   const events = ((p.events as (CalEvent & { taskId?: string })[]) ?? []).map(({ taskId, ...e }) => (taskId ? { ...e, link: `task:${taskId}` } : e))
   const linked = new Set(events.map((e) => e.link).filter(Boolean))
   const tasks = ((p.tasks as (Task & { eventId?: string })[]) ?? []).map(({ eventId, ...t }) => {

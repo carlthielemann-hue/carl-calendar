@@ -115,6 +115,34 @@ export function describeRef(s: AppState, r: string): { label: string; sub?: stri
       const i = s.insights.find((x) => x.id === p.id)
       return i ? { label: i.title, sub: `Insight · ${i.type}`, path: `/lab/insights/${i.id}` } : null
     }
+    case 'research': {
+      const r = s.research.find((x) => x.id === p.id)
+      return r ? { label: r.title, sub: `Research · ${s.clients.find((c) => c.id === r.clientId)?.name ?? ''}`, path: `/tps/clients/${r.clientId}/research` } : null
+    }
+    case 'asset': {
+      const a = s.assets.find((x) => x.id === p.id)
+      return a ? { label: a.name, sub: `File · ${a.kind}`, path: a.clientId ? `/tps/clients/${a.clientId}/assets` : undefined } : null
+    }
+    case 'feedback': {
+      const f = s.feedback.find((x) => x.id === p.id)
+      return f ? { label: f.text.slice(0, 60), sub: 'Client feedback', path: `/tps/clients/${f.clientId}/feedback` } : null
+    }
+    case 'performance': {
+      const f = s.performance.find((x) => x.id === p.id)
+      return f ? { label: f.title, sub: 'Performance', path: `/tps/clients/${f.clientId}/performance` } : null
+    }
+    case 'concept': {
+      const c = s.concepts.find((x) => x.id === p.id)
+      return c ? { label: c.title, sub: `Concept · ${c.status}`, path: `/tps/studio/${c.clientId}/concepts` } : null
+    }
+    case 'aiOutput': {
+      const o = s.aiOutputs.find((x) => x.id === p.id)
+      return o ? { label: o.title, sub: 'AI Studio output', path: `/tps/studio/${o.clientId ?? '-'}/outputs` } : null
+    }
+    case 'post': {
+      const o = s.posts.find((x) => x.id === p.id)
+      return o ? { label: o.text.slice(0, 60), sub: 'Content', path: '/tps/content' } : null
+    }
     default:
       return null
   }

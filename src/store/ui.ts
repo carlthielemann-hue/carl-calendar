@@ -13,6 +13,8 @@ export interface Location {
   space: Space
   page: string
   id?: string
+  /** optional sub-view, e.g. a client tab */
+  sub?: string
 }
 
 export const DEFAULT_PAGE: Record<Space, string> = { home: '', personal: 'overview', tps: 'overview', lab: 'overview', settings: '' }
@@ -28,13 +30,13 @@ const LEGACY: Record<string, string> = {
 export function parsePath(path: string): Location {
   let p = path.replace(/^#?\/?/, '').replace(/\/$/, '')
   if (LEGACY[p]) p = LEGACY[p]
-  const [space, page, id] = p.split('/') as [Space, string?, string?]
+  const [space, page, id, sub] = p.split('/') as [Space, string?, string?, string?]
   if (!SPACES.includes(space)) return { space: 'home', page: '' }
-  return { space, page: page || DEFAULT_PAGE[space], id: id ? decodeURIComponent(id) : undefined }
+  return { space, page: page || DEFAULT_PAGE[space], id: id ? decodeURIComponent(id) : undefined, sub: sub || undefined }
 }
 
 export function toPath(l: Location) {
-  return '/' + [l.space, l.page, l.id && encodeURIComponent(l.id)].filter(Boolean).join('/')
+  return '/' + [l.space, l.page, l.id && encodeURIComponent(l.id), l.id && l.sub].filter(Boolean).join('/')
 }
 
 export interface EventDraft {

@@ -1,6 +1,6 @@
 import { addDays, startOfWeek } from 'date-fns'
 import { dateKey } from '@/lib/dates'
-import type { AdRef, Analysis, Client, Deliverable, FocusLog, Insight, Opportunity, PracticePlan, Project } from './entities'
+import type { AdRef, Analysis, Client, Concept, Deliverable, FeedbackEntry, FocusLog, Insight, Opportunity, PerformanceEntry, PracticePlan, Project, ResearchRecord } from './entities'
 
 /**
  * Sample TPS + Creative Lab data. Every record is flagged `isDemo` and every client/brand name
@@ -31,7 +31,7 @@ export function buildWorkspaceDemo(now = new Date()) {
   })
   const deliverables: Deliverable[] = [
     dl({ id: 'demo-d1', projectId: 'demo-p1', clientId: 'demo-c1', title: 'New ad concepts — barrier repair angle', type: 'Concepts', quantity: 4, stageId: 'concept', due: day(2), nextAction: 'Draft concept 3 & 4' }),
-    dl({ id: 'demo-d2', projectId: 'demo-p1', clientId: 'demo-c1', title: 'UGC scripts round 1', type: 'Ad scripts', quantity: 3, stageId: 'revisions', due: day(0), feedback: 'Hook 2 feels too clinical — make it more personal.', nextAction: 'Rewrite hook 2', completedAt: iso(-4), firstDeliveredAt: iso(-3), lastDeliveredAt: iso(-3), revisionRounds: 1 }),
+    dl({ id: 'demo-d2', projectId: 'demo-p1', clientId: 'demo-c1', title: 'UGC scripts round 1', type: 'Ad scripts', quantity: 3, stageId: 'revisions', due: day(0), nextAction: 'Rewrite hook 2', completedAt: iso(-4), firstDeliveredAt: iso(-3), lastDeliveredAt: iso(-3), revisionRounds: 1 }),
     dl({ id: 'demo-d3', projectId: 'demo-p1', clientId: 'demo-c1', title: 'Hook variations for winning ad', type: 'Hooks', quantity: 10, stageId: 'client', due: day(-1), completedAt: iso(-2), firstDeliveredAt: iso(-1), lastDeliveredAt: iso(-1) }),
     dl({ id: 'demo-d4', projectId: 'demo-p2', clientId: 'demo-c2', title: 'Customer research doc', type: 'Research doc', stageId: 'approved', due: day(-5), completedAt: iso(-7), firstDeliveredAt: iso(-6), lastDeliveredAt: iso(-6), approvedAt: iso(-5) }),
     dl({ id: 'demo-d5', projectId: 'demo-p2', clientId: 'demo-c2', title: 'Launch creative brief', type: 'Creative brief', stageId: 'drafting', due: day(4), nextAction: 'Finish offer section' }),
@@ -72,5 +72,34 @@ export function buildWorkspaceDemo(now = new Date()) {
     { id: 'demo-f3', workspace: 'lab', start: iso(-2, 14), minutes: 60, isDemo: true },
   ] as FocusLog[]
   ).filter((f) => new Date(f.start) >= monday)
-  return { clients, projects, deliverables, opportunities, ads, analyses, plans, insights, focusLogs }
+  clients[0].brand = {
+    description: 'Sample DTC skincare brand for sensitive, reactive skin. Positioned as the “fewer products, calmer skin” alternative to 10-step routines.',
+    products: 'Barrier Repair Serum (hero, €39) · Gentle Cleanser (€22) · Starter bundle (€55).',
+    usps: 'Ceramide + niacinamide complex; fragrance-free; dermatologist-tested (sample claim — verify before use).',
+    offers: 'Starter bundle −15% for first order; 60-day money-back guarantee.',
+    voice: 'Calm, honest, a little dry. Never fear-mongering. Avoid “miracle”, “cure”, “anti-aging”.',
+    avatars: 'Women 25–40 with reactive skin who have tried “everything” and feel overwhelmed by routines.',
+    pains: 'Redness and stinging after new products; wasted money on products that made it worse.',
+    desires: 'A simple routine that just works; skin they don’t think about.',
+    objections: '“Everything stings on me.” “Another serum?” “Too expensive for one product.”',
+    competitors: 'Sample Brand A (clinical, ingredient-led), Sample Brand B (influencer-heavy, bright packaging).',
+    restrictions: 'No medical claims (no “treats eczema/rosacea”). No before/after without consent forms.',
+  }
+  clients[0].brandUpdatedAt = iso(-3)
+  const research: ResearchRecord[] = [
+    { id: 'demo-r1', clientId: 'demo-c1', kind: 'Voice of customer', title: 'Review mining — barrier serum (sample)', body: 'Recurring phrases: “finally something that doesn’t sting” (×14), “I threw out half my shelf” (×6), “redness gone in a week” (×5).\nTop objection: price per ml vs. drugstore.', tags: ['reviews', 'voc'], date: day(-9), source: 'Sample review export', links: [], assetIds: [], status: 'approved', origin: 'manual', createdAt: iso(-9), updatedAt: iso(-9), isDemo: true },
+    { id: 'demo-r2', clientId: 'demo-c1', kind: 'Meeting notes', title: 'Kickoff call — October sprint (sample)', body: 'Goal: 4 new concepts on the barrier-repair angle + 3 UGC scripts. Avoid “clinical” tone. Founder wants more UGC, less studio.', tags: ['kickoff'], date: day(-12), links: [], assetIds: [], status: 'approved', origin: 'manual', createdAt: iso(-12), updatedAt: iso(-12), isDemo: true },
+    { id: 'demo-r3', clientId: 'demo-c1', kind: 'Competitor research', title: 'Competitor hooks (AI draft — needs review)', body: 'Draft: Sample Brand A leads with ingredient percentages; Sample Brand B leads with creator faces in the first frame.', tags: ['competitors'], links: [], assetIds: [], status: 'draft', origin: 'ai', createdAt: iso(-1), updatedAt: iso(-1), isDemo: true },
+  ]
+  const feedback: FeedbackEntry[] = [
+    { id: 'demo-fb1', clientId: 'demo-c1', projectId: 'demo-p1', deliverableId: 'demo-d2', at: iso(-2), kind: 'revision', text: 'Hook 2 feels too clinical — make it more personal.', status: 'open', nextAction: 'Rewrite hook 2', isDemo: true },
+    { id: 'demo-fb2', clientId: 'demo-c2', projectId: 'demo-p2', deliverableId: 'demo-d4', at: iso(-5), kind: 'approval', text: 'Research doc approved — great VOC section.', status: 'addressed', isDemo: true },
+  ]
+  const performance: PerformanceEntry[] = [
+    { id: 'demo-pf1', clientId: 'demo-c1', title: '“Stopped buying 6 products” UGC (sample)', date: day(-15), metrics: [{ label: 'Hook rate', value: 'entered manually' }], verdict: 'winner', learning: 'Confession-style openers beat ingredient-led openers for this audience (sample learning).', insightIds: ['demo-i1'], createdAt: iso(-15), isDemo: true },
+  ]
+  const concepts: Concept[] = [
+    { id: 'demo-cn1', clientId: 'demo-c1', title: '“I threw out half my shelf”', body: 'UGC confession → shelf clear-out → serum as the one product left. Proof: 60-day guarantee.', status: 'approved', origin: 'manual', insightIds: ['demo-i1'], deliverableId: 'demo-d1', createdAt: iso(-3), isDemo: true },
+  ]
+  return { clients, projects, deliverables, opportunities, ads, analyses, plans, insights, focusLogs, research, feedback, performance, concepts }
 }

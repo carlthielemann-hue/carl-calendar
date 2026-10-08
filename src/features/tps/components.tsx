@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { ArrowRight, Ban, CalendarPlus, Lightbulb, Link2, MessageSquare, Plus, Send, Trash2, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { Button, ConfirmButton, Dialog, Field, Input, Select, Sheet, SheetClose, Textarea } from '@/components/ui'
+import { Button, ConfirmButton, Dialog, Field, Input, Select, Sheet, SheetClose } from '@/components/ui'
 import { DELIVERABLE_TYPES, type Deliverable, type DeliverableType, type LinkItem, type Stage, type StageKind } from '@/domain/entities'
 import { KIND_COLOR, KIND_LABEL, stageOf } from '@/domain/stages'
 import { dateKey } from '@/lib/dates'
@@ -12,6 +12,7 @@ import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { dueLabel } from '@/features/tasks/TaskRow'
 import { HEALTH_COLOR, HEALTH_LABEL } from './hooks'
+import { FeedbackForm, FeedbackItem } from './Feedback'
 import type { Health } from '@/domain/stages'
 
 export function StageBadge({ stage, className }: { stage: Stage; className?: string }) {
@@ -199,7 +200,8 @@ function DrawerBody({ d, onClose }: { d: Deliverable; onClose: () => void }) {
   const stage = stageOf(stages, d.stageId)
   const workItem = useWorkItemMap().get(`deliverable:${d.id}`)
   const [editing, setEditing] = useState(false)
-  const [feedback, setFeedback] = useState(d.feedback ?? '')
+  const feedbackList = useApp((s) => s.feedback)
+  const fbs = feedbackList.filter((f) => f.deliverableId === d.id)
   const [link, setLink] = useState({ label: '', url: '' })
   const [taskText, setTaskText] = useState('')
   const insights = allInsights.filter((i) => d.insightIds.includes(i.id))
@@ -288,8 +290,15 @@ function DrawerBody({ d, onClose }: { d: Deliverable; onClose: () => void }) {
           </div>
         </Section>
 
-        <Section title="Client feedback">
-          <Textarea rows={3} value={feedback} onChange={(e) => setFeedback(e.target.value)} onBlur={() => feedback !== (d.feedback ?? '') && st.updateDeliverable(d.id, { feedback: feedback.trim() || undefined })} placeholder="Paste or summarise the latest feedback…" />
+        <Section title={`Client feedback${fbs.filter((f) => f.status === 'open').length ? ` · ${fbs.filter((f) => f.status === 'open').length} open` : ''}`}>
+          {fbs.length > 0 && (
+            <ul className="mb-3 space-y-2">
+              {fbs.map((f) => (
+                <FeedbackItem key={f.id} f={f} />
+              ))}
+            </ul>
+          )}
+          <FeedbackForm clientId={d.clientId} projectId={d.projectId} deliverableId={d.id} />
         </Section>
 
         <Section title="Blocked">

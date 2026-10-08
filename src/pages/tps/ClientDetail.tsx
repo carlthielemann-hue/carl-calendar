@@ -1,5 +1,5 @@
 import { format } from 'date-fns'
-import { ArrowLeft, ExternalLink, Link2, Mail, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Card, CardHeader, ConfirmButton, Empty, Input, Select } from '@/components/ui'
@@ -12,6 +12,12 @@ import { ClientDialog } from '@/features/tps/ClientDialog'
 import { DeliverableDialog, DeliverableDrawer, HealthPill, StageBadge } from '@/features/tps/components'
 import { clientHealth, HEALTH_COLOR, useDeliverableRows } from '@/features/tps/hooks'
 import { TaskRow, dueLabel } from '@/features/tasks/TaskRow'
+import { BrandTab } from '@/features/tps/client/Brand'
+import { ResearchTab } from '@/features/tps/client/Research'
+import { AssetsTab } from '@/features/tps/client/Assets'
+import { FeedbackTab } from '@/features/tps/client/FeedbackTab'
+import { PerformanceTab } from '@/features/tps/client/Performance'
+import { ActivityTab } from '@/features/tps/client/Activity'
 
 function Stat({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
   return (
@@ -24,8 +30,24 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
   )
 }
 
+const TABS: { id: string; label: string; count?: (c: Record<string, number>) => number }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'brand', label: 'Brand' },
+  { id: 'research', label: 'Research', count: (c) => c.research },
+  { id: 'assets', label: 'Assets', count: (c) => c.assets },
+  { id: 'feedback', label: 'Feedback', count: (c) => c.feedback },
+  { id: 'performance', label: 'Performance', count: (c) => c.performance },
+  { id: 'activity', label: 'Activity' },
+]
+
 export default function ClientDetail() {
   const id = useUI((s) => s.loc.id)!
+  const tab = useUI((s) => s.loc.sub) ?? 'overview'
+  const researchN = useApp((s) => s.research.filter((r) => r.clientId === id).length)
+  const assetsN = useApp((s) => s.assets.filter((r) => r.clientId === id).length)
+  const feedbackN = useApp((s) => s.feedback.filter((r) => r.clientId === id && r.status === 'open').length)
+  const perfN = useApp((s) => s.performance.filter((r) => r.clientId === id).length)
+  const counts = { research: researchN, assets: assetsN, feedback: feedbackN, performance: perfN }
   const client = useApp((s) => s.clients.find((c) => c.id === id))
   const projects = useApp((s) => s.projects)
   const tasks = useApp((s) => s.tasks)
@@ -87,7 +109,10 @@ export default function ClientDetail() {
             {client.terms && <span>· {client.terms}</span>}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => go(`/tps/studio/${client.id}`)}>
+            <Sparkles className="h-3.5 w-3.5" /> AI Studio
+          </Button>
           <Button variant="secondary" onClick={() => setEditing(true)}>
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Button>
@@ -97,6 +122,30 @@ export default function ClientDetail() {
         </div>
       </header>
 
+      <nav className="-mx-1 mb-5 flex gap-1 overflow-x-auto border-b border-line px-1 [scrollbar-width:none]" aria-label="Client sections">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => go(`/tps/clients/${client.id}${t.id === 'overview' ? '' : `/${t.id}`}`)}
+            aria-current={tab === t.id ? 'page' : undefined}
+            className={cn('relative shrink-0 px-2.5 pb-2.5 pt-1 text-[13px] font-medium transition-colors', tab === t.id ? 'text-fg' : 'text-muted hover:text-fg')}
+          >
+            {t.label}
+            {t.count?.(counts) ? <span className="ml-1.5 text-[11px] text-faint tnum">{t.count(counts)}</span> : null}
+            {tab === t.id && <span className="absolute inset-x-1 -bottom-px h-[2px] rounded-full bg-fg" />}
+          </button>
+        ))}
+      </nav>
+
+      {tab === 'brand' && <BrandTab client={client} />}
+      {tab === 'research' && <ResearchTab client={client} />}
+      {tab === 'assets' && <AssetsTab client={client} />}
+      {tab === 'feedback' && <FeedbackTab client={client} />}
+      {tab === 'performance' && <PerformanceTab client={client} />}
+      {tab === 'activity' && <ActivityTab client={client} />}
+
+      {tab === 'overview' && (
+      <>
       <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Units agreed" value={units(() => true)} />
         <Stat label="My part done" value={units((r) => !!r.d.completedAt)} />
@@ -306,6 +355,8 @@ export default function ClientDetail() {
           </ConfirmButton>
         </div>
       </div>
+      </>
+      )}
 
       <ClientDialog open={editing} onOpenChange={setEditing} initial={client} />
       <DeliverableDialog open={newDeliverableFor !== null} onOpenChange={(v) => !v && setNewDeliverableFor(null)} defaultProjectId={newDeliverableFor ?? undefined} />

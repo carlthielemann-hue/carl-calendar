@@ -23,6 +23,13 @@ export type EntityType =
   | 'analysis'
   | 'insight'
   | 'plan'
+  | 'research'
+  | 'asset'
+  | 'feedback'
+  | 'performance'
+  | 'concept'
+  | 'aiOutput'
+  | 'post'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -54,6 +61,9 @@ export interface Client {
   links: LinkItem[]
   /** Default rate or retainer notes, free text */
   terms?: string
+  /** Structured brand intelligence, one editable section per key (see domain/knowledge) */
+  brand?: Partial<Record<BrandKey, string>>
+  brandUpdatedAt?: string
   createdAt: string
   isDemo?: boolean
 }
@@ -98,8 +108,6 @@ export interface Deliverable {
   stageId: string
   due?: string
   nextAction?: string
-  /** Latest feedback from the client */
-  feedback?: string
   blocked?: string
   links: LinkItem[]
   /** Insights applied to this deliverable */
@@ -140,6 +148,8 @@ export interface Opportunity {
   nextFollowUp?: string
   notes?: string
   touches: Touch[]
+  /** Upwork job / proposal link, X conversation, etc. */
+  url?: string
   /** Set when the opportunity is won and converted. */
   clientId?: string
   createdAt: string
@@ -320,3 +330,175 @@ export interface DayPlan {
 }
 
 export const WORKSPACE_CATEGORY: Record<WorkspaceId, CategoryId> = { personal: 'personal', tps: 'tps', lab: 'lab' }
+
+/* ---------------- Client knowledge (V3) ---------------- */
+
+export const BRAND_SECTIONS = [
+  { key: 'description', label: 'Brand description & positioning', hint: 'What they are, who they’re for, how they’re different.' },
+  { key: 'products', label: 'Products & services', hint: 'Hero products, bundles, price points.' },
+  { key: 'usps', label: 'Unique selling propositions', hint: 'Mechanisms, proof, claims they can make.' },
+  { key: 'offers', label: 'Core offers & pricing', hint: 'Current offers, discounts, guarantees.' },
+  { key: 'voice', label: 'Brand voice & messaging', hint: 'Tone, words they use, words they never use.' },
+  { key: 'avatars', label: 'Customer avatars & segments', hint: 'Who buys, why, in their words.' },
+  { key: 'pains', label: 'Pains', hint: '' },
+  { key: 'desires', label: 'Desires', hint: '' },
+  { key: 'objections', label: 'Objections', hint: '' },
+  { key: 'motivations', label: 'Motivations & triggers', hint: '' },
+  { key: 'competitors', label: 'Competitors', hint: 'Who they lose to and how those brands advertise.' },
+  { key: 'guidelines', label: 'Brand guidelines', hint: 'Visual identity, fonts, do’s and don’ts.' },
+  { key: 'restrictions', label: 'Creative restrictions & compliance', hint: 'Claims to avoid, platform policy issues, legal.' },
+] as const
+export type BrandKey = (typeof BRAND_SECTIONS)[number]['key']
+
+export const RESEARCH_KINDS = ['Customer research', 'Competitor research', 'Market observation', 'Voice of customer', 'Strategy document', 'Meeting notes', 'Brief', 'Decision'] as const
+export type ResearchKind = (typeof RESEARCH_KINDS)[number]
+
+/** Drafts (e.g. AI output) are visibly separate from approved client knowledge. */
+export type KnowledgeStatus = 'draft' | 'approved'
+
+export interface ResearchRecord {
+  id: string
+  clientId: string
+  kind: ResearchKind
+  title: string
+  body: string
+  tags: string[]
+  /** yyyy-MM-dd the research is about / was done */
+  date?: string
+  source?: string
+  links: Ref[]
+  assetIds: string[]
+  status: KnowledgeStatus
+  origin: 'manual' | 'ai' | 'manus' | 'mcp'
+  createdAt: string
+  updatedAt: string
+  isDemo?: boolean
+}
+
+export const ASSET_KINDS = ['Document', 'Image', 'Video', 'Creative brief', 'Brand asset', 'Script', 'Concept', 'Reference link', 'Other'] as const
+export type AssetKind = (typeof ASSET_KINDS)[number]
+
+export interface Asset {
+  id: string
+  clientId?: string
+  projectId?: string
+  deliverableId?: string
+  name: string
+  kind: AssetKind
+  /** local = IndexedDB on this device, cloud = R2 via the sync backend, link = external URL */
+  storage: 'local' | 'cloud' | 'link'
+  /** IndexedDB media id or cloud object key */
+  blobId?: string
+  url?: string
+  mime?: string
+  size?: number
+  tags: string[]
+  notes?: string
+  createdAt: string
+  isDemo?: boolean
+}
+
+export type FeedbackKind = 'revision' | 'approval' | 'comment'
+export interface FeedbackEntry {
+  id: string
+  clientId: string
+  projectId?: string
+  deliverableId?: string
+  at: string
+  kind: FeedbackKind
+  text: string
+  /** open = still to address */
+  status: 'open' | 'addressed'
+  nextAction?: string
+  isDemo?: boolean
+}
+
+export interface PerfMetric {
+  label: string
+  value: string
+}
+export interface PerformanceEntry {
+  id: string
+  clientId: string
+  deliverableId?: string
+  conceptId?: string
+  title: string
+  date?: string
+  /** Manually entered — never invented */
+  metrics: PerfMetric[]
+  verdict: 'winner' | 'loser' | 'inconclusive' | 'testing'
+  learning?: string
+  insightIds: string[]
+  createdAt: string
+  isDemo?: boolean
+}
+
+export interface Concept {
+  id: string
+  clientId: string
+  title: string
+  body: string
+  status: 'draft' | 'approved' | 'rejected'
+  origin: 'manual' | 'ai' | 'mcp'
+  insightIds: string[]
+  deliverableId?: string
+  aiOutputId?: string
+  createdAt: string
+  isDemo?: boolean
+}
+
+/* ---------------- AI Studio ---------------- */
+
+export type ContextKey = 'brand' | 'research' | 'concepts' | 'feedback' | 'insights' | 'performance' | 'deliverables'
+
+export interface WorkflowInput {
+  key: string
+  label: string
+  multiline?: boolean
+  placeholder?: string
+}
+
+export interface AiWorkflow {
+  id: string
+  name: string
+  description: string
+  /** Template with {{client}}, {{context}} and {{input.<key>}} placeholders */
+  template: string
+  inputs: WorkflowInput[]
+  defaultContext: ContextKey[]
+  /** Suggested place to save the result */
+  saveAs: 'research' | 'concept' | 'note'
+  builtIn?: boolean
+}
+
+export type AiProvider = 'manual' | 'anthropic' | 'openai' | 'manus'
+
+export interface AiOutput {
+  id: string
+  clientId?: string
+  workflowId?: string
+  title: string
+  /** The exact text that was (or would be) sent */
+  prompt: string
+  /** Human summary of included context, e.g. "Brand (6 sections), 2 research records" */
+  contextSummary: string
+  response: string
+  provider: AiProvider
+  status: 'draft' | 'approved'
+  /** Records created from this output */
+  savedAs: Ref[]
+  externalUrl?: string
+  createdAt: string
+}
+
+/* ---------------- Content (X) ---------------- */
+
+export interface ContentPost {
+  id: string
+  text: string
+  status: 'idea' | 'draft' | 'scheduled' | 'posted'
+  scheduledFor?: string
+  postedUrl?: string
+  notes?: string
+  createdAt: string
+}

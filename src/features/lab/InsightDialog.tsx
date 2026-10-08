@@ -6,15 +6,15 @@ import { useApp } from '@/store/app'
 import { parseTags } from './components'
 
 /** Create an insight, pre-linked to where it came from (ad, analysis…). */
-export function InsightDialog({ open, onOpenChange, links = [], seed = '' }: { open: boolean; onOpenChange: (v: boolean) => void; links?: Ref[]; seed?: string }) {
+export function InsightDialog({ open, onOpenChange, links = [], seed = '', onSaved }: { open: boolean; onOpenChange: (v: boolean) => void; links?: Ref[]; seed?: string; onSaved?: (id: string) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Save an insight" description="A reusable lesson you can apply to client work.">
-      {open && <Form links={links} seed={seed} onDone={() => onOpenChange(false)} />}
+      {open && <Form links={links} seed={seed} onSaved={onSaved} onDone={() => onOpenChange(false)} />}
     </Dialog>
   )
 }
 
-function Form({ links, seed, onDone }: { links: Ref[]; seed: string; onDone: () => void }) {
+function Form({ links, seed, onDone, onSaved }: { links: Ref[]; seed: string; onDone: () => void; onSaved?: (id: string) => void }) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState(seed)
   const [type, setType] = useState<InsightType>('Hook pattern')
@@ -27,6 +27,7 @@ function Form({ links, seed, onDone }: { links: Ref[]; seed: string; onDone: () 
     const s = useApp.getState()
     const i = s.addInsight({ title: title.trim(), body: body.trim() || undefined, type, tags: parseTags(tags), links })
     if (applyTo) s.linkInsight(i.id, applyTo as Ref)
+    onSaved?.(i.id)
     toast.success('Insight saved', { description: applyTo ? 'Linked to the client deliverable too.' : undefined })
     onDone()
   }

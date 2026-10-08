@@ -131,3 +131,38 @@ describe('backup', () => {
     expect(() => importSnapshot({ hello: 1 })).toThrow()
   })
 })
+
+describe('migration v2 → v3', () => {
+  it('turns deliverable feedback text into a feedback entry and adds new collections', () => {
+    const v2 = {
+      hasDemoData: false,
+      clients: [{ id: 'c', name: 'C', status: 'active', links: [], createdAt: '' }],
+      deliverables: [{ id: 'd', projectId: 'p', clientId: 'c', title: 'Hooks', type: 'Hooks', quantity: 1, stageId: 'revisions', links: [], insightIds: [], revisionRounds: 1, history: [], createdAt: '2026-10-01', feedback: 'Make it punchier' }],
+    }
+    const v3 = migrateState(v2, 2) as { deliverables: Record<string, unknown>[]; feedback: { text: string; kind: string; status: string }[]; workflows: unknown[]; research: unknown[] }
+    expect(v3.deliverables[0].feedback).toBeUndefined()
+    expect(v3.feedback).toEqual([expect.objectContaining({ text: 'Make it punchier', kind: 'revision', status: 'open' })])
+    expect(v3.workflows.length).toBe(10)
+    expect(v3.research).toEqual([])
+  })
+})
+
+describe('client knowledge', () => {
+  it('deleting an asset detaches it from research; context pack excludes drafts', async () => {
+    const { buildContextPack } = await import('@/domain/context')
+    const s = useApp.getState()
+    s.clearAll()
+    const c = s.addClient({ name: 'K', brand: { voice: 'Calm' } })
+    s.put('assets', { id: 'a1', clientId: c.id, name: 'brief.pdf', kind: 'Document', storage: 'link', url: 'https://x', tags: [], createdAt: '' })
+    s.put('research', { id: 'r1', clientId: c.id, kind: 'Brief', title: 'Approved', body: 'yes', tags: [], links: [], assetIds: ['a1'], status: 'approved', origin: 'manual', createdAt: '', updatedAt: '' })
+    s.put('research', { id: 'r2', clientId: c.id, kind: 'Brief', title: 'Draft', body: 'no', tags: [], links: [], assetIds: [], status: 'draft', origin: 'ai', createdAt: '', updatedAt: '' })
+    s.drop('assets', 'a1')
+    const st = useApp.getState()
+    expect(st.research.find((r) => r.id === 'r1')!.assetIds).toEqual([])
+    const pack = buildContextPack(st, c.id, { keys: ['brand', 'research'] })
+    expect(pack.text).toContain('Calm')
+    expect(pack.text).toContain('Approved')
+    expect(pack.text).not.toContain('Draft')
+    expect(pack.summary).toBe('Brand intelligence (1), Research (1)')
+  })
+})
