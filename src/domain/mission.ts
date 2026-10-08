@@ -18,8 +18,8 @@ export interface RiskItem {
 const day = (k: string) => new Date(`${k}T00:00`)
 const daysBetween = (from: string, to: string) => differenceInCalendarDays(day(to), day(from))
 
-export function atRisk(input: { items: WorkItem[]; today: string; proposals?: Proposal[] }): RiskItem[] {
-  const out: RiskItem[] = []
+export function atRisk(input: { items: WorkItem[]; today: string; proposals?: Proposal[]; extra?: RiskItem[] }): RiskItem[] {
+  const out: RiskItem[] = [...(input.extra ?? [])]
   for (const i of input.items) {
     if (i.done || !i.due) continue
     const d = daysBetween(input.today, i.due)
@@ -41,13 +41,17 @@ export interface CountdownRow {
   title: string
   date: string
   daysLeft: number
-  kind: 'custom' | 'deliverable'
+  kind: 'custom' | 'deliverable' | 'exam'
   ref?: Ref
 }
 
 /** Your own countdowns plus client deadlines in the next two weeks, soonest first. */
-export function countdownRows(input: { countdowns: Countdown[]; items: WorkItem[]; today: string; limit?: number }): CountdownRow[] {
+export function countdownRows(input: { countdowns: Countdown[]; items: WorkItem[]; today: string; limit?: number; exams?: { id: string; title: string; date: string }[] }): CountdownRow[] {
   const rows: CountdownRow[] = []
+  for (const e of input.exams ?? []) {
+    const d = daysBetween(input.today, e.date)
+    if (d >= 0 && d <= 30) rows.push({ id: `exam:${e.id}`, title: e.title, date: e.date, daysLeft: d, kind: 'exam', ref: `exam:${e.id}` })
+  }
   for (const c of input.countdowns) {
     const d = daysBetween(input.today, c.date)
     if (d >= 0) rows.push({ id: c.id, title: c.title, date: c.date, daysLeft: d, kind: 'custom', ref: `countdown:${c.id}` })

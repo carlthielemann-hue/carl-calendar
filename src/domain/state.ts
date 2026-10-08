@@ -12,6 +12,10 @@ import type {
   Concept,
   ContentPost,
   Countdown,
+  Subject,
+  Exam,
+  Assignment,
+  Grade,
   DayPlan,
   Deliverable,
   FeedbackEntry,
@@ -71,6 +75,10 @@ export interface Data {
   /* V4 */
   countdowns: Countdown[]
   proposals: Proposal[]
+  subjects: Subject[]
+  exams: Exam[]
+  assignments: Assignment[]
+  grades: Grade[]
   /* Shared */
   metrics: Metric[]
   scorecards: Record<string, WeekScore>

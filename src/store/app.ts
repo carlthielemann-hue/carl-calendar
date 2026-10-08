@@ -10,6 +10,7 @@ import type { CalEvent, Settings, Task, WeeklyPlan } from '@/lib/types'
 import { BUILTIN_TEMPLATES, DEFAULT_PRACTICE_TEMPLATES, STARTER_METRICS } from '@/domain/defaults'
 import { buildWorkspaceDemo } from '@/domain/demo'
 import { BUILTIN_WORKFLOWS } from '@/domain/aiWorkflows'
+import { DEFAULT_STUDY_PREFS } from '@/domain/entities'
 import { isAccountMode, storeKey } from './mode'
 import type {
   AdRef,
@@ -20,6 +21,10 @@ import type {
   ContentPost,
   Countdown,
   Proposal,
+  Subject,
+  Exam,
+  Assignment,
+  Grade,
   EntityType,
   FeedbackEntry,
   PerformanceEntry,
@@ -65,6 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
   googleClientId: '',
   hiddenSpaces: [],
   hiddenMissionModules: [],
+  study: DEFAULT_STUDY_PREFS,
 }
 
 
@@ -81,6 +87,10 @@ export interface Collections {
   posts: ContentPost
   countdowns: Countdown
   proposals: Proposal
+  subjects: Subject
+  exams: Exam
+  assignments: Assignment
+  grades: Grade
 }
 export type CollKey = keyof Collections
 export const COLL_REF: Record<CollKey, EntityType> = {
@@ -94,6 +104,10 @@ export const COLL_REF: Record<CollKey, EntityType> = {
   posts: 'post',
   countdowns: 'countdown',
   proposals: 'proposal',
+  subjects: 'subject',
+  exams: 'exam',
+  assignments: 'assignment',
+  grades: 'grade',
 }
 
 interface Actions {
@@ -210,6 +224,10 @@ function initialData(): Data {
     posts: [],
     countdowns: [],
     proposals: [],
+    subjects: [],
+    exams: [],
+    assignments: [],
+    grades: [],
     settings: DEFAULT_SETTINGS,
     google: { connected: false, calendarId: 'primary', events: [] },
     hasDemoData: true,
@@ -679,7 +697,7 @@ export const useApp = create<AppState>()(
           set({
             events: [], tasks: [], topThree: {}, weekly: {}, dayPlans: {}, clients: [], projects: [], deliverables: [], opportunities: [],
             ads: [], analyses: [], plans: [], insights: [], scorecards: {}, focusLogs: [], activity: [], hasDemoData: false,
-            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [],
+            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [],
           }),
       }
     },
@@ -697,6 +715,7 @@ export const useApp = create<AppState>()(
             ...DEFAULT_SETTINGS,
             ...p.settings,
             categoryColors: { ...DEFAULT_CATEGORY_COLORS, ...p.settings?.categoryColors },
+            study: { ...DEFAULT_STUDY_PREFS, ...p.settings?.study },
           },
           google: { ...current.google, ...p.google },
         }
@@ -757,6 +776,10 @@ function migrateV2(p: Record<string, unknown>): Record<string, unknown> {
     posts: [],
     countdowns: [],
     proposals: [],
+    subjects: [],
+    exams: [],
+    assignments: [],
+    grades: [],
   }
 }
 

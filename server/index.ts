@@ -9,15 +9,15 @@ import { OAuthProvider, AuthorizationError } from '@cloudflare/workers-oauth-pro
 import { Hono, type Context } from 'hono'
 import { runAi, AiError } from './ai'
 import { currentSession, login, logout, OWNER_ID, readCookie } from './auth'
-import { DEFAULT_PREFS, morningBrief, scheduled, type NotifyPrefs } from './cron'
+import { DEFAULT_PREFS, morningBrief, plannerRun, scheduled, type NotifyPrefs } from './cron'
 import type { Env } from './env'
 import * as google from './google'
 import { createManusTask, getManusTask } from './manus'
 import { DEFAULT_MCP_AREAS, DEFAULT_MCP_PERMISSIONS, mcpFetch, toolList, type McpAreas, type McpPermissions } from './mcp'
 import { consentPage, HTML_HEADERS, loginPage, messagePage } from './pages'
 import { notify, pendingNotification, pushConfigured } from './push'
-import { applyChange, currentRev, type PushChange } from './records'
-import { getMeta, json, nowIso, setMeta } from './util'
+import { applyChange, currentRev, type PushChange, loadState } from './records'
+import { getMeta, json, nowIso, setMeta, wallClock } from './util'
 
 type C = Context<{ Bindings: Env }>
 const app = new Hono<{ Bindings: Env }>()
@@ -275,6 +275,12 @@ app.put('/api/notify/prefs', async (c) => {
   return json(next)
 })
 app.get('/api/brief', async (c) => json(await morningBrief(c.env)))
+/** Run the planner on the server now (same as the nightly run). */
+app.post('/api/planner/run', async (c) => {
+  const today = wallClock(new Date(), c.env.APP_TIMEZONE || 'Europe/Berlin').slice(0, 10)
+  const out = await plannerRun(c.env, await loadState(c.env), today, { dryRun: false })
+  return json({ proposed: out.items.length, fixedToday: out.urgent.length, warnings: out.warnings, needsPace: out.needsPace.map((e) => e.id) })
+})
 
 /* ---------------- MCP settings ---------------- */
 

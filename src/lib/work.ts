@@ -20,9 +20,11 @@ export function useWorkItems(): WorkItem[] {
   const analyses = useApp((s) => s.analyses)
   const ads = useApp((s) => s.ads)
   const opportunities = useApp((s) => s.opportunities)
+  const assignments = useApp((s) => s.assignments)
+  const subjects = useApp((s) => s.subjects)
   return useMemo(
-    () => deriveWorkItems({ tasks, deliverables, stages, clients, analyses, ads, opportunities }),
-    [tasks, deliverables, stages, clients, analyses, ads, opportunities],
+    () => deriveWorkItems({ tasks, deliverables, stages, clients, analyses, ads, opportunities, assignments, subjects }),
+    [tasks, deliverables, stages, clients, analyses, ads, opportunities, assignments, subjects],
   )
 }
 
@@ -71,6 +73,13 @@ export function toggleWorkItem(r: string) {
       if (!o) return
       s.logTouch(o.id, 'follow_up')
       toast.success('Follow-up logged', { description: `Set the next follow-up on ${o.name} in the pipeline.`, action: { label: 'Open', onClick: () => useUI.getState().go('/tps/pipeline') } })
+      return
+    }
+    case 'assignment': {
+      const a = s.assignments.find((x) => x.id === p.id)
+      if (!a) return
+      s.patch('assignments', a.id, { done: !a.done, completedAt: a.done ? undefined : new Date().toISOString() })
+      if (!a.done) toast.success('Homework done', { description: a.title, action: { label: 'Undo', onClick: () => useApp.getState().patch('assignments', a.id, { done: false, completedAt: undefined }) } })
       return
     }
   }
@@ -142,6 +151,27 @@ export function describeRef(s: AppState, r: string): { label: string; sub?: stri
     case 'post': {
       const o = s.posts.find((x) => x.id === p.id)
       return o ? { label: o.text.slice(0, 60), sub: 'Content', path: '/tps/content' } : null
+    }
+    case 'subject': {
+      const o = s.subjects.find((x) => x.id === p.id)
+      return o ? { label: o.name, sub: 'Subject', path: '/school/subjects' } : null
+    }
+    case 'exam': {
+      const o = s.exams.find((x) => x.id === p.id)
+      const sub = s.subjects.find((x) => x.id === o?.subjectId)
+      return o ? { label: `${sub ? `${sub.name}: ` : ''}${o.title}`, sub: `Exam · ${o.date}`, path: `/school/exams/${o.id}` } : null
+    }
+    case 'assignment': {
+      const o = s.assignments.find((x) => x.id === p.id)
+      return o ? { label: o.title, sub: 'Homework', path: '/school/assignments' } : null
+    }
+    case 'grade': {
+      const o = s.grades.find((x) => x.id === p.id)
+      return o ? { label: `${o.points} points`, sub: 'Grade', path: '/school/grades' } : null
+    }
+    case 'countdown': {
+      const o = s.countdowns.find((x) => x.id === p.id)
+      return o ? { label: o.title, sub: `Countdown · ${o.date}`, path: '/home' } : null
     }
     default:
       return null

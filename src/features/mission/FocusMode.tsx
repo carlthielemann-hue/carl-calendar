@@ -71,6 +71,7 @@ export function FocusMode() {
     const mins = focusedMinutes(s)
     if (mins >= 5) {
       useApp.getState().logFocus({ workspace: WS[s.category] ?? 'personal', start: new Date(s.startedAt).toISOString(), minutes: mins, occurrenceKey: s.occurrenceKey, link: s.link as never, note: s.title })
+      if (s.eventId) useApp.getState().updateEvent(s.eventId, { outcome: 'done' })
       toast.success(`${mins} min focused`, { description: 'Logged — counts toward this week’s targets.' })
     } else toast('Session ended', { description: 'Under 5 minutes — not logged.' })
     clearFocus()

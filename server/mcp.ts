@@ -6,6 +6,8 @@
  */
 import { addDays } from 'date-fns'
 import { buildContextPack } from '@/domain/context'
+import { DEFAULT_STUDY_PREFS } from '@/domain/entities'
+import { examStatus, gradeAverage } from '@/domain/school'
 import type { Concept, Insight, Ref } from '@/domain/entities'
 import { metricActual, pace } from '@/domain/metrics'
 import { stageOf, courtOf, deliverableHealth } from '@/domain/stages'
@@ -73,7 +75,16 @@ function todayKey(env: Env) {
 }
 
 /** Remove clients hidden from AI tools, and everything that belongs to them. */
-function visible(s: AppStateLike, perms: McpPermissions): AppStateLike {
+function visible(s0: AppStateLike, perms: McpPermissions): AppStateLike {
+  const areas = { ...DEFAULT_MCP_AREAS, ...perms.areas }
+  // Areas switched off are removed before any tool sees the data.
+  const s: AppStateLike = {
+    ...s0,
+    subjects: areas.school ? (s0.subjects ?? []) : [],
+    exams: areas.school ? (s0.exams ?? []) : [],
+    assignments: areas.school ? (s0.assignments ?? []) : [],
+    grades: areas.school && areas.grades ? (s0.grades ?? []) : [],
+  }
   if (!perms.hiddenClients.length) return s
   const hidden = new Set(perms.hiddenClients)
   const own = <T extends { clientId?: string }>(l: T[]) => l.filter((x) => !x.clientId || !hidden.has(x.clientId))
@@ -264,6 +275,49 @@ const TOOLS: Tool[] = [
       const top = (s.topThree[today] ?? []).map((r) => items.find((i) => i.ref === r)).filter(Boolean)
       const due = items.filter((i) => !i.done && i.due && i.due <= today)
       return { today, top_three: top, due_or_overdue: due.map((i) => ({ ...i, overdue: i.due! < today })) }
+    },
+  },
+  {
+    name: 'get_school_overview',
+    title: 'School overview',
+    description: 'Subjects, upcoming exams (with pace and study hours done/planned) and open homework. Use for questions about tests and studying.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    level: 'read',
+    run: async (_a, ctx) => {
+      if (!areaAllowed(ctx.perms, 'school')) throw new ToolError('School access is turned off in Command Center → Settings → AI connections.')
+      const s = await ctx.state()
+      const today = todayKey(ctx.env)
+      const now = new Date(wallClock(new Date(), ctx.env.APP_TIMEZONE || 'Europe/Berlin'))
+      const prefs = { ...DEFAULT_STUDY_PREFS, ...(s.settings as { study?: Partial<typeof DEFAULT_STUDY_PREFS> }).study }
+      return {
+        today,
+        subjects: s.subjects.map((x) => ({ id: x.id, name: x.name, level: x.level ?? null, study: x.mode === 'ongoing' ? `ongoing, ${x.ongoing?.minutes} min on ${x.ongoing?.days.length} days/week` : 'only before tests' })),
+        exams: s.exams
+          .filter((e) => e.date >= today)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map((e) => {
+            const st = examStatus(e, { subjects: s.subjects, events: s.events, now, today, prefs })
+            return { id: e.id, subject: st.subject?.name, title: e.title, date: e.date, size: e.size, days_left: st.daysLeft, topics: e.topics ?? null, state: st.state, pace_hours: e.pace ? e.pace.minutes / 60 : null, hours_done: Math.round(st.doneMin / 6) / 10, hours_planned: Math.round(st.plannedMin / 6) / 10 }
+          }),
+        homework_open: s.assignments.filter((a) => !a.done).map((a) => ({ id: a.id, subject: s.subjects.find((x) => x.id === a.subjectId)?.name, title: a.title, due: a.due })),
+      }
+    },
+  },
+  {
+    name: 'get_grades',
+    title: 'Get grades',
+    description: 'Grades per subject (Oberstufe points 0–15) with weighted averages. Only available if you allowed grades for AI.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    level: 'read',
+    run: async (_a, ctx) => {
+      if (!areaAllowed(ctx.perms, 'school') || !areaAllowed(ctx.perms, 'grades')) throw new ToolError('Grades are private — turn on “Grades” in Command Center → Settings → AI connections to share them.')
+      const s = await ctx.state()
+      return {
+        subjects: s.subjects.map((x) => {
+          const g = s.grades.filter((y) => y.subjectId === x.id)
+          return { subject: x.name, average_points: gradeAverage(g), grades: g.map((y) => ({ kind: y.kind, points: y.points, weight: y.weight, date: y.date })) }
+        }),
+      }
     },
   },
   {

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { toggleWorkItem } from '@/lib/work'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { AtRiskCard, CountdownsCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
+import { AtRiskCard, AutopilotCard, CountdownsCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
 import { startFocus } from '@/features/mission/focus'
 import type { Occurrence } from '@/lib/types'
 import { NowNext } from '@/features/overview/NowNext'
@@ -151,7 +151,7 @@ export default function Home() {
 
   const focusOn = (current: Occurrence | undefined) => {
     if (current) {
-      startFocus({ title: current.event.title, category: current.event.category, link: current.event.link, occurrenceKey: current.key, endsAt: current.end.getTime() })
+      startFocus({ title: current.event.title, category: current.event.category, link: current.event.link, occurrenceKey: current.key, eventId: current.event.origin === 'planner' ? current.event.id : undefined, endsAt: current.end.getTime() })
       return
     }
     const first = top.find((t) => !t.done)
@@ -181,6 +181,11 @@ export default function Home() {
         {show('risk') && (
           <div className={cn('min-w-0 lg:order-4 lg:col-span-7', risks.some((r) => r.level === 'high') ? 'order-2' : 'order-5')}>
             <AtRiskCard risks={risks} />
+          </div>
+        )}
+        {show('autopilot') && (
+          <div className="order-6 min-w-0 empty:hidden lg:col-span-12">
+            <AutopilotCard />
           </div>
         )}
         {show('week') && (

@@ -1,5 +1,10 @@
 import {
+  BarChart3,
+  BookOpen,
   Briefcase,
+  CalendarClock,
+  GraduationCap,
+  NotebookPen,
   Crosshair,
   CalendarCheck,
   CalendarDays,
@@ -39,6 +44,7 @@ export const SPACE_DEFS: SpaceDef[] = [
   { id: 'personal', label: 'Personal', short: 'Personal', icon: User, color: '#5b8def', key: 'P' },
   { id: 'tps', label: 'TPS Business', short: 'TPS', icon: Briefcase, color: '#9d84f7', key: 'B' },
   { id: 'lab', label: 'Creative Lab', short: 'Lab', icon: FlaskConical, color: '#3fb5c4', key: 'L' },
+  { id: 'school', label: 'School', short: 'School', icon: GraduationCap, color: '#5b8def', key: 'S' },
 ]
 
 export interface PageDef {
@@ -72,6 +78,13 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'library', label: 'Swipe library', icon: Library },
     { page: 'insights', label: 'Insights', icon: Lightbulb },
     { page: 'history', label: 'Practice history', icon: History },
+  ],
+  school: [
+    { page: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { page: 'exams', label: 'Exams', icon: CalendarClock },
+    { page: 'assignments', label: 'Homework', icon: NotebookPen },
+    { page: 'grades', label: 'Grades', icon: BarChart3 },
+    { page: 'subjects', label: 'Subjects', icon: BookOpen },
   ],
 }
 

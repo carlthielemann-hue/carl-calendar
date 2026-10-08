@@ -1,6 +1,6 @@
 import { addDays } from 'date-fns'
-import type { Analysis, Deliverable, FocusLog, Insight, Metric, Opportunity, WeekScore } from './entities'
-import type { Task } from '@/lib/types'
+import type { Analysis, Assignment, Deliverable, FocusLog, Insight, Metric, Opportunity, WeekScore } from './entities'
+import type { CalEvent, Task } from '@/lib/types'
 
 export interface MetricData {
   deliverables: Deliverable[]
@@ -9,6 +9,9 @@ export interface MetricData {
   analyses: Analysis[]
   insights: Insight[]
   tasks: Task[]
+  /** For study hours: planner blocks */
+  events?: CalEvent[]
+  assignments?: Assignment[]
 }
 
 const inRange = (iso: string | undefined, from: Date, to: Date) => {
@@ -53,6 +56,15 @@ export function metricActual(m: Metric, data: MetricData, weekStart: Date, score
       return data.insights.filter((i) => inRange(i.createdAt, from, to)).length
     case 'tasks_completed':
       return data.tasks.filter((t) => t.completed && inRange(t.completedAt, from, to)).length
+    case 'study_hours': {
+      const now = Date.now()
+      const m = (data.events ?? [])
+        .filter((e) => e.origin === 'planner' && e.category === 'school' && e.outcome !== 'missed' && new Date(e.end).getTime() <= now && inRange(new Date(e.start).toISOString(), from, to))
+        .reduce((a, e) => a + (new Date(e.end).getTime() - new Date(e.start).getTime()) / 60000, 0)
+      return Math.round((m / 60) * 10) / 10
+    }
+    case 'homework_done':
+      return (data.assignments ?? []).filter((a) => a.done && inRange(a.completedAt, from, to)).length
     default:
       return 0
   }
@@ -69,6 +81,8 @@ export const AUTO_METRICS: { key: Metric['source']['key']; label: string; unit: 
   { key: 'analyses_completed', label: 'Ads analyzed', unit: 'count', kind: 'output', workspace: 'lab', hint: 'Analyses marked done this week.' },
   { key: 'insights_created', label: 'Insights saved', unit: 'count', kind: 'output', workspace: 'lab', hint: 'New insights added to the knowledge base.' },
   { key: 'tasks_completed', label: 'Tasks completed', unit: 'count', kind: 'output', workspace: 'personal', hint: 'Tasks ticked off this week.' },
+  { key: 'study_hours', label: 'Study hours', unit: 'hours', kind: 'effort', workspace: 'personal', hint: 'Planner study blocks that happened (not marked missed).' },
+  { key: 'homework_done', label: 'Homework done', unit: 'count', kind: 'output', workspace: 'personal', hint: 'Homework ticked off this week.' },
 ]
 
 /**

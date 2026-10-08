@@ -38,6 +38,11 @@ const ROUTES: Record<string, ReturnType<typeof lazy>> = {
   'lab/library': page(() => import('@/pages/lab/Library')),
   'lab/insights': page(() => import('@/pages/lab/Insights')),
   'lab/history': page(() => import('@/pages/lab/History')),
+  'school/overview': page(() => import('@/pages/school/Overview')),
+  'school/exams': page(() => import('@/pages/school/Exams')),
+  'school/assignments': page(() => import('@/pages/school/Assignments')),
+  'school/grades': page(() => import('@/pages/school/Grades')),
+  'school/subjects': page(() => import('@/pages/school/Subjects')),
   settings: page(() => import('@/pages/Settings')),
 }
 /** Routes whose ":id" segment opens a dedicated detail page */
@@ -143,7 +148,7 @@ export default function App() {
   useEffect(boot, [])
   const loc = useUI((s) => s.loc)
   const theme = useApp((s) => s.settings.theme)
-  const key = loc.space === 'home' || loc.space === 'settings' ? loc.space : `${loc.space}/${loc.page}`
+  const key = loc.space === 'settings' || (loc.space === 'home' && !loc.page) ? loc.space : `${loc.space}/${loc.page}`
   const Page = loc.id && DETAIL[key] ? DETAIL[key] : ROUTES[key]
   useEffect(() => {
     const d = spaceDef(loc.space === 'settings' ? 'home' : loc.space)

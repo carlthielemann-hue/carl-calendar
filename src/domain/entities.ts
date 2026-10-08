@@ -32,6 +32,10 @@ export type EntityType =
   | 'post'
   | 'countdown'
   | 'proposal'
+  | 'subject'
+  | 'exam'
+  | 'assignment'
+  | 'grade'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -272,6 +276,8 @@ export type AutoMetricKey =
   | 'analyses_completed'
   | 'insights_created'
   | 'tasks_completed'
+  | 'study_hours'
+  | 'homework_done'
 
 export interface MetricSource {
   type: 'manual' | 'auto'
@@ -530,6 +536,8 @@ export type ProposalAction =
 export interface ProposalItem {
   id: string
   action: ProposalAction
+  /** For changes the planner applied on its own (same-day clashes): how to put it back */
+  undo?: ProposalAction
   /** Human summary, e.g. "Mathe review · Tue 16:00–17:00" */
   label: string
   /** Why, e.g. "basketball moved to 15:30" */
@@ -548,3 +556,75 @@ export interface Proposal {
   resolvedAt?: string
   items: ProposalItem[]
 }
+
+/* ---------------- School (V4.1) ---------------- */
+
+export interface Subject {
+  id: string
+  name: string
+  color: string
+  level?: 'LK' | 'GK'
+  /** ongoing = regular study planned every week; test-only = nothing until a test's heads-up */
+  mode: 'ongoing' | 'test-only'
+  ongoing?: { minutes: number; /** 0 = Sunday … 6 = Saturday */ days: number[] }
+  createdAt: string
+}
+
+export interface Exam {
+  id: string
+  subjectId: string
+  title: string
+  /** yyyy-MM-dd */
+  date: string
+  time?: string
+  size: 'big' | 'small'
+  topics?: string
+  /** Heads-up this many days before (default 21 big / 10 small) */
+  leadDays?: number
+  priority?: 'normal' | 'high'
+  /** Set when you decide how hard to study */
+  pace?: { minutes: number; preset: 'light' | 'normal' | 'intense' | 'custom'; offDays: number[]; setAt: string }
+  notes?: string
+  createdAt: string
+}
+
+export interface Assignment {
+  id: string
+  subjectId: string
+  title: string
+  due: string
+  dueTime?: string
+  estimate?: number
+  done: boolean
+  completedAt?: string
+  notes?: string
+  createdAt: string
+}
+
+export const GRADE_KINDS = ['Klausur', 'Mündlich', 'Test', 'Referat', 'Other'] as const
+export type GradeKind = (typeof GRADE_KINDS)[number]
+
+export interface Grade {
+  id: string
+  subjectId: string
+  kind: GradeKind
+  /** Oberstufe points 0–15 */
+  points: number
+  weight: number
+  date: string
+  semester?: string
+  note?: string
+  createdAt: string
+}
+
+export interface StudyPrefs {
+  /** Earliest time a study block may start (default 09:00); the timetable blocks school hours anyway */
+  from: string
+  sessionMinutes: number
+  maxSchoolDay: number
+  maxFreeDay: number
+  bufferMinutes: number
+  leadBig: number
+  leadSmall: number
+}
+export const DEFAULT_STUDY_PREFS: StudyPrefs = { from: '09:00', sessionMinutes: 60, maxSchoolDay: 120, maxFreeDay: 240, bufferMinutes: 15, leadBig: 21, leadSmall: 10 }

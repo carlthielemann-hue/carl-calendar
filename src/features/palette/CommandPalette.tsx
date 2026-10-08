@@ -60,6 +60,9 @@ function searchIndex(s: AppState): { ref: Ref; text: string }[] {
     ...s.feedback.map((f) => ({ ref: `feedback:${f.id}` as Ref, text: `${f.text} ${f.kind} ${f.nextAction ?? ''} ${clientName.get(f.clientId) ?? ''}` })),
     ...s.aiOutputs.map((o) => ({ ref: `aiOutput:${o.id}` as Ref, text: `${o.title} ${o.response.slice(0, 4000)} ${clientName.get(o.clientId ?? '') ?? ''}` })),
     ...s.posts.map((p) => ({ ref: `post:${p.id}` as Ref, text: `${p.text} ${p.notes ?? ''} ${p.status}` })),
+    ...s.exams.map((e) => ({ ref: `exam:${e.id}` as Ref, text: `${e.title} ${e.topics ?? ''} ${s.subjects.find((x) => x.id === e.subjectId)?.name ?? ''} exam test klausur` })),
+    ...s.assignments.map((a) => ({ ref: `assignment:${a.id}` as Ref, text: `${a.title} ${s.subjects.find((x) => x.id === a.subjectId)?.name ?? ''} homework` })),
+    ...s.subjects.map((x) => ({ ref: `subject:${x.id}` as Ref, text: `${x.name} subject` })),
   ]
 }
 
@@ -78,6 +81,9 @@ const GROUP_LABEL: Record<string, string> = {
   feedback: 'Feedback',
   aiOutput: 'AI outputs',
   post: 'X posts',
+  exam: 'Exams',
+  assignment: 'Homework',
+  subject: 'Subjects',
 }
 
 /** "@research hooks" → only research; "@client" etc. match type keys or group labels. */

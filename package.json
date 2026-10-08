@@ -19,7 +19,8 @@
     "test:sync": "node tests/sync-e2e.mjs",
     "test:v3": "node tests/v3.mjs",
     "setup:secrets": "node scripts/setup-secrets.mjs",
-    "test:v4": "node tests/v4.mjs"
+    "test:v4": "node tests/v4.mjs",
+    "test:school": "node tests/school.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

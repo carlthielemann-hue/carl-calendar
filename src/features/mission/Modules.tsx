@@ -1,5 +1,6 @@
 import { differenceInMinutes, format } from 'date-fns'
-import { AlertTriangle, CalendarClock, Check, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { AlertTriangle, Bot, CalendarClock, Check, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { undoAuto, usePlanner } from '@/lib/plannerRunner'
 import { useMemo, useState } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { Card, CardHeader, Input } from '@/components/ui'
@@ -16,6 +17,7 @@ export const MISSION_MODULES = [
   { id: 'risk', label: 'At risk' },
   { id: 'countdowns', label: 'Countdowns' },
   { id: 'week', label: 'This week' },
+  { id: 'autopilot', label: 'Autopilot log' },
   { id: 'clients', label: 'Client work' },
   { id: 'practice', label: 'Creative practice' },
 ] as const
@@ -29,8 +31,67 @@ export function useMissionVisible() {
 export function useRisks(now: Date) {
   const items = useWorkItems()
   const proposals = useApp((s) => s.proposals)
+  const subjects = useApp((s) => s.subjects)
+  const needsPace = usePlanner((s) => s.needsPace)
+  const warnings = usePlanner((s) => s.warnings)
   const today = dateKey(now)
-  return useMemo(() => atRisk({ items, today, proposals }), [items, today, proposals])
+  return useMemo(() => {
+    const name = (id: string) => subjects.find((s) => s.id === id)?.name
+    const extra: RiskItem[] = [
+      ...warnings.map((w) => ({ id: `warn:${w.link}`, level: w.level, title: w.title, detail: w.message, path: w.link.startsWith('exam:') || w.link.startsWith('subject:') ? '/school/overview' : '/fitness/today' })),
+      ...needsPace.map((e) => ({
+        id: `pace:${e.id}`,
+        level: 'medium' as const,
+        title: `Set your pace: ${name(e.subjectId) ? `${name(e.subjectId)} ` : ''}${e.title}`,
+        detail: `${e.size === 'big' ? 'Big' : 'Small'} test on ${format(fromDateKey(e.date), 'EEE d MMM')} — decide how hard to study`,
+        path: `/school/exams/${e.id}`,
+      })),
+    ]
+    return atRisk({ items, today, proposals, extra })
+  }, [items, today, proposals, subjects, needsPace, warnings])
+}
+
+/** What the planner did or wants to do, with Undo for changes it made on its own. */
+export function AutopilotCard() {
+  const proposals = useApp((s) => s.proposals)
+  const go = useUI((s) => s.go)
+  const since = new Date(Date.now() - 3 * 86400000).toISOString()
+  const pending = proposals.filter((p) => p.source === 'planner' && p.status === 'pending')
+  const recent = proposals
+    .filter((p) => p.source === 'planner' && p.status !== 'pending' && (p.resolvedAt ?? p.createdAt) >= since)
+    .sort((a, b) => (b.resolvedAt ?? b.createdAt).localeCompare(a.resolvedAt ?? a.createdAt))
+    .slice(0, 5)
+  if (!pending.length && !recent.length) return null
+  return (
+    <Card>
+      <CardHeader title="Autopilot" icon={<Bot />} sub="What the planner changed or suggests" />
+      <ul className="px-2 pb-2">
+        {pending.map((p) => (
+          <li key={p.id}>
+            <button onClick={() => go('/personal/tomorrow')} className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left hover:bg-hover">
+              <span className="text-[13px] text-fg">{p.items.length} suggested change{p.items.length === 1 ? '' : 's'}</span>
+              <span className="text-[12px] text-muted">review tonight →</span>
+            </button>
+          </li>
+        ))}
+        {recent.map((p) => (
+          <li key={p.id} className="flex items-start gap-3 rounded-lg px-2 py-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] text-fg">{p.title}</div>
+              <div className="truncate text-[12px] text-muted">{p.items.map((i) => (i.reason ? `${i.label} — ${i.reason}` : i.label)).join(' · ')}</div>
+            </div>
+            {p.id.startsWith('auto-') && p.status !== 'rejected' ? (
+              <button onClick={() => undoAuto(p.id)} className="shrink-0 text-[12px] text-fg-2 underline-offset-2 hover:underline">
+                Undo
+              </button>
+            ) : (
+              <span className="shrink-0 text-[11.5px] text-faint">{p.status === 'rejected' ? 'dismissed' : p.status === 'partly' ? 'partly applied' : 'applied'}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
 }
 
 /** "MISSION · Thursday 8 October" + one line that says how the day stands. */
@@ -135,9 +196,14 @@ export function AtRiskCard({ risks }: { risks: RiskItem[] }) {
 
 export function CountdownsCard({ now }: { now: Date }) {
   const countdowns = useApp((s) => s.countdowns)
+  const exams = useApp((s) => s.exams)
+  const subjects = useApp((s) => s.subjects)
   const items = useWorkItems()
   const today = dateKey(now)
-  const rows = useMemo(() => countdownRows({ countdowns, items, today }), [countdowns, items, today])
+  const rows = useMemo(
+    () => countdownRows({ countdowns, items, today, exams: exams.map((e) => ({ id: e.id, date: e.date, title: `${subjects.find((s) => s.id === e.subjectId)?.name ?? ''} ${e.title}`.trim() })) }),
+    [countdowns, items, today, exams, subjects],
+  )
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -180,7 +246,7 @@ export function CountdownsCard({ now }: { now: Date }) {
         <ul className="grid grid-cols-2 gap-2 px-3 pb-3">
           {rows.map((r) => (
             <li key={r.id} className="group relative rounded-xl border border-line bg-panel-2 px-3 py-2.5">
-              <button onClick={() => r.kind === 'deliverable' && r.ref && openRef(r.ref)} className="block w-full text-left">
+              <button onClick={() => r.kind !== 'custom' && r.ref && openRef(r.ref)} className="block w-full text-left">
                 <div className={cn('tnum text-[28px] font-semibold leading-none tracking-[-0.03em]', r.daysLeft <= 2 ? 'text-danger' : r.daysLeft <= 7 ? 'text-[#e5a54b]' : 'text-fg')}>
                   {r.daysLeft === 0 ? 'Today' : r.daysLeft}
                   {r.daysLeft > 0 && <span className="ml-1 text-[12px] font-medium text-faint">{r.daysLeft === 1 ? 'day' : 'days'}</span>}

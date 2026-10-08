@@ -1,3 +1,4 @@
+import type { Assignment, Subject } from './entities'
 import type { CategoryId, Priority, Task } from '@/lib/types'
 import type { AdRef, Analysis, Client, Deliverable, Opportunity, Ref, Stage } from './entities'
 import { ref } from './refs'
@@ -9,7 +10,7 @@ import { courtOf, KIND_LABEL, stageOf } from './stages'
  */
 export interface WorkItem {
   ref: Ref
-  kind: 'task' | 'deliverable' | 'analysis' | 'followup'
+  kind: 'task' | 'deliverable' | 'analysis' | 'followup' | 'assignment'
   title: string
   /** e.g. client name, brand, stage */
   context?: string
@@ -29,6 +30,8 @@ export interface WorkSources {
   analyses: Analysis[]
   ads: AdRef[]
   opportunities: Opportunity[]
+  assignments?: Assignment[]
+  subjects?: Subject[]
 }
 
 export function deriveWorkItems(s: WorkSources): WorkItem[] {
@@ -73,6 +76,10 @@ export function deriveWorkItems(s: WorkSources): WorkItem[] {
     if (!o.nextFollowUp || o.stage === 'won' || o.stage === 'lost') continue
     items.push({ ref: ref('opportunity', o.id), kind: 'followup', title: `Follow up: ${o.name}`, context: o.company ?? o.channel, due: o.nextFollowUp, category: 'tps', done: false })
   }
+  const subjectName = new Map((s.subjects ?? []).map((x) => [x.id, x.name]))
+  for (const a of s.assignments ?? []) {
+    items.push({ ref: ref('assignment', a.id), kind: 'assignment', title: a.title, context: subjectName.get(a.subjectId), due: a.due, dueTime: a.dueTime, category: 'school', done: a.done, estimate: a.estimate })
+  }
   return items
 }
 
@@ -81,6 +88,7 @@ export const WORK_KIND_LABEL: Record<WorkItem['kind'], string> = {
   deliverable: 'Deliverable',
   analysis: 'Practice',
   followup: 'Follow-up',
+  assignment: 'Homework',
 }
 
 export { KIND_LABEL }

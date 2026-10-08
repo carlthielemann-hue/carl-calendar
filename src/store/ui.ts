@@ -6,8 +6,8 @@ import type { CalendarView, CategoryId, Occurrence, Task } from '@/lib/types'
  * Hash routing: "#/<workspace>/<page>[/<id>]".
  * Workspaces: home, personal, tps, lab, settings.
  */
-export type Space = 'home' | WorkspaceId | 'settings'
-export const SPACES: Space[] = ['home', 'personal', 'tps', 'lab', 'settings']
+export type Space = 'home' | WorkspaceId | 'school' | 'fitness' | 'money' | 'settings'
+export const SPACES: Space[] = ['home', 'personal', 'tps', 'lab', 'school', 'fitness', 'money', 'settings']
 
 export interface Location {
   space: Space
@@ -17,7 +17,7 @@ export interface Location {
   sub?: string
 }
 
-export const DEFAULT_PAGE: Record<Space, string> = { home: '', personal: 'overview', tps: 'overview', lab: 'overview', settings: '' }
+export const DEFAULT_PAGE: Record<Space, string> = { home: '', personal: 'overview', tps: 'overview', lab: 'overview', school: 'overview', fitness: 'today', money: 'overview', settings: '' }
 
 /** Old v1 routes → new locations */
 const LEGACY: Record<string, string> = {

@@ -27,6 +27,8 @@ export function useScorecard(weekKey: string) {
   const analyses = useApp((s) => s.analyses)
   const insights = useApp((s) => s.insights)
   const tasks = useApp((s) => s.tasks)
+  const events = useApp((s) => s.events)
+  const assignments = useApp((s) => s.assignments)
   const ensureWeek = useApp((s) => s.ensureWeek)
   const isFuture = weekKey > dateKey(new Date())
 
@@ -37,7 +39,7 @@ export function useScorecard(weekKey: string) {
 
   return useMemo(() => {
     const ws = fromDateKey(weekKey)
-    const data = { deliverables, opportunities, focusLogs, analyses, insights, tasks }
+    const data = { deliverables, opportunities, focusLogs, analyses, insights, tasks, events, assignments }
     const sc: WeekScore | undefined = score
     const rows: ScoreRow[] = metrics
       .filter((m) => (sc ? sc.targets[m.id] != null : !m.archived))
@@ -48,7 +50,7 @@ export function useScorecard(weekKey: string) {
         return { metric: m, target, carried: sc?.carried[m.id] ?? 0, actual, pace: pace(actual, target, ws) }
       })
     return { rows, score: sc }
-  }, [weekKey, score, metrics, deliverables, opportunities, focusLogs, analyses, insights, tasks])
+  }, [weekKey, score, metrics, deliverables, opportunities, focusLogs, analyses, insights, tasks, events, assignments])
 }
 
 export const PACE_LABEL: Record<Pace, string> = { done: 'Hit', on_track: 'On track', behind: 'Behind', not_started: 'Not started' }

@@ -1,13 +1,13 @@
 import { differenceInMinutes, format } from 'date-fns'
-import { CalendarClock, Clock, ExternalLink, FlaskConical, Pencil, Repeat, Trash2, X } from 'lucide-react'
+import { CalendarClock, Clock, ExternalLink, FlaskConical, Pencil, Pin, Repeat, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { CategoryBadge } from '@/components/Category'
 import { Button, Checkbox, Sheet, SheetClose } from '@/components/ui'
 import { formatDuration, formatTime } from '@/lib/dates'
 import { deleteOccurrence } from '@/lib/eventActions'
-import type { Recurrence } from '@/lib/types'
-import { alpha } from '@/lib/utils'
+import type { Occurrence, Recurrence } from '@/lib/types'
+import { alpha, cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { describeRef, openRef, toggleWorkItem, useWorkItemMap } from '@/lib/work'
@@ -109,6 +109,8 @@ function DetailBody() {
           )}
         </div>
 
+        {ev.origin === 'planner' && <PlannerBlock occ={occ} />}
+
         {linked && (
           <div className="mt-5 rounded-xl border border-line p-3" style={{ background: alpha(color, 0.05) }}>
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">For</div>
@@ -200,6 +202,41 @@ function DetailBody() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/** Controls for blocks the planner created: pin it, and say whether it happened. */
+function PlannerBlock({ occ }: { occ: Occurrence }) {
+  const ev = useApp((s) => s.events.find((e) => e.id === occ.event.id)) ?? occ.event
+  const st = useApp.getState()
+  const past = occ.end <= new Date()
+  return (
+    <div className="mt-5 rounded-xl border border-line p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">Planned by the planner</span>
+        <button
+          onClick={() => st.updateEvent(ev.id, { locked: !ev.locked })}
+          aria-pressed={!!ev.locked}
+          className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px]', ev.locked ? 'bg-fg text-bg' : 'text-muted hover:bg-hover')}
+        >
+          <Pin className="h-3 w-3" /> {ev.locked ? 'Pinned' : 'Pin'}
+        </button>
+      </div>
+      {past ? (
+        <div className="flex items-center gap-2 text-[12.5px]">
+          <span className="text-muted">Did it happen?</span>
+          <Button size="sm" variant={ev.outcome !== 'missed' ? 'primary' : 'secondary'} onClick={() => st.updateEvent(ev.id, { outcome: 'done' })}>
+            Done
+          </Button>
+          <Button size="sm" variant={ev.outcome === 'missed' ? 'danger' : 'secondary'} onClick={() => st.updateEvent(ev.id, { outcome: 'missed' })}>
+            Missed
+          </Button>
+        </div>
+      ) : (
+        <p className="text-[12px] text-muted">{ev.locked ? 'Pinned — the planner won’t move it.' : 'The planner may suggest moving it if something clashes.'}</p>
+      )}
+      {past && ev.outcome === 'missed' && <p className="mt-1.5 text-[11.5px] text-faint">The planner will fit this time in again.</p>}
     </div>
   )
 }

@@ -39,6 +39,8 @@ export interface CalEvent {
   origin?: 'planner'
   /** Pinned: the planner never moves it */
   locked?: boolean
+  /** For planner blocks: did it happen? Past blocks count as done unless marked missed. */
+  outcome?: 'done' | 'missed'
 }
 
 export interface Task {
@@ -87,6 +89,7 @@ export interface Settings {
   hiddenSpaces: string[]
   /** Mission screen modules you've hidden */
   hiddenMissionModules: string[]
+  study: import('@/domain/entities').StudyPrefs
 }
 
 /** A concrete, dated instance of an event (recurring events expand into many). */

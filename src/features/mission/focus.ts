@@ -7,6 +7,8 @@ export interface FocusSession {
   category: CategoryId
   link?: string
   occurrenceKey?: string
+  /** planner block being focused on — marked done on finish */
+  eventId?: string
   /** ms timestamps */
   startedAt: number
   endsAt: number
