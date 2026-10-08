@@ -110,3 +110,32 @@ describe('availability', () => {
     expect(w.map((x) => x.minutes)).toEqual([60, 150, 90])
   })
 })
+
+import { diff, flatten, unflatten } from '@/domain/syncSchema'
+
+describe('sync schema', () => {
+  const base = () => {
+    const s: Record<string, unknown> = { stages: [{ id: 'a' }], settings: { theme: 'dark', shutdownTime: '20:30' } }
+    for (const c of ['events','tasks','clients','projects','deliverables','opportunities','ads','analyses','templates','plans','practiceTemplates','insights','metrics','focusLogs','activity','research','assets','feedback','performance','concepts','aiOutputs','workflows','posts']) s[c] = []
+    for (const c of ['topThree','weekly','dayPlans','scorecards']) s[c] = {}
+    return s as never
+  }
+  it('round-trips and keeps device-only settings local', () => {
+    const s = base() as Record<string, unknown>
+    s.tasks = [{ id: 't1', title: 'A' }]
+    s.topThree = { '2026-10-08': ['task:t1'] }
+    const flat = flatten(s as never)
+    const back = unflatten([...flat].map(([k, v]) => ({ coll: k.split('\u0000')[0], id: k.split('\u0000')[1], data: JSON.parse(v) })))
+    expect(back.tasks).toEqual([{ id: 't1', title: 'A' }])
+    expect(back.topThree).toEqual({ '2026-10-08': ['task:t1'] })
+    expect(back.settings).toEqual({ shutdownTime: '20:30' })
+  })
+  it('diffs adds, edits and deletes', () => {
+    const a = base() as Record<string, unknown>
+    a.tasks = [{ id: 't1', title: 'A' }, { id: 't2', title: 'B' }]
+    const b = base() as Record<string, unknown>
+    b.tasks = [{ id: 't1', title: 'A2' }, { id: 't3', title: 'C' }]
+    const changes = diff(flatten(a as never), flatten(b as never))
+    expect(changes.map((c) => `${c.id}:${c.data === null ? 'del' : 'put'}`).sort()).toEqual(['t1:put', 't2:del', 't3:put'])
+  })
+})

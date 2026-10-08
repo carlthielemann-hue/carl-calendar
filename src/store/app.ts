@@ -11,7 +11,6 @@ import { BUILTIN_TEMPLATES, DEFAULT_PRACTICE_TEMPLATES, STARTER_METRICS } from '
 import { buildWorkspaceDemo } from '@/domain/demo'
 import { BUILTIN_WORKFLOWS } from '@/domain/aiWorkflows'
 import type {
-  ActivityEntry,
   AdRef,
   AiOutput,
   AiWorkflow,
@@ -44,6 +43,8 @@ import { metricActual, snapshotWeek } from '@/domain/metrics'
 import { ref } from '@/domain/refs'
 import { DEFAULT_STAGES, moveDeliverable, stageOf } from '@/domain/stages'
 import { safeStorage } from './storage'
+import type { Data, GoogleState } from '@/domain/state'
+export type { Data, GoogleState }
 
 export const MAX_TOP = 3
 export const STORE_KEY = 'command-center:v1'
@@ -61,54 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
   googleClientId: '',
 }
 
-export interface GoogleState {
-  connected: boolean
-  email?: string
-  calendarId: string
-  lastSync?: string
-  /** Mirror of Google events (expanded instances). Replaced wholesale on each sync. */
-  events: CalEvent[]
-}
 
-export interface Data {
-  /* Personal */
-  events: CalEvent[]
-  tasks: Task[]
-  /** dateKey → ordered work-item refs (max 3), e.g. "task:abc", "deliverable:xyz" */
-  topThree: Record<string, string[]>
-  weekly: Record<string, WeeklyPlan>
-  dayPlans: Record<string, DayPlan>
-  /* TPS */
-  clients: Client[]
-  projects: Project[]
-  deliverables: Deliverable[]
-  stages: Stage[]
-  opportunities: Opportunity[]
-  /* Creative Lab */
-  ads: AdRef[]
-  analyses: Analysis[]
-  templates: AnalysisTemplate[]
-  plans: PracticePlan[]
-  practiceTemplates: PracticeTemplate[]
-  insights: Insight[]
-  /* Client knowledge, AI Studio, content (V3) */
-  research: ResearchRecord[]
-  assets: Asset[]
-  feedback: FeedbackEntry[]
-  performance: PerformanceEntry[]
-  concepts: Concept[]
-  aiOutputs: AiOutput[]
-  workflows: AiWorkflow[]
-  posts: ContentPost[]
-  /* Shared */
-  metrics: Metric[]
-  scorecards: Record<string, WeekScore>
-  focusLogs: FocusLog[]
-  activity: ActivityEntry[]
-  settings: Settings
-  google: GoogleState
-  hasDemoData: boolean
-}
 
 /** Simple record collections that share generic create/update/delete. */
 export interface Collections {

@@ -6,3 +6,5 @@ dist-single
 .env.*
 !.env.example
 test-results
+.dev.vars
+.wrangler

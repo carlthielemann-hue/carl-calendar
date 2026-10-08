@@ -1,0 +1,38 @@
+// Command Center backend: one Cloudflare Worker serving the app, API, MCP endpoint,
+// file storage (R2), database (D1), OAuth state (KV) and scheduled notifications.
+// Free-tier friendly. See docs/DEPLOY.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "command-center",
+  "main": "server/index.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "tsconfig": "./tsconfig.server.json",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/mcp", "/mcp/*", "/authorize", "/oauth/*", "/.well-known/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "command-center",
+      // Replace with the id printed by `wrangler d1 create command-center`
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "command-center-files" }],
+  "kv_namespaces": [
+    // Replace with the id printed by `wrangler kv namespace create OAUTH_KV`
+    { "binding": "OAUTH_KV", "id": "00000000000000000000000000000000" }
+  ],
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "vars": {
+    "APP_TIMEZONE": "Europe/Berlin",
+    "ANTHROPIC_MODEL": "claude-opus-5-5",
+    "OPENAI_MODEL": ""
+  },
+  "observability": { "enabled": true }
+}
