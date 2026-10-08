@@ -83,9 +83,15 @@ deep-work blocks for deliverables, Creative Lab practice, workouts.
 - **Rules**: study windows, daily maxima, shutdown 20:30, buffers, rest day, max N changes per day
   so the week doesn't churn; tomorrow's plan stays stable after you confirm it in Plan Tomorrow
   unless something urgent appears.
-- **Modes** (Settings → Planner): **Autopilot** — changes its own blocks and logs each change with a
-  reason and Undo; **Ask me** — same changes arrive as a Proposal to accept. Default: Ask me for the
-  first week, then you decide.
+- **Where you review it** (decided): changes are batched into your daily rhythm, not pinged all day.
+  - **Evening planning (Plan Tomorrow)** gets a first step *"Planner changes"*: what it wants to
+    move/add for tomorrow and the rest of the week, each with its reason → accept all, untick, or edit.
+  - **Evening reminder push** (20:15) says how many changes are waiting.
+  - **Morning brief** (07:00 push + Mission screen) summarises today's final plan and anything it had
+    to adjust overnight (e.g. a Google event appeared on top of a study block).
+  - Only a hard clash *today* (something now overlaps a planner block) is fixed immediately — and it
+    still shows in the Autopilot log with Undo.
+  - Setting for later: full **Autopilot** (apply changes without the evening review).
 - **Explanations**: every change has a one-line reason, e.g. *"Moved Mathe review 15:00 → 17:00 —
   basketball moved to 15:30."* Shown on the Mission screen and in the brief.
 - **Can't fit** → never silently drops work: it goes to *At risk* with options (start earlier, raise
@@ -96,20 +102,31 @@ deep-work blocks for deliverables, Creative Lab practice, workouts.
 ### Data
 | Entity | Fields |
 | --- | --- |
-| `Subject` | name, colour, teacher?, level (Leistungskurs/Grundkurs), Abitur subject? (written/oral/none) |
-| `Exam` | subject, title, date + time, kind (Klausur, Abitur written, Abitur oral, test), topics[], **estimated study hours**, **study start date** (default: 14 days before), priority (normal/high), notes, links (docs) |
+| `Subject` | name, colour, teacher?, level (Leistungskurs/Grundkurs), **study mode: ongoing** (daily/weekly study, e.g. 30 min Mon–Fri) **or test-only** (nothing until a test's heads-up) — editable any time |
+| `Exam` | subject, title, date + time, **size: big** (Klausur, Abitur) **or small** (test, Ex, quiz), topics[], **heads-up lead time** (default **21 days** big / **10 days** small, editable per exam), **pace** (set when the heads-up fires, see below), priority, notes, links (docs) |
 | `Assignment` | subject, title, due date/time, estimated minutes, status (open/done), notes → also appears in Tasks and Home like other work items |
 | `Grade` | subject, kind (Klausur, mündlich, test…), points **0–15**, weight, date, semester (Q11/1 …) |
-| `StudyPrefs` | study windows per weekday (default Mon–Fri 15:00–20:00, Sat–Sun 10:00–18:00), session length (default 60 min, min 30, max 90), max study per day (default 2 h weekdays, 4 h weekends), buffer around events (15 min), rest day (optional), never after shutdown (20:30) |
+| `StudyPrefs` | **no fixed study times for now** — sessions go into real free time between your last fixed commitment and the 20:30 shutdown. Optional later: preferred windows. Session length (default 60 min, 30–90), max study per day (default 2 h school days / 4 h free days, editable), buffer around events (15 min), rest day (optional) |
 
 Study sessions are ordinary calendar events (category School) linked to `exam:<id>` and marked
 `origin: study-planner`. Marking one done (or logging focus time) counts toward the exam's hours.
 
+### Heads-up and pace (how studying starts)
+- **Ongoing subjects** get their regular sessions planned week by week (e.g. 30 min Mon–Fri).
+- **Test-only subjects** get nothing until a test's heads-up.
+- **Heads-up**: 21 days before a big test, 10 days before a small one (both editable, per exam too)
+  you get a push + a card on the Mission screen: *"Mathe Klausur in 21 days — set your pace."*
+- **Set the pace** (one screen): how ready you feel, total hours you want (suggested from size and
+  topics) or a preset — **light** (~30 min/day), **normal** (~60 min/day), **intense** (~90 min/day) —
+  and which days are off. The planner turns it into sessions and they show up in that evening's
+  planning to accept.
+- No pace set within 2 days → it stays on the Mission screen under *At risk*; it never plans silently.
+
 ### The scheduler
-1. **Hours left** per exam = estimate − hours already done (completed linked sessions).
-2. **Days available** = from max(today, study start) to the day before the exam.
+1. **Hours left** per exam = hours from the pace − hours already done (completed linked sessions).
+2. **Days available** = from the day you set the pace (or the heads-up date) to the day before the exam.
 3. **Busy time** = every event in that range — local and Google, school timetable, gym,
-   basketball — plus buffers, plus outside your study windows, plus after shutdown.
+   basketball — plus buffers and everything after shutdown. Ongoing-subject sessions are planned too.
 4. **Distribute**: earliest exam first, weighted by priority; spread sessions across days with a
    ramp (lighter at the start, heavier near the exam) and reserve the last two days for review.
    Never more than the daily max across all subjects combined.
@@ -124,7 +141,7 @@ sessions that the planner created — never your own events.
 
 ### Views
 - **Overview**: next exams with countdown and "planned / done / needed" hours bars, assignments due this week, grade averages per subject.
-- **Grades**: per-subject average (weighted), semester view; Abitur projection later (optional).
+- **Grades**: per-subject average (weighted), semester view. (Abitur projection: not planned for now.)
 - **Home card**: next exam + today's study blocks; **morning brief** gets "Study: Mathe 16:00–17:00 (Analysis)".
 - **Scorecard**: new auto-metric *study hours*.
 - **MCP**: read subjects/exams/assignments; `propose_study_plan` creates a Proposal (never events); grades only if switched on.
@@ -146,12 +163,14 @@ records with a tax adviser or proper tool.
 | `Subscription` | name, amount, cycle (monthly/yearly), next renewal, business/personal, category, active |
 | `SavingsGoal` | name, target, target date (optional), current amount (manual or from an account) |
 | `SetAsideRule` | name, **percentage**, applies to (business income / all income), destination account |
+| (defaults) | **Reserves 30 %** (put away, untouchable — also covers taxes until a tax adviser says otherwise) · **Investable capital 50 %** · **Personal spend 20 %** — of business income, adjustable any time |
 
 ### "Always put a percentage away"
-- You set rules once, e.g. **Tax reserve 25 %** and **Savings 20 %** of business income (any number you want; ask a tax adviser what your tax reserve should be).
-- Every income entry immediately shows: *"€1,200 in → put away €300 tax + €240 savings."*
+- Default split of every business income: **30 % reserves · 50 % investable capital · 20 % personal spend** (change the numbers or add buckets any time; they must add up to 100 %).
+- Every income entry immediately shows: *"€1,200 in → €360 reserves · €600 invest · €240 spend."*
+- **Personal spend** shows as a running budget: *"€240 earned for spending this month, €95 spent, €145 left."*
 - **Set-aside page**: per rule, *owed so far this month / moved / still to move*, with a **"Moved"** button that records the transfer. Home shows a nudge only when something is still to move.
-- Savings rate this month = (saved + set aside) ÷ income.
+- Savings rate this month = (reserves + investable moved) ÷ income.
 
 ### Views
 - **Ledger**: spreadsheet-style table — inline editing, keyboard entry (Enter for a new row), filters (month, in/out, business/personal, category, client), totals row, CSV import and export.
@@ -175,8 +194,8 @@ records with a tax adviser or proper tool.
 - **V4.5 Swipe Vault** — synced ad media (needs R2), richer fields, boards, phone share-sheet capture, `save_swipe` MCP tool (Claude + Adlicio fill it).
 - **V4.6 Ask Command Center** — in-app chat with source links and the permissions above; paid API with a monthly cap.
 
-## Open questions for you
-0. Planner mode to start with: **Ask me** (suggests, you accept) or straight **Autopilot**?
-1. Default set-aside rules: start with **Tax reserve 25 % + Savings 20 %** of business income, editable?
-2. Study windows default **Mon–Fri 15:00–20:00, Sat–Sun 10:00–18:00**, max **2 h / 4 h** per day — right?
-3. Do you want the Abitur grade projection in V4.1, or later?
+## Decisions (8 Oct 2026)
+- Planner changes are reviewed in the **evening planning**, summarised in the **evening reminder** and **morning brief**; only hard same-day clashes are fixed immediately (with Undo).
+- Money split: **30 % reserves · 50 % investable · 20 % personal spend**, adjustable.
+- No fixed study times yet: **heads-up 21 days before big / 10 days before small tests**, then you set the pace; subjects are **ongoing** or **test-only**.
+- Abitur grade projection: left out for now.
