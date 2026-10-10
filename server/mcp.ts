@@ -50,7 +50,8 @@ export const areaAllowed = (p: McpPermissions, area: keyof McpAreas) => !!{ ...D
 const PROTOCOLS = ['2026-07-28', '2025-11-25', '2025-06-18', '2025-03-26']
 
 import { ToolError, str, type Ctx, type Json, type Tool } from './mcpCore'
-import { TOOLS_21 } from './mcp21'
+import { TOOLS_21, refExists } from './mcp21'
+import { contentHash } from '@/domain/content2'
 
 function todayKey(env: Env) {
   return wallClock(new Date(), env.APP_TIMEZONE || 'Europe/Berlin').slice(0, 10)
@@ -593,14 +594,16 @@ const TOOLS: Tool[] = [
       properties: {
         agent: { type: 'string', enum: [...CUE_IDS] },
         title: { type: 'string', description: 'Short summary, e.g. "Upwork proposal: Shopify skincare brand"' },
-        action_type: { type: 'string', enum: ['email', 'post', 'proposal', 'dm', 'file', 'calendar', 'other'] },
+        action_type: { type: 'string', enum: ['email', 'post', 'proposal', 'dm', 'file', 'calendar', 'status_change', 'internal_task', 'other'], description: 'status_change / internal_task = a proposed change inside Command Center; approving it still changes nothing by itself' },
         destination: { type: 'string', description: 'Where it goes, e.g. "Upwork job 0123…", "X @carl", "jane@brand.com"' },
         payload: { type: 'string', description: 'The exact text/content that would be sent or published' },
         context: { type: 'string', description: 'Why, and anything Carl needs to decide' },
         source_refs: { type: 'array', items: { type: 'string' }, description: 'Links or record refs this is based on' },
         risk: { type: 'string', enum: ['low', 'medium', 'high'] },
         risk_note: { type: 'string' },
-        run_id: { type: 'string' },
+        run_id: { type: 'string', description: 'The agent run that produced this request' },
+        target_ref: { type: 'string', description: 'Record the action is about, e.g. "appdraft:a-1", "post:p-2", "deliverable:d-3"' },
+        idempotency_key: { type: 'string', description: 'Retries with the same key return the existing request' },
       },
       required: ['agent', 'title', 'action_type', 'destination', 'payload'],
       additionalProperties: false,
@@ -609,6 +612,16 @@ const TOOLS: Tool[] = [
     run: async (a, ctx) => {
       const agent = str(a, 'agent', true) as CueAgentId
       if (!CUE_IDS.includes(agent)) throw new ToolError(`agent must be one of ${CUE_IDS.join(', ')}`)
+      const s = await ctx.state()
+      const key = str(a, 'idempotency_key')
+      const dup = key && s.approvals.find((x) => x.idempotencyKey === key)
+      if (dup) return { ok: true, approval_id: dup.id, status: dup.status, duplicate: true }
+      const actionTypes = ['email', 'post', 'proposal', 'dm', 'file', 'calendar', 'status_change', 'internal_task', 'other']
+      if (!actionTypes.includes(str(a, 'action_type', true)!)) throw new ToolError(`action_type must be one of ${actionTypes.join(', ')}`)
+      const target = str(a, 'target_ref')
+      if (target && !refExists(s, target)) throw new ToolError(`target_ref "${target}" does not point at a record you can access.`)
+      const run = str(a, 'run_id') ? s.agentRuns.find((r) => r.id === str(a, 'run_id')) : undefined
+      if (str(a, 'run_id') && !run) throw new ToolError('Unknown run_id')
       const now = nowIso()
       const id = `apr-${randomId(8)}`
       const rec: ApprovalRequest = {
@@ -624,12 +637,16 @@ const TOOLS: Tool[] = [
         riskNote: str(a, 'risk_note'),
         status: 'pending',
         decisions: [],
-        runId: str(a, 'run_id'),
+        runId: run?.id,
+        targetRef: target,
+        payloadHash: contentHash(str(a, 'payload', true)!),
+        idempotencyKey: key,
         via: ctx.via,
         createdAt: now,
         updatedAt: now,
       }
       await writeRecord(ctx.env, 'approvals', id, rec)
+      if (run) await writeRecord(ctx.env, 'agentRuns', run.id, { ...run, approvalIds: [...new Set([...(run.approvalIds ?? []), id])], updatedAt: now })
       await notifyApproval(ctx.env, rec)
       return { ok: true, approval_id: id, status: 'pending', message: 'Waiting for Carl in the Approval Inbox. Do not act until cue_get_approval returns approved.' }
     },
@@ -654,6 +671,14 @@ const TOOLS: Tool[] = [
         note: last?.note ?? null,
         decided_at: last?.at ?? null,
         executed_at: r.executedAt ?? null,
+        action_type: r.actionType,
+        target_ref: r.targetRef ?? null,
+        payload_hash: r.payloadHash ?? null,
+        final_payload_hash: r.status === 'approved' ? contentHash(last?.editedPayload ?? r.payload) : null,
+        decided_by: r.status === 'pending' ? null : (last?.by ?? r.approver ?? null),
+        run_id: r.runId ?? null,
+        requested_at: r.createdAt,
+        history: r.decisions.map((d) => ({ at: d.at, decision: d.decision, by: d.by ?? null, note: d.note ?? null, edited: !!d.editedPayload })),
       }
     },
   },
@@ -673,7 +698,7 @@ const TOOLS: Tool[] = [
           .filter((r) => (!agent || r.agent === agent) && (status ? r.status === status : r.status === 'pending' || r.updatedAt >= since))
           .sort((x, y) => y.createdAt.localeCompare(x.createdAt))
           .slice(0, 50)
-          .map((r) => ({ id: r.id, agent: r.agent, title: r.title, action_type: r.actionType, destination: r.destination, status: r.status, executed_at: r.executedAt ?? null, created_at: r.createdAt })),
+          .map((r) => ({ id: r.id, agent: r.agent, title: r.title, action_type: r.actionType, destination: r.destination, status: r.status, target_ref: r.targetRef ?? null, run_id: r.runId ?? null, executed_at: r.executedAt ?? null, created_at: r.createdAt })),
       }
     },
   },

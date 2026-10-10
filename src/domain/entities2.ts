@@ -224,6 +224,8 @@ export interface ApprovalDecision {
   note?: string
   /** Payload as you edited it before approving */
   editedPayload?: string
+  /** Who decided ("carl"). Older records have no value. */
+  by?: string
 }
 
 /** A proposed external action waiting for you. Approving records a decision — it never executes anything. */
@@ -231,7 +233,7 @@ export interface ApprovalRequest {
   id: string
   agent: CueAgentId | 'other'
   title: string
-  actionType: 'email' | 'post' | 'proposal' | 'dm' | 'file' | 'calendar' | 'other'
+  actionType: 'email' | 'post' | 'proposal' | 'dm' | 'file' | 'calendar' | 'status_change' | 'internal_task' | 'other'
   destination: string
   payload: string
   context?: string

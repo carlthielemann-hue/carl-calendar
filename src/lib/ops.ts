@@ -27,12 +27,18 @@ export function decideApproval(r: ApprovalRequest, decision: ApprovalStatus, opt
   const final = edited ?? r.payload
   st().patch('approvals', r.id, {
     status: decision,
-    decisions: [...r.decisions, { at: now, decision, note: opts.note?.trim() || undefined, editedPayload: edited }],
+    decisions: [...r.decisions, { at: now, decision, note: opts.note?.trim() || undefined, editedPayload: edited, by: 'carl' }],
     approver: 'carl',
     payloadHash: decision === 'approved' ? contentHash(final) : r.payloadHash,
     updatedAt: now,
   })
   st().log('tps', `${decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Rejected' : 'Requested changes on'}: ${r.title}`, `approval:${r.id}`)
+  // A post a Cue asked to publish: the approval covers exactly this text. Scheduling stays a
+  // separate step in the content calendar (it creates the publication job).
+  if (r.targetRef?.startsWith('post:') && decision === 'approved') {
+    const p = st().posts.find((x) => `post:${x.id}` === r.targetRef)
+    if (p && p.status !== 'posted') st().patch('posts', p.id, { text: final, approvedText: final, approvedHash: contentHash(final), approvedAt: now, approvalId: r.id, status: 'approved', updatedAt: now })
+  }
   if (r.targetRef?.startsWith('appdraft:')) {
     const d = st().appDrafts.find((x) => `appdraft:${x.id}` === r.targetRef)
     if (d && d.status !== 'sent')
@@ -149,7 +155,7 @@ export function approvePost(postId: string, o: ApproveOpts): { ok: true; jobId?:
     sourceRefs: [`post:${p.id}`],
     risk: 'low',
     status: 'approved',
-    decisions: [{ at: now, decision: 'approved', note: o.via === 'manual' ? 'Carl will post it himself' : undefined }],
+    decisions: [{ at: now, decision: 'approved', note: o.via === 'manual' ? 'Carl will post it himself' : undefined, by: 'carl' }],
     approver: 'carl',
     targetRef: `post:${p.id}`,
     payloadHash: hash,

@@ -255,6 +255,30 @@ await step('industry digest: three voices → repeated claim; send to Creative L
   assert.equal(i.confidence, 'hypothesis')
 })
 
+console.log('Approval Center')
+await step('approving a Cue post request records who decided and marks the exact text approved — nothing is published', async () => {
+  await seed(`
+    const t = new Date().toISOString()
+    s.posts.push({ id: 'post-cue', text: 'Draft by Content Cue', status: 'review', platform: 'linkedin', by: 'content', createdAt: t, updatedAt: t })
+    s.approvals.push({ id: 'apr-post', agent: 'content', title: 'Publish on LinkedIn: Draft by Content Cue', actionType: 'post', destination: 'LinkedIn', payload: 'Draft by Content Cue', sourceRefs: ['post:post-cue'], risk: 'low', status: 'pending', decisions: [], targetRef: 'post:post-cue', runId: 'run-x', createdAt: t, updatedAt: t })
+  `)
+  await page.reload()
+  await go('/cue/approvals')
+  const card = main.getByText('Publish on LinkedIn: Draft by Content Cue').locator('xpath=ancestor::div[contains(@class,"p-5")][1]')
+  await card.getByLabel('Request details').getByText(/run run-x/).waitFor()
+  await card.getByLabel('Payload').fill('Draft by Content Cue, edited by Carl')
+  await card.getByRole('button', { name: 'Approve edited' }).click()
+  await main.getByRole('tab', { name: 'Decided' }).click()
+  await main.getByText(/Approved by you \(with your edits\)/).first().waitFor()
+  const s = await state()
+  const p = s.posts.find((x) => x.id === 'post-cue')
+  assert.equal(p.status, 'approved')
+  assert.equal(p.text, 'Draft by Content Cue, edited by Carl')
+  assert.ok(p.approvedHash)
+  assert.equal(s.publications.filter((j) => j.postId === 'post-cue').length, 0, 'approval alone creates no publication job')
+  assert.equal(s.approvals.find((a) => a.id === 'apr-post').decisions.at(-1).by, 'carl')
+})
+
 console.log('Notifications & briefing')
 await step('the bell shows unread notifications; opening one marks it read and goes there', async () => {
   await seed(`s.notifications.push({ id: 'nt-1', category: 'review', title: 'Opportunity package ready', body: 'Glow Labs', path: '/tps/acquisition', agent: 'main', createdAt: new Date().toISOString() })`)

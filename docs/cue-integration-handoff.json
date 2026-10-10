@@ -1,0 +1,1426 @@
+{
+  "generatedAt": "2026-10-10T11:50:54+00:00",
+  "branch": "claude/personal-command-center-j4seaw",
+  "commit": "9dcacbdf923b0b7cc36b4005ee0a79d51edc2554",
+  "commitNote": "SHA of the parent commit. The handoff itself is committed in the single commit directly on top of this SHA (a file cannot contain its own commit SHA); `git log -1` shows it.",
+  "gitStatusClean": true,
+  "gitStatusNote": "Clean after the handoff commit (verified with `git status --porcelain` after committing). Not pushed.",
+  "deploymentPerformed": false,
+  "validation": [
+    {
+      "command": "npx tsc -b",
+      "result": "passed",
+      "notes": "exit code 0"
+    },
+    {
+      "command": "npx tsc -p tsconfig.server.json --noEmit",
+      "result": "passed",
+      "notes": "exit code 0"
+    },
+    {
+      "command": "npx eslint src server --quiet",
+      "result": "passed",
+      "notes": "exit code 0"
+    },
+    {
+      "command": "npx vitest run",
+      "result": "passed",
+      "notes": "Tests  92 passed (92)"
+    },
+    {
+      "command": "npm run build",
+      "result": "passed",
+      "notes": "exit code 0"
+    },
+    {
+      "command": "node tests/smoke.mjs",
+      "result": "passed",
+      "notes": "19 checks passed"
+    },
+    {
+      "command": "node tests/v3.mjs",
+      "result": "passed",
+      "notes": "9 V3 workflow checks passed"
+    },
+    {
+      "command": "node tests/v4.mjs",
+      "result": "passed",
+      "notes": "9 V4 checks passed"
+    },
+    {
+      "command": "node tests/school.mjs",
+      "result": "passed",
+      "notes": "10 school checks passed"
+    },
+    {
+      "command": "node tests/fitness.mjs",
+      "result": "passed",
+      "notes": "10 fitness checks passed"
+    },
+    {
+      "command": "node tests/money.mjs",
+      "result": "passed",
+      "notes": "12 money checks passed"
+    },
+    {
+      "command": "node tests/goals.mjs",
+      "result": "passed",
+      "notes": "5 goals checks passed"
+    },
+    {
+      "command": "node tests/vault.mjs",
+      "result": "passed",
+      "notes": "6 vault checks passed"
+    },
+    {
+      "command": "node tests/cc2.mjs",
+      "result": "passed",
+      "notes": "14 CC2 checks passed"
+    },
+    {
+      "command": "node tests/ops21.mjs",
+      "result": "passed",
+      "notes": "16 CC 2.1 UI checks passed"
+    },
+    {
+      "command": "node tests/ops21-server.mjs (wrangler dev, fresh D1)",
+      "result": "passed",
+      "notes": "17 CC 2.1 scenario checks passed"
+    },
+    {
+      "command": "node tests/server.mjs (wrangler dev, fresh D1)",
+      "result": "passed",
+      "notes": "29 server checks passed"
+    },
+    {
+      "command": "node tests/widgets.mjs (wrangler dev, fresh D1)",
+      "result": "passed",
+      "notes": "5 notification/widget checks passed"
+    },
+    {
+      "command": "node tests/sync-e2e.mjs (wrangler dev, fresh D1)",
+      "result": "passed",
+      "notes": "14 sync checks passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed",
+      "notes": "no whitespace errors (run before commit)"
+    },
+    {
+      "command": "jq empty docs/cue-integration-handoff.json",
+      "result": "passed",
+      "notes": "JSON validated after generation"
+    }
+  ],
+  "records": [
+    {
+      "name": "Client",
+      "typePath": "src/domain/entities.ts:98 (Client)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `clients`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `clients`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/Clients.tsx",
+        "src/pages/tps/ClientDetail.tsx"
+      ],
+      "statusValues": [
+        "active",
+        "paused",
+        "past"
+      ],
+      "relationships": [
+        "projects/deliverables/research/feedback/concepts reference clientId",
+        "companies.clientId",
+        "opportunities.clientId (after conversion)"
+      ],
+      "sourceReferenceFields": [
+        "brand (brand intelligence sections)"
+      ],
+      "privacyNotes": "Hidden clients and all their records are removed from every MCP response."
+    },
+    {
+      "name": "Project",
+      "typePath": "src/domain/entities.ts:126 (Project)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `projects`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `projects`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/Projects.tsx",
+        "src/pages/tps/ClientDetail.tsx"
+      ],
+      "statusValues": [
+        "active",
+        "paused",
+        "done"
+      ],
+      "relationships": [
+        "clientId → Client",
+        "deliverables.projectId"
+      ],
+      "sourceReferenceFields": [],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "Deliverable",
+      "typePath": "src/domain/entities.ts:153 (Deliverable)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `deliverables`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `deliverables`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/Deliverables.tsx",
+        "src/pages/tps/ClientDetail.tsx"
+      ],
+      "statusValues": [
+        "stageId → Stage.kind: backlog | working | internal_review | client_review | revisions | approved (stages are configurable, src/domain/stages.ts)"
+      ],
+      "relationships": [
+        "clientId → Client",
+        "projectId → Project",
+        "insightIds → Insight",
+        "feedback.deliverableId"
+      ],
+      "sourceReferenceFields": [
+        "insightIds"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible()). Stage changes by AI need the consequential permission + confirm=true (update_deliverable_status)."
+    },
+    {
+      "name": "Task",
+      "typePath": "src/lib/types.ts:46 (Task)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `tasks`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `tasks`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/personal/Tasks.tsx",
+        "src/pages/Home.tsx"
+      ],
+      "statusValues": [
+        "completed: boolean"
+      ],
+      "relationships": [
+        "link: Ref (e.g. client:, deliverable:, improvement:, finding:)"
+      ],
+      "sourceReferenceFields": [
+        "link"
+      ],
+      "privacyNotes": "Personal and business tasks; readable over MCP (list_todays_tasks)."
+    },
+    {
+      "name": "FeedbackEntry (client feedback)",
+      "typePath": "src/domain/entities.ts:527 (FeedbackEntry)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `feedback`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `feedback`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/ClientDetail.tsx",
+        "src/pages/lab/Improve.tsx"
+      ],
+      "statusValues": [
+        "open",
+        "addressed",
+        " kind: revision | approval | comment"
+      ],
+      "relationships": [
+        "clientId → Client",
+        "projectId → Project",
+        "deliverableId → Deliverable"
+      ],
+      "sourceReferenceFields": [],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "ResearchRecord",
+      "typePath": "src/domain/entities.ts:484 (ResearchRecord)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `research`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `research`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/ClientDetail.tsx"
+      ],
+      "statusValues": [
+        "draft",
+        "approved"
+      ],
+      "relationships": [
+        "clientId → Client"
+      ],
+      "sourceReferenceFields": [
+        "source",
+        "origin: manual | ai | manus | mcp"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "Insight",
+      "typePath": "src/domain/entities.ts:364 (Insight)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `insights`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `insights`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/lab/Insights.tsx"
+      ],
+      "statusValues": [
+        "confidence: hypothesis | tested | proven"
+      ],
+      "relationships": [
+        "links: Ref[] (ads, analyses, deliverables, findings)"
+      ],
+      "sourceReferenceFields": [
+        "links"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "Concept (creative concept / brief draft)",
+      "typePath": "src/domain/entities.ts:561 (Concept)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `concepts`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `concepts`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/Studio.tsx",
+        "src/pages/tps/ClientDetail.tsx"
+      ],
+      "statusValues": [
+        "draft",
+        "approved",
+        "rejected"
+      ],
+      "relationships": [
+        "clientId → Client",
+        "insightIds → Insight"
+      ],
+      "sourceReferenceFields": [
+        "origin"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "Analysis (ad analysis / practice)",
+      "typePath": "src/domain/entities.ts:322 (Analysis)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `analyses`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `analyses`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/lab/Analyses.tsx"
+      ],
+      "statusValues": [
+        "planned",
+        "in_progress",
+        "done"
+      ],
+      "relationships": [
+        "adId → AdRef",
+        "planId → PracticePlan"
+      ],
+      "sourceReferenceFields": [],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "KnowledgeDoc",
+      "typePath": "src/domain/entities2.ts:291 (KnowledgeDoc)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `knowledgeDocs`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `knowledgeDocs`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/knowledge/Brain.tsx",
+        "src/pages/knowledge/DocDetail.tsx"
+      ],
+      "statusValues": [
+        "syncStatus: manual | synced | stale | error",
+        " access: business | client | private"
+      ],
+      "relationships": [
+        "clientId → Client",
+        "projectId → Project"
+      ],
+      "sourceReferenceFields": [
+        "source",
+        "url",
+        "externalId",
+        "account"
+      ],
+      "privacyNotes": "access=private documents are never returned to MCP clients."
+    },
+    {
+      "name": "Company",
+      "typePath": "src/domain/entities3.ts:112 (Company)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `companies`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `companies`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/Companies.tsx",
+        "src/features/acquisition/Intel.tsx"
+      ],
+      "statusValues": [],
+      "relationships": [
+        "clientId → Client",
+        "opportunities.companyId",
+        "contacts.companyId"
+      ],
+      "sourceReferenceFields": [
+        "sourceRefs",
+        "socials",
+        "aliases"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "ClientContact (client + prospect contacts)",
+      "typePath": "src/domain/entities2.ts:333 (ClientContact)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `contacts`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `contacts`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/features/tps/ClientExtras.tsx",
+        "src/features/acquisition/Intel.tsx"
+      ],
+      "statusValues": [],
+      "relationships": [
+        "clientId → Client (optional)",
+        "companyId → Company (optional)"
+      ],
+      "sourceReferenceFields": [
+        "source",
+        "profiles",
+        "history"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible()). upsert_contact requires a `source` (provenance)."
+    },
+    {
+      "name": "Opportunity",
+      "typePath": "src/domain/entities.ts:193 (Opportunity)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `opportunities`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `opportunities`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/Acquisition.tsx",
+        "src/pages/tps/Pipeline.tsx"
+      ],
+      "statusValues": [
+        "lead",
+        "qualified",
+        "contacted",
+        "replied",
+        "conversation",
+        "call",
+        "proposal",
+        "won",
+        "lost",
+        " proposalStatus: none | drafting | sent | accepted | declined"
+      ],
+      "relationships": [
+        "companyId → Company",
+        "contactId → ClientContact",
+        "clientId → Client (when won)",
+        "appDrafts.opportunityId",
+        "agentTasks.refs"
+      ],
+      "sourceReferenceFields": [
+        "evidence[] (platform, url, seenAt)",
+        "researchRefs",
+        "scores[criterion].why",
+        "source",
+        "url",
+        "via"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "ApplicationDraft (outreach / proposal draft)",
+      "typePath": "src/domain/entities2.ts:412 (ApplicationDraft)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `appDrafts`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `appDrafts`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/Applications.tsx (Outreach & proposals)"
+      ],
+      "statusValues": [
+        "draft",
+        "review",
+        "approved",
+        "sent",
+        " outcome: replied | no-reply | call | won | lost | bounced"
+      ],
+      "relationships": [
+        "opportunityId → Opportunity",
+        "contactId → ClientContact",
+        "companyId → Company",
+        "approvalId → ApprovalRequest",
+        "portfolioIds → PortfolioPiece"
+      ],
+      "sourceReferenceFields": [
+        "personalization",
+        "versions[]",
+        "executionRef",
+        "sentVia"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "ContentPost",
+      "typePath": "src/domain/entities.ts:634 (ContentPost)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `posts`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `posts`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/Content.tsx",
+        "src/pages/tps/ContentCalendar.tsx"
+      ],
+      "statusValues": [
+        "idea",
+        "research",
+        "draft",
+        "review",
+        "approved",
+        "scheduled",
+        "posted",
+        "failed",
+        "canceled"
+      ],
+      "relationships": [
+        "opportunityId → ContentOpportunity",
+        "approvalId → ApprovalRequest",
+        "sourceId → ContentPost (repurposed)",
+        "publications.postId"
+      ],
+      "sourceReferenceFields": [
+        "researchRefs",
+        "versions[]",
+        "approvedHash",
+        "metrics (entered manually)"
+      ],
+      "privacyNotes": "Business record."
+    },
+    {
+      "name": "PublicationJob",
+      "typePath": "src/domain/entities3.ts:183 (PublicationJob)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `publications`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `publications`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/ContentCalendar.tsx",
+        "src/features/content/Publish.tsx"
+      ],
+      "statusValues": [
+        "queued",
+        "claimed",
+        "published",
+        "failed",
+        "canceled"
+      ],
+      "relationships": [
+        "postId → ContentPost",
+        "approvalId → ApprovalRequest"
+      ],
+      "sourceReferenceFields": [
+        "hash",
+        "manusRef",
+        "url",
+        "executor: manus | manual"
+      ],
+      "privacyNotes": "Contains only approved text."
+    },
+    {
+      "name": "ContentOpportunity",
+      "typePath": "src/domain/entities3.ts:210 (ContentOpportunity)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `contentOpps`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `contentOpps`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/ContentIdeas.tsx"
+      ],
+      "statusValues": [
+        "new",
+        "drafting",
+        "drafted",
+        "used",
+        "dismissed",
+        " confidentiality: public | generalize | confidential"
+      ],
+      "relationships": [
+        "postIds → ContentPost",
+        "sourceRef → any record"
+      ],
+      "sourceReferenceFields": [
+        "sourceRef",
+        "excerpt",
+        "origin",
+        "via"
+      ],
+      "privacyNotes": "Derived from client work → confidentiality 'generalize' (publish only as a general lesson)."
+    },
+    {
+      "name": "PerformanceEntry (client ad performance)",
+      "typePath": "src/domain/entities.ts:545 (PerformanceEntry)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `performance`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `performance`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/tps/ClientDetail.tsx"
+      ],
+      "statusValues": [],
+      "relationships": [
+        "clientId → Client",
+        "deliverableId → Deliverable"
+      ],
+      "sourceReferenceFields": [],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "ApprovalRequest",
+      "typePath": "src/domain/entities2.ts:232 (ApprovalRequest) + ApprovalDecision src/domain/entities2.ts:221",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `approvals`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `approvals`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/cue/Approvals.tsx (Approval Center)",
+        "src/pages/tps/Applications.tsx",
+        "src/features/content/Publish.tsx"
+      ],
+      "statusValues": [
+        "pending",
+        "approved",
+        "rejected",
+        "changes",
+        " actionType: email | post | proposal | dm | file | calendar | status_change | internal_task | other",
+        " executionStatus: succeeded | failed"
+      ],
+      "relationships": [
+        "runId → AgentRun",
+        "targetRef → appdraft:/post:/deliverable:/opportunity:…",
+        "resubmittedFrom → ApprovalRequest",
+        "agentRuns.approvalIds"
+      ],
+      "sourceReferenceFields": [
+        "sourceRefs",
+        "payloadHash",
+        "decisions[] (at, decision, by, note, editedPayload)",
+        "approver",
+        "executionRef",
+        "executionNote",
+        "via"
+      ],
+      "privacyNotes": "Decision record only; approving executes nothing."
+    },
+    {
+      "name": "AgentRun",
+      "typePath": "src/domain/entities2.ts:187 (AgentRun)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `agentRuns`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `agentRuns`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/cue/Runs.tsx (Activity)",
+        "src/pages/cue/Team.tsx"
+      ],
+      "statusValues": [
+        "queued",
+        "running",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "relationships": [
+        "taskId → AgentTask",
+        "scheduleId → AgentSchedule",
+        "clientId/projectId",
+        "approvalIds → ApprovalRequest",
+        "refs → business records"
+      ],
+      "sourceReferenceFields": [
+        "outputRefs",
+        "sourceRefs",
+        "externalId",
+        "manusUrl",
+        "via"
+      ],
+      "privacyNotes": "Hidden clients' runs are filtered from MCP."
+    },
+    {
+      "name": "AgentTask (assignment / hand-off)",
+      "typePath": "src/domain/entities3.ts:20 (AgentTask)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `agentTasks`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `agentTasks`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/cue/Tasks.tsx"
+      ],
+      "statusValues": [
+        "open",
+        "in_progress",
+        "blocked",
+        "done",
+        "cancelled"
+      ],
+      "relationships": [
+        "assignee/from: Cue ids",
+        "parentId → AgentTask",
+        "runIds → AgentRun",
+        "scheduleId → AgentSchedule",
+        "refs → business records"
+      ],
+      "sourceReferenceFields": [
+        "refs",
+        "outputRefs",
+        "via",
+        "idempotencyKey"
+      ],
+      "privacyNotes": "Business record."
+    },
+    {
+      "name": "AgentSchedule",
+      "typePath": "src/domain/entities3.ts:54 (AgentSchedule)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `schedules`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `schedules`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/cue/Schedules.tsx"
+      ],
+      "statusValues": [
+        "configured",
+        "active",
+        "paused",
+        "error"
+      ],
+      "relationships": [
+        "agent → Cue id",
+        "agentRuns.scheduleId"
+      ],
+      "sourceReferenceFields": [
+        "manusRef",
+        "manusUrl"
+      ],
+      "privacyNotes": "Mirror only; Command Center never executes schedules."
+    },
+    {
+      "name": "AppNotification",
+      "typePath": "src/domain/entities3.ts:79 (AppNotification)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `notifications`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `notifications`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/features/notifications/Center.tsx"
+      ],
+      "statusValues": [
+        "category: urgent | review | intel | routine",
+        " readAt set = read"
+      ],
+      "relationships": [
+        "ref → any record"
+      ],
+      "sourceReferenceFields": [
+        "agent",
+        "dedupeKey"
+      ],
+      "privacyNotes": "Carl's inbox: emptied before any MCP tool sees state (server/mcp.ts visible())."
+    },
+    {
+      "name": "ActivityEntry (activity history)",
+      "typePath": "src/domain/entities.ts:444 (ActivityEntry)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `activity`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `activity`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/Home.tsx (Recent activity)",
+        "src/pages/home/Timeline.tsx"
+      ],
+      "statusValues": [],
+      "relationships": [
+        "ref → any record"
+      ],
+      "sourceReferenceFields": [
+        "text includes the connector name for agent actions"
+      ],
+      "privacyNotes": "Business record."
+    },
+    {
+      "name": "IntelFinding",
+      "typePath": "src/domain/entities3.ts:267 (IntelFinding)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `findings`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `findings`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/knowledge/Intel.tsx"
+      ],
+      "statusValues": [
+        "new",
+        "reviewed",
+        "archived",
+        " strength: opinion | developing | repeated | supported | platform-change",
+        " action: learn | test | monitor | ignore"
+      ],
+      "relationships": [
+        "sourceId → WatchSource",
+        "relatedIds → IntelFinding",
+        "refs → insight/contentopp/task"
+      ],
+      "sourceReferenceFields": [
+        "url",
+        "creator",
+        "publisher",
+        "evidence"
+      ],
+      "privacyNotes": "Business record."
+    },
+    {
+      "name": "WatchSource",
+      "typePath": "src/domain/entities3.ts:248 (WatchSource)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `watchlist`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `watchlist`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/knowledge/Watchlist.tsx"
+      ],
+      "statusValues": [
+        "active: boolean"
+      ],
+      "relationships": [
+        "findings.sourceId"
+      ],
+      "sourceReferenceFields": [
+        "url",
+        "handle"
+      ],
+      "privacyNotes": "Business record."
+    },
+    {
+      "name": "FeedbackObservation",
+      "typePath": "src/domain/entities3.ts:298 (FeedbackObservation)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `observations`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `observations`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/lab/Improve.tsx"
+      ],
+      "statusValues": [
+        "polarity: weakness | strength | neutral"
+      ],
+      "relationships": [
+        "clientId → Client",
+        "deliverableId → Deliverable",
+        "sourceRef → any record"
+      ],
+      "sourceReferenceFields": [
+        "sourceRef",
+        "by"
+      ],
+      "privacyNotes": "Business record. Visible to MCP clients unless its client is hidden (Settings → AI connections → hidden clients; server/mcp.ts visible())."
+    },
+    {
+      "name": "ImprovementRec",
+      "typePath": "src/domain/entities3.ts:316 (ImprovementRec)",
+      "statePath": "src/domain/state.ts (Data) + src/store/app.ts (Collections, defaults, COLL_REF) — collection `improvements`",
+      "syncPath": "src/domain/syncSchema.ts (ARRAY_COLLS) — `improvements`",
+      "persistencePath": "Server: D1 table `records` (migrations/0001_init.sql) via server/records.ts (applyChange/writeRecord/loadState); client: zustand persist localStorage key \"command-center:v1\" (src/store/app.ts); export/restore src/store/backup.ts (KEYS = ARRAY_COLLS + MAP_COLLS)",
+      "uiPaths": [
+        "src/pages/lab/Improve.tsx"
+      ],
+      "statusValues": [
+        "suggested",
+        "active",
+        "done",
+        "dismissed",
+        " confidence: observation | hypothesis | pattern"
+      ],
+      "relationships": [
+        "taskId → Task",
+        "evidence → observation/feedback refs"
+      ],
+      "sourceReferenceFields": [
+        "evidence"
+      ],
+      "privacyNotes": "Business record."
+    }
+  ],
+  "apiRoutes": [
+    {
+      "method": "GET",
+      "path": "/api/session",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handler (line 39)",
+      "requestShape": "none",
+      "responseShape": "{ signedIn, features | null, configured }",
+      "permissions": "public"
+    },
+    {
+      "method": "POST",
+      "path": "/api/login",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handler (line 46)",
+      "requestShape": "{ password }",
+      "responseShape": "200 + HttpOnly cc_session cookie | 401",
+      "permissions": "public, rate-limited"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sync",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handler (line 104)",
+      "requestShape": "?since=<rev>&limit=<n ≤ 5000, default 2000>",
+      "responseShape": "{ rev, records: [{ coll, id, data (JSON string|null), rev, updated_at }], more }",
+      "permissions": "owner session cookie"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sync",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handler (line 111) → server/records.ts applyChange",
+      "requestShape": "{ device, changes: [{ coll, id, data (JSON string|null), baseRev, updatedAt }] } (≤ 2000 changes)",
+      "responseShape": "{ rev, results: [{ coll, id, status: ok|conflict_kept_server|conflict_overwrote_server|rejected, rev?, data?, error? }] }",
+      "permissions": "owner session cookie"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sync/conflicts",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handler (line 121)",
+      "requestShape": "none",
+      "responseShape": "{ conflicts: [{ seq, coll, id, kept, discarded, at }] }",
+      "permissions": "owner session cookie"
+    },
+    {
+      "method": "GET",
+      "path": "/api/export",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handler (line 131)",
+      "requestShape": "none",
+      "responseShape": "attachment: { app, kind: 'server-backup', exportedAt, rev, records: [{ coll, id, data, rev, updated_at }] } (includes tombstones)",
+      "permissions": "owner session cookie"
+    },
+    {
+      "method": "GET",
+      "path": "/api/mcp/tools",
+      "sourcePath": "server/index.ts",
+      "handler": "toolList() from server/mcp.ts",
+      "requestShape": "none",
+      "responseShape": "{ tools: [{ name, title, description, inputSchema, annotations }] }",
+      "permissions": "owner session cookie"
+    },
+    {
+      "method": "GET/PUT",
+      "path": "/api/mcp/permissions",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handlers (lines 366, 370)",
+      "requestShape": "PUT: { write?, consequential?, hiddenClients?, areas? }",
+      "responseShape": "McpPermissions",
+      "permissions": "owner session cookie"
+    },
+    {
+      "method": "GET",
+      "path": "/api/mcp/clients",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handler (line 396)",
+      "requestShape": "none",
+      "responseShape": "{ clients: [{ clientId, name, scope, connectedAt, lastAt, lastTool }] }",
+      "permissions": "owner session cookie"
+    },
+    {
+      "method": "GET / DELETE",
+      "path": "/api/mcp/grants, /api/mcp/grants/:id",
+      "sourcePath": "server/index.ts",
+      "handler": "inline handlers (lines 385, 408)",
+      "requestShape": "none",
+      "responseShape": "grants list | { ok }",
+      "permissions": "owner session cookie"
+    },
+    {
+      "method": "POST",
+      "path": "/mcp",
+      "sourcePath": "server/index.ts (OAuthProvider apiRoute) → server/mcp.ts mcpFetch/handleRpc",
+      "handler": "mcpFetch",
+      "requestShape": "JSON-RPC 2.0: initialize | tools/list | tools/call { name, arguments }",
+      "responseShape": "JSON-RPC result: { content:[{type:'text',text}], structuredContent, isError? }",
+      "permissions": "OAuth 2.1 bearer token (DCR + PKCE + owner consent at /authorize), scopes mcp:read / mcp:write; server-side permissions: write tools need perms.write, consequential tools need perms.consequential + confirm:true"
+    },
+    {
+      "method": "POST",
+      "path": "/oauth/register, /oauth/token, GET /authorize",
+      "sourcePath": "server/index.ts (@cloudflare/workers-oauth-provider)",
+      "handler": "OAuthProvider + authorize()",
+      "requestShape": "RFC 7591 / OAuth 2.1",
+      "responseShape": "client registration / tokens / consent page",
+      "permissions": "public; consent requires owner session"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_create_task",
+      "sourcePath": "server/mcp21.ts",
+      "handler": "cue_create_task",
+      "requestShape": "{ assignee, from, title, instructions?, kind?, priority?, due?, refs?[], parent_task_id?, idempotency_key? }",
+      "responseShape": "{ ok, task_id, kind, refs } | { duplicate: true }",
+      "permissions": "OAuth bearer, level=write; purpose: start work: create a task or Cue→Cue hand-off"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_list_tasks",
+      "sourcePath": "server/mcp21.ts",
+      "handler": "cue_list_tasks",
+      "requestShape": "{ agent?, status?: open|blocked|done|all, ref?, limit?, cursor? }",
+      "responseShape": "{ items, next_cursor, total }",
+      "permissions": "OAuth bearer, level=read; purpose: retrieve assigned work"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_update_task",
+      "sourcePath": "server/mcp21.ts",
+      "handler": "cue_update_task",
+      "requestShape": "{ task_id, status: in_progress|blocked|done|cancelled, output?, output_refs?[], blocker?, run_id? }",
+      "responseShape": "{ ok, task_id, status, notifications }",
+      "permissions": "OAuth bearer, level=write; purpose: report progress / output / blocker"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_record_run",
+      "sourcePath": "server/mcp.ts",
+      "handler": "cue_record_run",
+      "requestShape": "{ agent, title, status?, input?, output?, output_refs?, client?, external_id?, purpose?, task_id?, schedule_id?, refs?, source_refs?, manus_url?, blocker?, idempotency_key? }",
+      "responseShape": "{ ok, id } | { duplicate: true }",
+      "permissions": "OAuth bearer, level=write; purpose: start/record a run (execution record)"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_update_run",
+      "sourcePath": "server/mcp.ts",
+      "handler": "cue_update_run",
+      "requestShape": "{ run_id, status: running|completed|failed|cancelled, output?, output_refs?, external_id?, error? }",
+      "responseShape": "{ ok, id, status }",
+      "permissions": "OAuth bearer, level=write; purpose: update run status/output"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_list_runs",
+      "sourcePath": "server/mcp21.ts",
+      "handler": "cue_list_runs",
+      "requestShape": "{ agent?, status?, task_id?, limit?, cursor? }",
+      "responseShape": "{ items: [{ id, agent, title, status, output_preview, approval_ids, … }], next_cursor, total }",
+      "permissions": "OAuth bearer, level=read; purpose: retrieve runs"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_get_run",
+      "sourcePath": "server/mcp21.ts",
+      "handler": "cue_get_run",
+      "requestShape": "{ run_id }",
+      "responseShape": "{ id, …, output, output_refs, refs, source_refs, task, approvals[] }",
+      "permissions": "OAuth bearer, level=read; purpose: retrieve run outputs"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_list_requests",
+      "sourcePath": "server/mcp.ts",
+      "handler": "cue_list_requests",
+      "requestShape": "{ agent?, status? }",
+      "responseShape": "{ tasks, requests }",
+      "permissions": "OAuth bearer, level=read; purpose: legacy: open requests (runs) + tasks"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_request_approval",
+      "sourcePath": "server/mcp.ts",
+      "handler": "cue_request_approval",
+      "requestShape": "{ agent, title, action_type, destination, payload, context?, source_refs?, risk?, risk_note?, run_id?, target_ref?, idempotency_key? }",
+      "responseShape": "{ ok, approval_id, status: 'pending' } | { duplicate: true }",
+      "permissions": "OAuth bearer, level=write; purpose: create approval request (record only)"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_get_approval",
+      "sourcePath": "server/mcp.ts",
+      "handler": "cue_get_approval",
+      "requestShape": "{ approval_id }",
+      "responseShape": "{ id, status, may_execute, final_payload, final_payload_hash, decided_by, decided_at, history[], target_ref, run_id, … }",
+      "permissions": "OAuth bearer, level=read; purpose: retrieve approval decision"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_list_approvals",
+      "sourcePath": "server/mcp.ts",
+      "handler": "cue_list_approvals",
+      "requestShape": "{ agent?, status? }",
+      "responseShape": "{ approvals: [...] }",
+      "permissions": "OAuth bearer, level=read; purpose: list approvals"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → cue_report_execution",
+      "sourcePath": "server/mcp.ts",
+      "handler": "cue_report_execution",
+      "requestShape": "{ approval_id, note? }",
+      "responseShape": "{ ok } (refused unless approved; once only)",
+      "permissions": "OAuth bearer, level=write; purpose: record that an approved action was executed"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → submit_outreach_draft",
+      "sourcePath": "server/mcp21.ts",
+      "handler": "submit_outreach_draft",
+      "requestShape": "see docs/MANUS_INTEGRATION.md",
+      "responseShape": "{ ok, draft_id, approval_id, version }",
+      "permissions": "OAuth bearer, level=write; purpose: validated outreach/proposal draft + approval"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → save_content_draft",
+      "sourcePath": "server/mcp.ts",
+      "handler": "save_content_draft",
+      "requestShape": "{ text, platform?, status?, hook?, format?, notes?, opportunity_id?, suggested_time?, agent?, idempotency_key? }",
+      "responseShape": "{ ok, id }",
+      "permissions": "OAuth bearer, level=write; purpose: validated content draft"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → create_draft_concept / save_research_draft / create_task",
+      "sourcePath": "server/mcp.ts",
+      "handler": "create_draft_concept / save_research_draft / create_task",
+      "requestShape": "see tools/list",
+      "responseShape": "{ created }",
+      "permissions": "OAuth bearer, level=write; purpose: validated internal drafts"
+    },
+    {
+      "method": "POST (MCP tools/call)",
+      "path": "/mcp → update_deliverable_status",
+      "sourcePath": "server/mcp.ts",
+      "handler": "update_deliverable_status",
+      "requestShape": "{ deliverable_id, stage, confirm }",
+      "responseShape": "preview | { updated }",
+      "permissions": "OAuth bearer, level=consequential (perms.consequential + confirm:true); purpose: the only tool that changes a deliverable stage"
+    }
+  ],
+  "uiSurfaces": [
+    {
+      "name": "Dashboard",
+      "route": "/home",
+      "componentPath": "src/pages/Home.tsx",
+      "recordTypes": [
+        "all (ReadyCard)"
+      ],
+      "cueIntegrationUse": "Shows 'Ready for you' counts from buildDailyBriefing; Cue output appears once stored."
+    },
+    {
+      "name": "Main Cue daily briefing",
+      "route": "/home/briefing",
+      "componentPath": "src/pages/home/Briefing.tsx",
+      "recordTypes": [
+        "agentRuns",
+        "agentTasks",
+        "opportunities",
+        "appDrafts",
+        "posts",
+        "publications",
+        "approvals",
+        "findings",
+        "improvements",
+        "deliverables"
+      ],
+      "cueIntegrationUse": "Same builder as MCP get_daily_briefing (src/domain/briefing.ts)."
+    },
+    {
+      "name": "Acquisition intelligence",
+      "route": "/tps/acquisition",
+      "componentPath": "src/pages/tps/Acquisition.tsx",
+      "recordTypes": [
+        "opportunities",
+        "companies",
+        "appDrafts",
+        "agentTasks"
+      ],
+      "cueIntegrationUse": "Shows Acquisition Cue opportunities, scores, research hand-offs, drafts awaiting approval."
+    },
+    {
+      "name": "Pipeline",
+      "route": "/tps/pipeline",
+      "componentPath": "src/pages/tps/Pipeline.tsx (+ src/features/acquisition/Intel.tsx)",
+      "recordTypes": [
+        "opportunities",
+        "companies",
+        "contacts",
+        "agentTasks",
+        "appDrafts"
+      ],
+      "cueIntegrationUse": "Opportunity dialog shows linked Cue research and hand-off buttons."
+    },
+    {
+      "name": "Companies",
+      "route": "/tps/companies",
+      "componentPath": "src/pages/tps/Companies.tsx",
+      "recordTypes": [
+        "companies",
+        "opportunities",
+        "contacts"
+      ],
+      "cueIntegrationUse": "Canonical company records created by upsert_company."
+    },
+    {
+      "name": "Outreach & proposals",
+      "route": "/tps/applications",
+      "componentPath": "src/pages/tps/Applications.tsx",
+      "recordTypes": [
+        "appDrafts",
+        "approvals",
+        "opportunities"
+      ],
+      "cueIntegrationUse": "Review/approve Cue outreach and proposal drafts."
+    },
+    {
+      "name": "Creative Lab",
+      "route": "/lab/overview, /lab/analyses, /lab/insights, /lab/library",
+      "componentPath": "src/pages/lab/Overview.tsx, Analyses.tsx, Insights.tsx, Library.tsx",
+      "recordTypes": [
+        "analyses",
+        "insights",
+        "ads"
+      ],
+      "cueIntegrationUse": "Insights saved by Creative Cue (save_insight)."
+    },
+    {
+      "name": "AI Studio (concepts, research drafts)",
+      "route": "/tps/studio",
+      "componentPath": "src/pages/tps/Studio.tsx",
+      "recordTypes": [
+        "concepts",
+        "aiOutputs",
+        "research"
+      ],
+      "cueIntegrationUse": "Draft concepts from create_draft_concept appear here."
+    },
+    {
+      "name": "Client workspace",
+      "route": "/tps/clients/:id",
+      "componentPath": "src/pages/tps/ClientDetail.tsx",
+      "recordTypes": [
+        "clients",
+        "research",
+        "feedback",
+        "performance",
+        "concepts",
+        "contacts",
+        "meetings"
+      ],
+      "cueIntegrationUse": "Client-isolated context; research drafts from Cues."
+    },
+    {
+      "name": "Projects & deliverables",
+      "route": "/tps/projects, /tps/deliverables",
+      "componentPath": "src/pages/tps/Projects.tsx, src/pages/tps/Deliverables.tsx",
+      "recordTypes": [
+        "projects",
+        "deliverables",
+        "feedback"
+      ],
+      "cueIntegrationUse": "Operations Cue reads these; status changes go through approval or the consequential tool."
+    },
+    {
+      "name": "Improvement",
+      "route": "/lab/improve",
+      "componentPath": "src/pages/lab/Improve.tsx",
+      "recordTypes": [
+        "observations",
+        "feedback",
+        "improvements"
+      ],
+      "cueIntegrationUse": "Feedback observations and recommendations from Operations Cue."
+    },
+    {
+      "name": "Content calendar",
+      "route": "/tps/content-calendar",
+      "componentPath": "src/pages/tps/ContentCalendar.tsx",
+      "recordTypes": [
+        "posts",
+        "publications"
+      ],
+      "cueIntegrationUse": "Content Cue drafts appear; approval creates publication jobs."
+    },
+    {
+      "name": "Content ideas",
+      "route": "/tps/content-ideas",
+      "componentPath": "src/pages/tps/ContentIdeas.tsx",
+      "recordTypes": [
+        "contentOpps",
+        "posts",
+        "knowledgeDocs"
+      ],
+      "cueIntegrationUse": "Content opportunities from save_content_opportunity."
+    },
+    {
+      "name": "Content board & performance",
+      "route": "/tps/content",
+      "componentPath": "src/pages/tps/Content.tsx",
+      "recordTypes": [
+        "posts"
+      ],
+      "cueIntegrationUse": "Draft review, manual metrics."
+    },
+    {
+      "name": "Agent runs / activity",
+      "route": "/cue/runs",
+      "componentPath": "src/pages/cue/Runs.tsx",
+      "recordTypes": [
+        "agentRuns"
+      ],
+      "cueIntegrationUse": "Shows run status and outputs written by the runtime."
+    },
+    {
+      "name": "Tasks & hand-offs",
+      "route": "/cue/tasks",
+      "componentPath": "src/pages/cue/Tasks.tsx",
+      "recordTypes": [
+        "agentTasks"
+      ],
+      "cueIntegrationUse": "Shows Cue→Cue hand-offs and outputs."
+    },
+    {
+      "name": "Approval Center",
+      "route": "/cue/approvals",
+      "componentPath": "src/pages/cue/Approvals.tsx",
+      "recordTypes": [
+        "approvals"
+      ],
+      "cueIntegrationUse": "Carl approves/rejects/requests changes; audit history with decided-by."
+    },
+    {
+      "name": "AI Team",
+      "route": "/cue/team",
+      "componentPath": "src/pages/cue/Team.tsx",
+      "recordTypes": [
+        "agentRuns",
+        "agentTasks",
+        "schedules",
+        "approvals"
+      ],
+      "cueIntegrationUse": "Per-Cue liveness from real reports only."
+    },
+    {
+      "name": "Schedules",
+      "route": "/cue/schedules",
+      "componentPath": "src/pages/cue/Schedules.tsx",
+      "recordTypes": [
+        "schedules"
+      ],
+      "cueIntegrationUse": "Mirror of runtime/Manus schedules."
+    },
+    {
+      "name": "Industry intelligence",
+      "route": "/knowledge/intel, /knowledge/watchlist",
+      "componentPath": "src/pages/knowledge/Intel.tsx, src/pages/knowledge/Watchlist.tsx",
+      "recordTypes": [
+        "findings",
+        "watchlist"
+      ],
+      "cueIntegrationUse": "Findings from save_industry_finding."
+    },
+    {
+      "name": "Business Brain",
+      "route": "/knowledge/brain",
+      "componentPath": "src/pages/knowledge/Brain.tsx",
+      "recordTypes": [
+        "knowledgeDocs",
+        "research",
+        "insights",
+        "concepts",
+        "feedback",
+        "companies",
+        "opportunities",
+        "findings"
+      ],
+      "cueIntegrationUse": "Same search as MCP search_business_knowledge."
+    },
+    {
+      "name": "Notification centre",
+      "route": "bell in sidebar / mobile top bar",
+      "componentPath": "src/features/notifications/Center.tsx",
+      "recordTypes": [
+        "notifications"
+      ],
+      "cueIntegrationUse": "cue_notify and server rules write here."
+    }
+  ],
+  "cueIntegration": {
+    "protectedPaths": [],
+    "protectedPathsNote": "No server/cues/ directory or other Cue-runtime code exists in this repository or on any remote branch (checked: `ls server/cues`, `git ls-remote --heads origin`, `git grep server/cues`). Nothing was protected or modified on its behalf.",
+    "compatibleSeams": [
+      "POST /mcp (OAuth 2.1 bearer, JSON-RPC tools/call) — the only programmatic write path for an external runtime; tools listed in apiRoutes",
+      "Agent runs: cue_record_run / cue_update_run / cue_list_runs / cue_get_run (AgentRun)",
+      "Assignments and hand-offs: cue_create_task / cue_list_tasks / cue_update_task (AgentTask)",
+      "Approval Center: cue_request_approval → (Carl decides in /cue/approvals) → cue_get_approval → cue_report_execution (ApprovalRequest)",
+      "Validated drafts: submit_outreach_draft, save_content_draft, create_draft_concept, save_research_draft, attach_research, save_content_opportunity",
+      "Context reads: get_client_context_pack, search_business_knowledge, get_opportunity, get_daily_briefing, cue_get_coordination_state",
+      "Notifications: cue_notify (deduped, rate-limited)"
+    ],
+    "possibleConflicts": [
+      "If the runtime persists its own AgentRun store, it must mirror runs into Command Center via cue_record_run/cue_update_run (or treat Command Center as the system of record); there is no bulk import endpoint.",
+      "AgentRun.status union is queued|running|completed|failed|cancelled — runtime states outside this set must be mapped.",
+      "ApprovalRequest.actionType union is fixed (email|post|proposal|dm|file|calendar|status_change|internal_task|other); new action kinds need a type + enum change in src/domain/entities2.ts and server/mcp.ts.",
+      "Cue agent ids are fixed: main|acquisition|creative|operations|content (src/domain/entities2.ts CUE_AGENTS).",
+      "OAuth tokens expire after 1 h (refresh 60 days); a headless runtime must handle refresh tokens. There is no API-key auth for server-to-server calls.",
+      "The legacy REST endpoints POST /api/ai/run and /api/manus/task are owner-session only and are not a runtime seam."
+    ],
+    "requiredMigrations": [],
+    "requiredMigrationsNote": "None. All records are generic rows in the D1 `records` table; new fields are optional and older records/exports load unchanged.",
+    "approvalFlow": "Runtime creates ApprovalRequest via cue_request_approval (status pending, payloadHash, targetRef, runId) → Carl approves (optionally editing the payload), rejects or requests changes in /cue/approvals, /tps/applications or the content calendar → decision appended to decisions[] with by='carl' and synced → runtime polls cue_get_approval; only status=approved with may_execute=true allows acting, using final_payload exactly → runtime executes externally (outside Command Center) → reports with cue_report_execution / record_outreach_sent (text must match the approved hash) / report_publication_result. Approving never sends, publishes, submits or changes an external account; for post targets it marks the post approved, for appdraft targets it marks the draft approved."
+  },
+  "externalIntegrations": [
+    {
+      "service": "Cue runtime (separate)",
+      "status": "unconnected",
+      "notes": "Not present in this repo; integration via /mcp documented, not exercised by a real runtime."
+    },
+    {
+      "service": "Manus",
+      "status": "unconnected",
+      "notes": "MCP contract tested only with a simulated client in tests/ops21-server.mjs. MANUS_API_KEY (AI Studio) not configured in this environment."
+    },
+    {
+      "service": "X / Twitter",
+      "status": "unconnected",
+      "notes": "No API integration; publishing is represented by PublicationJob records only."
+    },
+    {
+      "service": "LinkedIn",
+      "status": "unconnected",
+      "notes": "No API integration."
+    },
+    {
+      "service": "Upwork",
+      "status": "unconnected",
+      "notes": "No API integration; proposals are ApplicationDraft + ApprovalRequest records."
+    },
+    {
+      "service": "Gmail / email",
+      "status": "unconnected",
+      "notes": "No integration; email drafts are records only."
+    },
+    {
+      "service": "Discord",
+      "status": "unconnected",
+      "notes": "No integration."
+    },
+    {
+      "service": "Google Calendar",
+      "status": "configured_but_unverified",
+      "notes": "Code path exists (server/google.ts); not configured or verified in this environment."
+    },
+    {
+      "service": "Web Push",
+      "status": "configured_but_unverified",
+      "notes": "Implemented (server/push.ts); local tests use the queue, real device delivery not verified here."
+    },
+    {
+      "service": "Anthropic / OpenAI (AI Studio)",
+      "status": "unconnected",
+      "notes": "Keys not configured in this environment; server reports not configured."
+    }
+  ],
+  "knownBlockers": [
+    "No Cue runtime code available to verify against; compatibility is stated from the Command Center side only.",
+    "Server-to-server auth: /mcp requires the OAuth consent flow once (owner clicks Allow); there is no static API key option.",
+    "No real external execution has been verified (Manus, X, LinkedIn, Upwork, email)."
+  ],
+  "nextIntegrationSteps": [
+    "Register the runtime as an OAuth client (POST /oauth/register), complete owner consent once, store the refresh token securely in the runtime.",
+    "Map runtime run states and agent ids onto AgentRun.status and CUE_AGENTS.",
+    "For every run, call cue_record_run (idempotency_key = runtime run id) and cue_update_run on completion with output and output_refs.",
+    "Route every external action through cue_request_approval with target_ref, run_id and idempotency_key; execute only after cue_get_approval returns may_execute=true; report via cue_report_execution / record_outreach_sent / report_publication_result.",
+    "Run tests/ops21-server.mjs against a staging Worker with the real runtime's client to confirm the contract.",
+    "Deploy only after explicit approval (npm run deploy)."
+  ]
+}

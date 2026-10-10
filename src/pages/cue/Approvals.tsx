@@ -12,7 +12,7 @@ import { decideApproval } from '@/lib/ops'
 
 const RISK: Record<ApprovalRequest['risk'], string> = { low: 'text-ok bg-[rgba(69,185,124,0.12)]', medium: 'text-[#e5b06b] bg-[rgba(229,165,75,0.14)]', high: 'text-danger bg-[rgba(239,107,107,0.14)]' }
 const STATUS_LABEL: Record<ApprovalStatus, string> = { pending: 'Waiting for you', approved: 'Approved', rejected: 'Rejected', changes: 'Changes requested' }
-const ACTION_LABEL: Record<ApprovalRequest['actionType'], string> = { email: 'Send email', post: 'Publish post', proposal: 'Submit proposal', dm: 'Send DM', file: 'Change file', calendar: 'Change calendar', other: 'Action' }
+const ACTION_LABEL: Record<ApprovalRequest['actionType'], string> = { email: 'Send email', post: 'Publish post', proposal: 'Submit proposal', dm: 'Send DM', file: 'Change file', calendar: 'Change calendar', status_change: 'Change a status', internal_task: 'Create a task', other: 'Action' }
 
 /** Decisions go through ops.decideApproval (it also updates linked drafts). */
 export const decide = decideApproval
@@ -37,6 +37,20 @@ function Request({ r }: { r: ApprovalRequest }) {
           </div>
           <h2 className="font-display mt-1 text-[17px] font-semibold">{r.title}</h2>
           <p className="text-[12.5px] text-muted">→ {r.destination}</p>
+          <p className="mt-0.5 text-[11.5px] text-faint" aria-label="Request details">
+            Requested {format(new Date(r.createdAt), 'd MMM HH:mm')}
+            {r.runId ? ` · run ${r.runId}` : ''}
+            {r.payloadHash ? ` · payload ${r.payloadHash.slice(0, 8)}` : ''}
+            {r.resubmittedFrom ? ' · revised request' : ''}
+            {r.targetRef && (
+              <>
+                {' · about '}
+                <button onClick={() => openRef(r.targetRef!)} className="underline-offset-2 hover:text-fg hover:underline">
+                  {r.targetRef}
+                </button>
+              </>
+            )}
+          </p>
         </div>
         {!pending && <span className={cn('rounded-lg px-2.5 py-1 text-[12px] font-medium', r.status === 'approved' ? 'bg-[rgba(69,185,124,0.14)] text-ok' : r.status === 'rejected' ? 'bg-[rgba(239,107,107,0.12)] text-danger' : 'bg-panel-2 text-[#e5b06b]')}>{STATUS_LABEL[r.status]}</span>}
       </div>
@@ -82,7 +96,8 @@ function Request({ r }: { r: ApprovalRequest }) {
         <ol className="mt-3 space-y-1 border-t border-line pt-3 text-[12px] text-muted">
           {r.decisions.map((d, i) => (
             <li key={i}>
-              {format(new Date(d.at), 'd MMM HH:mm')} — {STATUS_LABEL[d.decision]}
+              {format(new Date(d.at), 'd MMM HH:mm')} — {d.decision === 'pending' ? 'Reopened' : STATUS_LABEL[d.decision]}
+              {d.by ? ` by ${d.by === 'carl' ? 'you' : d.by}` : ''}
               {d.editedPayload ? ' (with your edits)' : ''}
               {d.note ? `: “${d.note}”` : ''}
             </li>
@@ -91,13 +106,14 @@ function Request({ r }: { r: ApprovalRequest }) {
             <li className="text-ok">
               <CheckCircle2 className="mr-1 inline h-3.5 w-3.5" />
               Executed {format(new Date(r.executedAt), 'd MMM HH:mm')} — {r.executionNote}
+              {r.executionRef ? ` (${r.executionRef})` : ''}
             </li>
           ) : (
             r.status === 'approved' && <li>Not reported as executed yet.</li>
           )}
           {r.status !== 'pending' && !r.executedAt && (
             <li>
-              <button onClick={() => useApp.getState().patch('approvals', r.id, { status: 'pending', updatedAt: new Date().toISOString() })} className="text-faint underline-offset-2 hover:text-fg hover:underline">
+              <button onClick={() => useApp.getState().patch('approvals', r.id, { status: 'pending', decisions: [...r.decisions, { at: new Date().toISOString(), decision: 'pending', by: 'carl', note: 'Reopened' }], updatedAt: new Date().toISOString() })} className="text-faint underline-offset-2 hover:text-fg hover:underline">
                 Reopen
               </button>
             </li>
@@ -116,7 +132,7 @@ export default function ApprovalsPage() {
     <div className="mx-auto w-full max-w-[900px]">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-[26px] font-semibold">Approval Inbox</h1>
+          <h1 className="font-display text-[26px] font-semibold">Approval Center</h1>
           <p className="text-[13px] text-muted">Approving records your decision. Command Center never sends, posts or submits — the agent acts only after it reads an approval.</p>
         </div>
         <Segmented

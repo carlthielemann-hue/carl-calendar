@@ -67,6 +67,9 @@ async function audit(ctx: Ctx, text: string, ref?: string) {
   await writeRecord(ctx.env, 'activity', id, { id, at: nowIso(), workspace: 'tps', text: `${text}${ctx.via ? ` (via ${ctx.via})` : ''}`, ref }, 'mcp')
 }
 
+/** Does a "type:id" ref point at a record visible to the agent? */
+export const refExists = (s: AppStateLike, ref: string) => validRefs(s, [ref]).length > 0
+
 /** Refs must point at records the agent can see; unknown refs are dropped, not stored blindly. */
 function validRefs(s: AppStateLike, refs: string[]) {
   const coll: Record<string, keyof AppStateLike> = {
@@ -240,6 +243,60 @@ export const TOOLS_21: Tool[] = [
         scheduled_publications: c.scheduledPosts.map((j) => ({ id: j.id, platform: j.platform, scheduled_for: j.scheduledFor, status: j.status })),
         failed_publications: c.failedPublications.map((j) => ({ id: j.id, error: j.error ?? null })),
         schedules_needing_attention: c.staleSchedules.map((x) => ({ id: x.id, name: x.name, agent: x.agent, error: x.error ?? null, next_run_at: x.nextRunAt ?? null })),
+      }
+    },
+  },
+  {
+    name: 'cue_list_runs',
+    title: 'Cue: list agent runs',
+    description: 'Agent runs (execution records) with status and a short output preview. Filter by agent, status or task. Use cue_get_run for the full output.',
+    inputSchema: { type: 'object', properties: { agent: { type: 'string', enum: AGENTS }, status: { type: 'string', enum: ['queued', 'running', 'completed', 'failed', 'cancelled', 'all'] }, task_id: { type: 'string' }, limit: { type: 'integer' }, cursor: { type: 'string' } }, additionalProperties: false },
+    level: 'read',
+    run: async (a, ctx) => {
+      const s = await ctx.state()
+      const agent = agentArg(a, 'agent', false)
+      const status = str(a, 'status') ?? 'all'
+      const task = str(a, 'task_id')
+      const list = s.agentRuns.filter((r) => (!agent || r.agent === agent) && (status === 'all' || r.status === status) && (!task || r.taskId === task)).sort((x, y) => y.updatedAt.localeCompare(x.updatedAt))
+      const p = page(list, a)
+      return { ...p, items: p.items.map((r) => ({ id: r.id, agent: r.agent, title: r.title, status: r.status, requested_by: r.requestedBy, task_id: r.taskId ?? null, schedule_id: r.scheduleId ?? null, started_at: r.startedAt ?? null, completed_at: r.completedAt ?? null, output_preview: r.outputText ? r.outputText.slice(0, 280) : null, approval_ids: r.approvalIds ?? [], error: r.error ?? null, updated_at: r.updatedAt })) }
+    },
+  },
+  {
+    name: 'cue_get_run',
+    title: 'Cue: get one agent run',
+    description: 'Full record of an agent run: input, output, output refs, linked task, schedule, and the approvals it requested with their status.',
+    inputSchema: { type: 'object', properties: { run_id: { type: 'string' } }, required: ['run_id'], additionalProperties: false },
+    level: 'read',
+    run: async (a, ctx) => {
+      const s = await ctx.state()
+      const r = s.agentRuns.find((x) => x.id === str(a, 'run_id', true))
+      if (!r) throw new ToolError('Unknown run_id')
+      const approvals = s.approvals.filter((x) => x.runId === r.id || (r.approvalIds ?? []).includes(x.id))
+      return {
+        id: r.id,
+        agent: r.agent,
+        title: r.title,
+        purpose: r.purpose ?? null,
+        input: r.input ?? null,
+        status: r.status,
+        requested_by: r.requestedBy,
+        via: r.via ?? null,
+        started_at: r.startedAt ?? null,
+        completed_at: r.completedAt ?? null,
+        output: r.outputText ?? null,
+        output_refs: r.outputRefs,
+        refs: r.refs ?? [],
+        source_refs: r.sourceRefs ?? [],
+        error: r.error ?? null,
+        blocker: r.blocker ?? null,
+        external_id: r.externalId ?? null,
+        manus_url: r.manusUrl ?? null,
+        task: r.taskId ? (s.agentTasks.find((t) => t.id === r.taskId) ?? null) : null,
+        schedule_id: r.scheduleId ?? null,
+        approvals: approvals.map((x) => ({ id: x.id, title: x.title, action_type: x.actionType, status: x.status, target_ref: x.targetRef ?? null, executed_at: x.executedAt ?? null })),
+        created_at: r.createdAt,
+        updated_at: r.updatedAt,
       }
     },
   },
