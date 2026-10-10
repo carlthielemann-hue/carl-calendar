@@ -111,7 +111,8 @@ await step('evening planning shows the changes with reasons; approving puts them
   }
   await page.waitForTimeout(2000)
   const after = await state()
-  assert.equal(after.proposals.filter((x) => x.source === 'planner' && x.status === 'pending' && !x.id.startsWith('auto-')).length, 0, 'stable: nothing new to propose')
+  const pend = after.proposals.filter((x) => x.source === 'planner' && x.status === 'pending' && !x.id.startsWith('auto-'))
+  assert.equal(pend.length, 0, 'stable: nothing new to propose')
 })
 await step('exam progress shows planned hours', async () => {
   await go('/school/overview')
@@ -159,7 +160,7 @@ await step('pinning a block in the event panel', async () => {
 console.log('Homework & grades')
 await step('homework shows up in Tasks and the Mission screen', async () => {
   await go('/school/assignments')
-  await main.getByRole('button', { name: 'Homework', exact: true }).click()
+  await main.locator('header').getByRole('button', { name: 'Homework', exact: true }).click()
   const dlg = page.getByRole('dialog')
   await dlg.getByPlaceholder('Buch S. 42, Nr. 3–5').fill('Buch S. 42 Nr. 3')
   await dlg.locator('input[type=date]').fill(iso(new Date()))
@@ -171,7 +172,7 @@ await step('homework shows up in Tasks and the Mission screen', async () => {
 await step('grades give a weighted average', async () => {
   await go('/school/grades')
   for (const [pts, w] of [['12', '2'], ['9', '1']]) {
-    await main.getByRole('button', { name: 'Grade', exact: true }).click()
+    await main.locator('header').getByRole('button', { name: 'Grade', exact: true }).click()
     const dlg = page.getByRole('dialog')
     await dlg.locator('select').nth(2).selectOption(pts)
     await dlg.locator('input[type=number]').fill(w)

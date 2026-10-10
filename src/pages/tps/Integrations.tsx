@@ -7,6 +7,7 @@ import { api, useCloud } from '@/lib/cloud'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
+import { useConnectedApps } from '@/features/cue/shared'
 
 interface ProviderInfo {
   configured: boolean
@@ -118,6 +119,7 @@ export default function IntegrationsPage() {
       <PageHeader title="Integrations" sub="What’s connected, what’s possible, and what it would take. Nothing here is simulated." />
       <div className="flex flex-col gap-4">
         <LiveStatus />
+        <ConnectedApps />
         <Card className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -177,5 +179,48 @@ export default function IntegrationsPage() {
         <p className="text-[12px] text-faint">Researched October 2026. API terms and prices change — re-check before building.</p>
       </div>
     </div>
+  )
+}
+
+/** AI apps that connected over MCP, with their last real call. */
+function ConnectedApps() {
+  const { loading, apps, error } = useConnectedApps()
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[14.5px] font-semibold">AI apps (MCP) — Claude, ChatGPT, Manus</h2>
+          <p className="mt-0.5 text-[12.5px] text-muted">Connected with your consent through OAuth. Status comes from their real calls to Command Center.</p>
+        </div>
+      </div>
+      {loading ? (
+        <p className="mt-3 text-[12.5px] text-muted">Checking…</p>
+      ) : error ? (
+        <p className="mt-3 text-[12.5px] text-muted">{error}</p>
+      ) : apps.length === 0 ? (
+        <p className="mt-3 text-[12.5px] text-muted">None connected yet. Add Command Center as a custom connector in each app (Settings → AI connections shows the URL).</p>
+      ) : (
+        <table className="mt-3 w-full text-left text-[12.5px]">
+          <thead className="text-[11px] text-faint uppercase">
+            <tr>
+              <th className="py-1 font-medium">App</th>
+              <th className="py-1 font-medium">Access</th>
+              <th className="py-1 font-medium">Connected</th>
+              <th className="py-1 font-medium">Last call</th>
+            </tr>
+          </thead>
+          <tbody>
+            {apps.map((a) => (
+              <tr key={a.clientId} className="border-t border-line">
+                <td className="py-1.5">{a.name}</td>
+                <td className="py-1.5 text-muted">{a.scope.includes('mcp:write') ? 'read + drafts' : 'read only'}</td>
+                <td className="py-1.5 text-muted">{new Date(a.connectedAt).toLocaleDateString()}</td>
+                <td className="py-1.5 text-muted">{a.lastAt ? `${new Date(a.lastAt).toLocaleString()}${a.lastTool ? ` · ${a.lastTool}` : ''}` : 'not used yet'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Card>
   )
 }

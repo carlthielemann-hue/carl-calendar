@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import { OnboardingTab, PeopleTab } from '@/features/tps/ClientExtras'
 import { ArrowLeft, ExternalLink, Link2, Mail, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -33,6 +34,8 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
 
 const TABS: { id: string; label: string; count?: (c: Record<string, number>) => number }[] = [
   { id: 'overview', label: 'Overview' },
+  { id: 'onboarding', label: 'Onboarding' },
+  { id: 'people', label: 'People & meetings' },
   { id: 'brand', label: 'Brand' },
   { id: 'research', label: 'Research', count: (c) => c.research },
   { id: 'assets', label: 'Assets', count: (c) => c.assets },
@@ -144,6 +147,8 @@ export default function ClientDetail() {
         ))}
       </nav>
 
+      {tab === 'onboarding' && <OnboardingTab client={client} />}
+      {tab === 'people' && <PeopleTab client={client} />}
       {tab === 'brand' && <BrandTab client={client} />}
       {tab === 'research' && <ResearchTab client={client} />}
       {tab === 'assets' && <AssetsTab client={client} />}

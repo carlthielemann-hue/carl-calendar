@@ -8,11 +8,13 @@ import { GoalCard } from '@/features/goals/GoalCard'
 import { GoalDialog } from '@/features/goals/GoalDialog'
 import { useGoalProgress } from '@/features/goals/hooks'
 import { useApp } from '@/store/app'
+import { useIntent } from '@/store/ui'
 
 export default function GoalsPage() {
   const [h, setH] = useState<GoalHorizon>('month')
   const [period, setPeriod] = useState(currentPeriod('month'))
   const [adding, setAdding] = useState(false)
+  useIntent('new', () => setAdding(true))
   const [showClosed, setShowClosed] = useState(false)
   const all = useApp((s) => s.goals)
   const list = all.filter((g) => g.horizon === h && g.period === period && (showClosed || g.status === 'active'))

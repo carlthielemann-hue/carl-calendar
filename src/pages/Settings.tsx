@@ -28,6 +28,7 @@ import { AiConnectionsSection } from '@/features/settings/AiConnections'
 import { DockSection } from '@/features/settings/Dock'
 import { CloudGoogleSection } from '@/features/settings/CloudGoogle'
 import { WidgetsSection } from '@/features/settings/Widgets'
+import { AppearanceSection } from '@/features/settings/Appearance'
 import { NotificationsSection } from '@/features/settings/Notifications'
 import { useCloud } from '@/lib/cloud'
 import { isAccountMode } from '@/store/mode'
@@ -340,9 +341,11 @@ export default function SettingsPage() {
           </Row>
         </Section>
 
-        <Section icon={<LayoutGrid />} title="Workspaces" sub="Hide spaces you don’t use. Mission is always on.">
-          {SPACE_DEFS.filter((d) => d.id !== 'home').map((d) => (
-            <Row key={d.id} label={d.label}>
+        <AppearanceSection />
+
+        <Section icon={<LayoutGrid />} title="Areas" sub="Hide areas you don’t use from the sidebar and dashboard.">
+          {SPACE_DEFS.filter((d) => ['tps', 'lab', 'school', 'fitness', 'money'].includes(d.id)).map((d) => (
+            <Row key={d.id} label={d.label} hint={d.id === 'tps' ? 'Clients, Acquisition, Projects and Content' : undefined}>
               <Toggle
                 checked={!s.hiddenSpaces?.includes(d.id)}
                 onChange={(v) => update({ hiddenSpaces: v ? (s.hiddenSpaces ?? []).filter((x) => x !== d.id) : [...(s.hiddenSpaces ?? []), d.id] })}

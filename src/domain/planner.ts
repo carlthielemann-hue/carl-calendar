@@ -309,6 +309,25 @@ export function plan(input: PlanInput): PlanOutput {
       }
       carry = Math.max(0, want - got)
     })
+    // Fill pass: whatever the ramp couldn't place goes into any day that still has room, so a
+    // later run doesn't discover those slots and propose again right after you approved.
+    if (!d.onePerDay && !d.days)
+      for (const k of days) {
+        const isStudy = d.category === 'school'
+        while (left >= 30) {
+          const room = isStudy ? cap(k) - (dayStudy.get(k) ?? 0) : Infinity
+          const len = Math.min(d.session, left, room)
+          if (len < 30) break
+          const w = freeWindows([...busyWithBuffer(), ...placed], fromDateKey(k), { from: prefs.from, until: input.shutdown, now, min: len })[0]
+          if (!w) break
+          const e = new Date(w.start.getTime() + len * 60000)
+          const action: ProposalAction = { type: 'create-event', event: { title: d.label?.(k) ?? d.title, start: toLocalDT(w.start), end: toLocalDT(e), category: d.category, link: d.link } }
+          items.push({ id: itemId(action), action, label: `${d.label?.(k) ?? d.title} · ${fmtSlot(w.start, e)}`, reason: d.reason(k) })
+          placed.push({ start: w.start, end: e })
+          if (isStudy) addStudy(k, len)
+          left -= len
+        }
+      }
     if (left >= 30) {
       warnings.push({
         link: d.link,

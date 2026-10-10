@@ -96,6 +96,12 @@ export interface Settings {
   appearance: import('@/domain/entities2').Appearance
   focus: import('@/domain/entities2').FocusPrefs
   voice: import('@/domain/entities2').VoicePrefs
+  /** Pipeline: renamed stage labels and hidden columns */
+  oppStageLabels?: Record<string, string>
+  oppStagesHidden?: string[]
+  /** Content OS: your voice guide and content pillars */
+  contentVoice?: string
+  contentPillars?: string[]
   /** This device only: full dashboard or minimal focus layout */
   homeMode: 'command' | 'focus'
 }

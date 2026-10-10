@@ -85,7 +85,7 @@ await step('quarter goals', async () => {
 })
 await step('Mission shows goals with pace', async () => {
   await go('/home')
-  await main.getByText('All goals →').waitFor()
+  await main.getByRole('heading', { name: 'Goals & milestones' }).waitFor()
   await main.getByText(/€3,000 revenue this month/).waitFor()
 })
 await step('no runtime errors', async () => assert.deepEqual(errors, []))

@@ -1,117 +1,413 @@
-import { format } from 'date-fns'
-import { CalendarClock, CheckCheck, ClipboardCopy, ExternalLink, PenLine, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek } from 'date-fns'
+import { BarChart3, Bot, CalendarDays, ChevronLeft, ChevronRight, ClipboardCopy, Columns3, Copy, ExternalLink, PenLine, Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { PageHeader } from '@/components/layout/PageHeader'
-import { Button, Card, ConfirmButton, Empty, Input, Segmented, Textarea } from '@/components/ui'
-import type { ContentPost } from '@/domain/entities'
+import { Button, Card, ConfirmButton, Dialog, Empty, Field, Input, Segmented, Select, Textarea } from '@/components/ui'
+import type { ContentMetrics, ContentPost, ContentStatus } from '@/domain/entities'
+import { dateKey } from '@/lib/dates'
 import { cn, uid } from '@/lib/utils'
 import { useApp } from '@/store/app'
+import { useIntent } from '@/store/ui'
+import { createRequest } from '@/features/cue/shared'
 
-const LIMIT = 280
-const STATUSES: ContentPost['status'][] = ['idea', 'draft', 'scheduled', 'posted']
-const LABEL: Record<ContentPost['status'], string> = { idea: 'Ideas', draft: 'Drafts', scheduled: 'Scheduled', posted: 'Posted' }
+const LIMIT = { x: 280, linkedin: 3000 } as const
+export const CONTENT_STAGES: { id: ContentStatus; label: string; color: string }[] = [
+  { id: 'idea', label: 'Idea', color: '#8f8c88' },
+  { id: 'research', label: 'Research', color: '#3fb5c4' },
+  { id: 'draft', label: 'Draft', color: '#5b8def' },
+  { id: 'review', label: 'Review', color: '#9d84f7' },
+  { id: 'approved', label: 'Approved', color: '#c9a27a' },
+  { id: 'scheduled', label: 'Scheduled', color: '#e5a54b' },
+  { id: 'posted', label: 'Published', color: '#45b97c' },
+]
+const platformOf = (p: ContentPost) => p.platform ?? 'x'
+const PLATFORM_LABEL = { x: 'X', linkedin: 'LinkedIn' } as const
 
-function PostCard({ p }: { p: ContentPost }) {
+function composeUrl(p: ContentPost, text: string) {
+  return platformOf(p) === 'linkedin' ? `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text.slice(0, 2900))}` : `https://x.com/compose/post?text=${encodeURIComponent(text.slice(0, 1000))}`
+}
+
+const engagement = (m?: ContentMetrics) => (m ? (m.likes ?? 0) + (m.replies ?? 0) * 2 + (m.reposts ?? 0) * 3 + (m.saves ?? 0) * 2 : 0)
+
+function PostDialog({ p, onClose }: { p: ContentPost; onClose: () => void }) {
   const st = useApp.getState()
+  const pillars = useApp((s) => s.settings.contentPillars ?? [])
   const [text, setText] = useState(p.text)
-  const [url, setUrl] = useState(p.postedUrl ?? '')
-  const over = text.length > LIMIT
+  const [hook, setHook] = useState(p.hook ?? '')
+  const [m, setM] = useState<ContentMetrics>(p.metrics ?? { recordedAt: new Date().toISOString() })
+  const platform = platformOf(p)
+  const limit = LIMIT[platform]
+  const patch = (x: Partial<ContentPost>) => st.patch('posts', p.id, x)
+  const saveText = () => text !== p.text && patch({ text, format: platform === 'x' && text.length > LIMIT.x ? 'thread' : p.format })
   return (
-    <Card className="p-3">
-      <Textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} onBlur={() => text !== p.text && st.patch('posts', p.id, { text })} aria-label="Post text" />
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11.5px]">
-        <span className={cn('tnum', over ? 'text-danger' : 'text-faint')}>
-          {text.length}/{LIMIT}
-          {over && ' — thread or trim'}
-        </span>
-        <span className="flex-1" />
-        <Input type="datetime-local" value={p.scheduledFor ?? ''} onChange={(e) => st.patch('posts', p.id, { scheduledFor: e.target.value || undefined, status: e.target.value && p.status !== 'posted' ? 'scheduled' : p.status })} className="h-7 w-[190px] text-[12px]" aria-label="Schedule" />
+    <Dialog open onOpenChange={(v) => !v && (saveText(), onClose())} title={`${PLATFORM_LABEL[platform]} ${p.format ?? 'post'}`} className="max-w-[680px]">
+      <div className="flex flex-col gap-3 pb-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={p.status} onChange={(e) => patch({ status: e.target.value as ContentStatus, ...(e.target.value === 'posted' && !p.postedAt ? { postedAt: new Date().toISOString() } : {}) })} className="w-[150px]" aria-label="Stage">
+            {CONTENT_STAGES.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </Select>
+          <Select value={platform} onChange={(e) => patch({ platform: e.target.value as 'x' | 'linkedin' })} className="w-[120px]" aria-label="Platform">
+            <option value="x">X</option>
+            <option value="linkedin">LinkedIn</option>
+          </Select>
+          <Select value={p.format ?? 'post'} onChange={(e) => patch({ format: e.target.value as ContentPost['format'] })} className="w-[120px]" aria-label="Format">
+            {['post', 'thread', 'carousel', 'article', 'video'].map((f) => (
+              <option key={f}>{f}</option>
+            ))}
+          </Select>
+          {pillars.length > 0 && (
+            <Select value={p.pillar ?? ''} onChange={(e) => patch({ pillar: e.target.value || undefined })} className="w-[160px]" aria-label="Pillar">
+              <option value="">No pillar</option>
+              {pillars.map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </Select>
+          )}
+        </div>
+        <Field label="Hook (first line)">
+          <Input value={hook} onChange={(e) => setHook(e.target.value)} onBlur={() => hook !== (p.hook ?? '') && patch({ hook: hook || undefined })} placeholder="The line that earns the next one" />
+        </Field>
+        <div>
+          <Textarea rows={10} value={text} onChange={(e) => setText(e.target.value)} onBlur={saveText} aria-label="Post text" className="text-[14px] leading-relaxed" />
+          <div className={cn('mt-1 text-right text-[11.5px] tnum', text.length > limit ? 'text-danger' : 'text-faint')}>
+            {text.length}/{limit}
+            {platform === 'x' && text.length > limit && ' — becomes a thread'}
+          </div>
+        </div>
+        <Field label="Research & notes">
+          <Textarea rows={2} defaultValue={p.notes ?? ''} onBlur={(e) => patch({ notes: e.target.value || undefined })} placeholder="Sources, data, the insight behind it" />
+        </Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Schedule (you post it)">
+            <Input type="datetime-local" value={p.scheduledFor ?? ''} onChange={(e) => patch({ scheduledFor: e.target.value || undefined, status: e.target.value && !['posted'].includes(p.status) ? 'scheduled' : p.status })} />
+          </Field>
+          <Field label="Live post link">
+            <Input defaultValue={p.postedUrl ?? ''} onBlur={(e) => patch({ postedUrl: e.target.value || undefined, ...(e.target.value && p.status !== 'posted' ? { status: 'posted', postedAt: new Date().toISOString() } : {}) })} placeholder="https://…" />
+          </Field>
+        </div>
+        {p.status === 'posted' && (
+          <div>
+            <div className="mb-1 text-[12px] font-medium text-muted">Performance (from {PLATFORM_LABEL[platform]} analytics — entered by you)</div>
+            <div className="grid grid-cols-4 gap-2">
+              {(['impressions', 'likes', 'replies', 'reposts', 'saves', 'clicks', 'followers'] as const).map((k) => (
+                <label key={k} className="text-[11px] text-faint">
+                  {k}
+                  <Input type="number" min={0} value={m[k] ?? ''} onChange={(e) => setM({ ...m, [k]: e.target.value === '' ? undefined : Number(e.target.value) })} onBlur={() => patch({ metrics: { ...m, recordedAt: new Date().toISOString() } })} className="h-8" />
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              await navigator.clipboard.writeText(text).catch(() => {})
+              toast.success('Copied')
+            }}
+          >
+            <ClipboardCopy className="h-3.5 w-3.5" /> Copy
+          </Button>
+          <a href={composeUrl(p, text)} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line px-3 text-[13px] hover:bg-hover">
+            <ExternalLink className="h-3.5 w-3.5" /> Open {PLATFORM_LABEL[platform]} composer
+          </a>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              const other = platform === 'x' ? 'linkedin' : 'x'
+              st.put('posts', { id: uid('post-'), text, status: 'draft', platform: other, hook: p.hook, pillar: p.pillar, sourceId: p.id, createdAt: new Date().toISOString() })
+              toast.success(`Repurposed as a ${PLATFORM_LABEL[other]} draft`)
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" /> Repurpose for {platform === 'x' ? 'LinkedIn' : 'X'}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              createRequest({ agent: 'content', title: `Improve ${PLATFORM_LABEL[platform]} draft: ${(p.hook || text).slice(0, 60)}`, input: `Draft (post id ${p.id}):\n\n${text}\n\nKeep my voice. Return 2 sharper versions and 5 alternative hooks.` })
+              toast.success('Sent to Content Cue’s queue')
+            }}
+          >
+            <Bot className="h-3.5 w-3.5" /> Ask Content Cue
+          </Button>
+          <span className="flex-1" />
+          <ConfirmButton
+            variant="ghost"
+            confirmLabel="Delete?"
+            onConfirm={() => {
+              st.drop('posts', p.id)
+              onClose()
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </ConfirmButton>
+        </div>
+        <p className="text-[11.5px] text-faint">Nothing is ever published automatically — you post it, then paste the link here.</p>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <Segmented size="sm" value={p.status} onChange={(v) => st.patch('posts', p.id, { status: v })} options={STATUSES.map((s) => ({ value: s, label: LABEL[s].replace(/s$/, '') }))} />
-        <span className="flex-1" />
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Copy text"
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(text)
-              toast.success('Copied — paste it into X')
-            } catch {
-              toast.error('Copy blocked — select the text instead')
-            }
-          }}
-        >
-          <ClipboardCopy className="h-3.5 w-3.5" />
-        </Button>
-        <a href={`https://x.com/compose/post?text=${encodeURIComponent(text.slice(0, 1000))}`} target="_blank" rel="noreferrer" className="grid h-7 w-7 place-items-center rounded-md text-faint hover:bg-hover hover:text-fg" aria-label="Open in X composer" title="Open in X composer (you post it yourself)">
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-        <ConfirmButton variant="ghost" className="h-7 px-2" confirmLabel="Delete?" onConfirm={() => st.drop('posts', p.id)}>
-          <Trash2 className="h-3.5 w-3.5" />
-        </ConfirmButton>
+    </Dialog>
+  )
+}
+
+function Board({ posts, open }: { posts: ContentPost[]; open: (p: ContentPost) => void }) {
+  const [over, setOver] = useState<string | null>(null)
+  return (
+    <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
+      <div className="flex min-w-max gap-3">
+        {CONTENT_STAGES.map((s) => {
+          const list = posts.filter((p) => p.status === s.id).sort((a, b) => (a.scheduledFor ?? a.createdAt).localeCompare(b.scheduledFor ?? b.createdAt))
+          return (
+            <div
+              key={s.id}
+              onDragOver={(e) => (e.preventDefault(), setOver(s.id))}
+              onDragLeave={() => setOver((o) => (o === s.id ? null : o))}
+              onDrop={(e) => {
+                const id = e.dataTransfer.getData('text/post')
+                setOver(null)
+                if (id) useApp.getState().patch('posts', id, { status: s.id, ...(s.id === 'posted' ? { postedAt: new Date().toISOString() } : {}) })
+              }}
+              className={cn('flex w-[232px] shrink-0 flex-col rounded-2xl border border-transparent bg-panel-2/60 p-2', over === s.id && 'border-line-strong bg-hover')}
+            >
+              <div className="mb-2 flex items-center gap-2 px-1 text-[12.5px] font-medium">
+                <span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.label} <span className="text-faint">{list.length}</span>
+              </div>
+              <div className="flex min-h-[80px] flex-col gap-2">
+                {list.map((p) => (
+                  <button key={p.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/post', p.id)} onClick={() => open(p)} className="rounded-xl border border-line bg-panel p-2.5 text-left transition-colors hover:border-line-strong">
+                    <div className="flex items-center gap-1.5 text-[10.5px] text-faint">
+                      <span className="rounded bg-panel-2 px-1 font-semibold">{PLATFORM_LABEL[platformOf(p)]}</span>
+                      {p.format && p.format !== 'post' && <span>{p.format}</span>}
+                      {p.pillar && <span className="truncate">· {p.pillar}</span>}
+                    </div>
+                    <p className="mt-1 line-clamp-4 text-[12.5px] text-fg-2">{p.hook || p.text}</p>
+                    {p.scheduledFor && p.status !== 'posted' && <p className="mt-1 text-[11px] text-[#e5b06b]">{format(new Date(p.scheduledFor), 'EEE d MMM HH:mm')}</p>}
+                    {p.status === 'posted' && p.metrics && <p className="mt-1 text-[11px] text-ok tnum">{(p.metrics.impressions ?? 0).toLocaleString('de-DE')} views · {engagement(p.metrics)} eng.</p>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
-      {p.status === 'posted' && (
-        <Input value={url} onChange={(e) => setUrl(e.target.value)} onBlur={() => st.patch('posts', p.id, { postedUrl: url || undefined })} placeholder="Link to the live post (optional)" className="mt-2 h-8" aria-label="Post URL" />
-      )}
-      {p.scheduledFor && p.status === 'scheduled' && (
-        <p className="mt-1.5 flex items-center gap-1 text-[11.5px] text-muted">
-          <CalendarClock className="h-3 w-3" /> {format(new Date(p.scheduledFor), 'EEE d MMM, HH:mm')} — you’ll post it manually
-        </p>
-      )}
+    </div>
+  )
+}
+
+function CalendarView({ posts, open }: { posts: ContentPost[]; open: (p: ContentPost) => void }) {
+  const [month, setMonth] = useState(startOfMonth(new Date()))
+  const days: Date[] = []
+  for (let d = startOfWeek(month, { weekStartsOn: 1 }); d <= endOfWeek(endOfMonth(month), { weekStartsOn: 1 }); d = addDays(d, 1)) days.push(d)
+  const byDay = useMemo(() => {
+    const m = new Map<string, ContentPost[]>()
+    for (const p of posts) {
+      const when = p.status === 'posted' ? (p.postedAt ?? p.scheduledFor) : p.scheduledFor
+      if (!when) continue
+      const k = when.slice(0, 10)
+      m.set(k, [...(m.get(k) ?? []), p])
+    }
+    return m
+  }, [posts])
+  return (
+    <Card className="p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-display text-[17px] font-semibold">{format(month, 'MMMM yyyy')}</h2>
+        <div className="flex gap-1">
+          <button aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-hover">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-hover">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-[11px] text-faint">
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
+          <div key={d} className="px-1 pb-1">
+            {d}
+          </div>
+        ))}
+        {days.map((d) => {
+          const list = byDay.get(dateKey(d)) ?? []
+          return (
+            <div key={d.toISOString()} className={cn('min-h-[84px] rounded-lg border border-line p-1', !isSameMonth(d, month) && 'opacity-40', dateKey(d) === dateKey(new Date()) && 'border-accent/50')}>
+              <div className="px-0.5 text-[11px] tnum">{format(d, 'd')}</div>
+              {list.slice(0, 3).map((p) => (
+                <button key={p.id} onClick={() => open(p)} className="mt-0.5 block w-full truncate rounded px-1 py-0.5 text-left text-[10.5px] text-fg-2" style={{ background: `color-mix(in srgb, ${CONTENT_STAGES.find((s) => s.id === p.status)?.color} 18%, transparent)` }}>
+                  {PLATFORM_LABEL[platformOf(p)]} · {p.hook || p.text}
+                </button>
+              ))}
+              {list.length > 3 && <div className="px-1 text-[10px]">+{list.length - 3}</div>}
+            </div>
+          )
+        })}
+      </div>
     </Card>
   )
 }
 
-export default function ContentPage() {
+function Performance({ posts, open }: { posts: ContentPost[]; open: (p: ContentPost) => void }) {
+  const posted = posts.filter((p) => p.status === 'posted')
+  const withM = posted.filter((p) => p.metrics)
+  const totals = withM.reduce((a, p) => ({ views: a.views + (p.metrics?.impressions ?? 0), eng: a.eng + engagement(p.metrics), followers: a.followers + (p.metrics?.followers ?? 0) }), { views: 0, eng: 0, followers: 0 })
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ['Published', posted.length],
+          ['With metrics', withM.length],
+          ['Views', totals.views.toLocaleString('de-DE')],
+          ['New followers', totals.followers],
+        ].map(([l, v]) => (
+          <Card key={l as string} className="px-4 py-3">
+            <div className="text-[11.5px] text-muted">{l}</div>
+            <div className="font-display mt-1 text-[22px] font-semibold tnum">{v}</div>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        {withM.length === 0 ? (
+          <Empty title="No performance recorded" hint="After posting, open the post and enter its numbers from X or LinkedIn analytics. Nothing is fetched automatically." className="py-8" />
+        ) : (
+          <table className="w-full text-left text-[12.5px]">
+            <thead className="border-b border-line text-[11px] text-faint uppercase">
+              <tr>
+                {['Post', 'Platform', 'Views', 'Engagement', 'Followers'].map((h) => (
+                  <th key={h} className="px-4 py-2 font-medium">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...withM]
+                .sort((a, b) => engagement(b.metrics) - engagement(a.metrics))
+                .map((p) => (
+                  <tr key={p.id} onClick={() => open(p)} className="cursor-pointer border-b border-line last:border-0 hover:bg-hover">
+                    <td className="max-w-[360px] truncate px-4 py-2">{p.hook || p.text}</td>
+                    <td className="px-4 py-2 text-muted">{PLATFORM_LABEL[platformOf(p)]}</td>
+                    <td className="px-4 py-2 tnum">{(p.metrics?.impressions ?? 0).toLocaleString('de-DE')}</td>
+                    <td className="px-4 py-2 tnum">{engagement(p.metrics)}</td>
+                    <td className="px-4 py-2 tnum">{p.metrics?.followers ?? '—'}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+function VoiceGuide({ onClose }: { onClose: () => void }) {
+  const s = useApp((x) => x.settings)
+  const [voice, setVoice] = useState(s.contentVoice ?? '')
+  const [pillars, setPillars] = useState((s.contentPillars ?? []).join('\n'))
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()} title="Voice & pillars" description="Your personal-brand rules. Content Cue reads them before drafting.">
+      <div className="flex flex-col gap-3 pb-2">
+        <Field label="Brand voice">
+          <Textarea rows={7} value={voice} onChange={(e) => setVoice(e.target.value)} placeholder={'Direct, specific, no fluff. Teach from real client work (no names).\nNever: “game-changer”, emojis in hooks, engagement bait.'} />
+        </Field>
+        <Field label="Content pillars (one per line)">
+          <Textarea rows={4} value={pillars} onChange={(e) => setPillars(e.target.value)} placeholder={'Creative strategy teardowns\nDTC copy lessons\nBuilding in public at 18'} />
+        </Field>
+        <Button
+          variant="primary"
+          className="self-end"
+          onClick={() => {
+            useApp.getState().updateSettings({
+              contentVoice: voice.trim() || undefined,
+              contentPillars: pillars
+                .split('\n')
+                .map((p) => p.trim())
+                .filter(Boolean),
+            })
+            onClose()
+          }}
+        >
+          Save
+        </Button>
+      </div>
+    </Dialog>
+  )
+}
+
+export default function ContentOS() {
   const posts = useApp((s) => s.posts)
+  const [view, setView] = useState<'board' | 'calendar' | 'performance'>('board')
+  const [platform, setPlatform] = useState<'all' | 'x' | 'linkedin'>('all')
   const [text, setText] = useState('')
-  const add = (status: ContentPost['status']) => {
+  const [newPlatform, setNewPlatform] = useState<'x' | 'linkedin'>('x')
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [voice, setVoice] = useState(false)
+  const [focusNew, setFocusNew] = useState(false)
+  useIntent('new', () => setFocusNew(true))
+  const shown = posts.filter((p) => platform === 'all' || platformOf(p) === platform)
+  const openPost = posts.find((p) => p.id === openId)
+  const add = (status: ContentStatus) => {
     if (!text.trim()) return
-    useApp.getState().put('posts', { id: uid('post-'), text: text.trim(), status, createdAt: new Date().toISOString() })
+    const t = text.trim()
+    useApp.getState().put('posts', { id: uid('post-'), text: t, status, platform: newPlatform, hook: t.split('\n')[0].slice(0, 140), format: newPlatform === 'x' && t.length > LIMIT.x ? 'thread' : 'post', createdAt: new Date().toISOString() })
     setText('')
   }
+  const week = posts.filter((p) => p.status === 'posted' && p.postedAt && Date.now() - Date.parse(p.postedAt) < 7 * 86400000).length
   return (
-    <div className="mx-auto w-full max-w-[1400px]">
-      <PageHeader title="Content (X)" sub="Plan posts, draft, schedule — and post them yourself. Nothing is published automatically." />
+    <div className="mx-auto w-full max-w-[1700px]">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-[26px] font-semibold">Content OS</h1>
+          <p className="text-[13px] text-muted">
+            X & LinkedIn · {posts.filter((p) => !['posted'].includes(p.status)).length} in progress · {week} published this week. You publish; Command Center never posts.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Segmented value={platform} onChange={setPlatform} options={[{ value: 'all', label: 'All' }, { value: 'x', label: 'X' }, { value: 'linkedin', label: 'LinkedIn' }]} />
+          <Segmented
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'board', label: <span className="flex items-center gap-1.5"><Columns3 className="h-3.5 w-3.5" /> Board</span> },
+              { value: 'calendar', label: <span className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Calendar</span> },
+              { value: 'performance', label: <span className="flex items-center gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Performance</span> },
+            ]}
+          />
+          <Button variant="ghost" onClick={() => setVoice(true)}>
+            Voice & pillars
+          </Button>
+        </div>
+      </div>
       <Card className="mb-4 p-3">
-        <Textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder="Post idea or draft… (a creative strategy lesson, a teardown, a client win without names)" aria-label="New post" />
-        <div className="mt-2 flex items-center gap-2">
-          <span className={cn('text-[11.5px] tnum', text.length > LIMIT ? 'text-danger' : 'text-faint')}>{text.length}/{LIMIT}</span>
+        <Textarea autoFocus={focusNew} rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder="Idea, hook or full draft… (a teardown, a lesson from client work, a build-in-public update)" aria-label="New content" />
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Segmented size="sm" value={newPlatform} onChange={setNewPlatform} options={[{ value: 'x', label: 'X' }, { value: 'linkedin', label: 'LinkedIn' }]} />
+          <span className={cn('text-[11.5px] tnum', text.length > LIMIT[newPlatform] ? 'text-[#e5b06b]' : 'text-faint')}>
+            {text.length}/{LIMIT[newPlatform]}
+          </span>
           <span className="flex-1" />
           <Button variant="ghost" onClick={() => add('idea')}>
-            Save idea
+            <Plus className="h-3.5 w-3.5" /> Idea
           </Button>
           <Button variant="primary" onClick={() => add('draft')}>
-            <PenLine className="h-3.5 w-3.5" /> Save draft
+            <PenLine className="h-3.5 w-3.5" /> Draft
           </Button>
         </div>
       </Card>
-      {posts.length === 0 ? (
+      {posts.length === 0 && view === 'board' ? (
         <Card>
-          <Empty icon={<PenLine />} title="No content planned" hint="Log X outreach as Pipeline touches; plan your own posts here." />
+          <Empty icon={<PenLine />} title="No content yet" hint="Capture ideas fast; move them through research, draft and review. Content Cue can help draft — you approve and post." className="py-10" />
         </Card>
+      ) : view === 'board' ? (
+        <Board posts={shown} open={(p) => setOpenId(p.id)} />
+      ) : view === 'calendar' ? (
+        <CalendarView posts={shown} open={(p) => setOpenId(p.id)} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {STATUSES.map((s) => {
-            const list = posts.filter((p) => p.status === s).sort((a, b) => (a.scheduledFor ?? a.createdAt).localeCompare(b.scheduledFor ?? b.createdAt))
-            return (
-              <section key={s} className="min-w-0">
-                <h2 className="mb-2 flex items-center gap-2 text-[12.5px] font-medium">
-                  {s === 'posted' && <CheckCheck className="h-3.5 w-3.5 text-ok" />} {LABEL[s]} <span className="text-faint">{list.length}</span>
-                </h2>
-                <div className="flex flex-col gap-2">
-                  {list.map((p) => (
-                    <PostCard key={p.id} p={p} />
-                  ))}
-                </div>
-              </section>
-            )
-          })}
-        </div>
+        <Performance posts={shown} open={(p) => setOpenId(p.id)} />
       )}
+      {openPost && <PostDialog key={openPost.id} p={openPost} onClose={() => setOpenId(null)} />}
+      {voice && <VoiceGuide onClose={() => setVoice(false)} />}
     </div>
   )
 }

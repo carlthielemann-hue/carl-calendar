@@ -174,7 +174,8 @@ function AddAffirmation({ category, autoFocus }: { category: string; autoFocus?:
 }
 
 function PlaylistDialog({ pl, onClose }: { pl?: AffirmationPlaylist; onClose: () => void }) {
-  const affirmations = useApp((s) => [...s.affirmations].sort((a, b) => a.order - b.order))
+  const raw = useApp((s) => s.affirmations)
+  const affirmations = useMemo(() => [...raw].sort((a, b) => a.order - b.order), [raw])
   const voice = useApp((s) => s.settings.voice)
   const [f, setF] = useState({ name: pl?.name ?? '', ids: pl?.affirmationIds ?? [], pauseSec: pl?.pauseSec ?? voice.pauseSec, repeat: pl?.repeat ?? voice.repeat, preferRecordings: pl?.preferRecordings ?? true })
   const toggle = (id: string) => setF({ ...f, ids: f.ids.includes(id) ? f.ids.filter((x) => x !== id) : [...f.ids, id] })

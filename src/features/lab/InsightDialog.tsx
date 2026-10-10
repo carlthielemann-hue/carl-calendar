@@ -19,13 +19,14 @@ function Form({ links, seed, onDone, onSaved }: { links: Ref[]; seed: string; on
   const [body, setBody] = useState(seed)
   const [type, setType] = useState<InsightType>('Hook pattern')
   const [tags, setTags] = useState('')
+  const [confidence, setConfidence] = useState<'hypothesis' | 'tested' | 'proven'>('hypothesis')
   const deliverables = useApp((s) => s.deliverables)
   const [applyTo, setApplyTo] = useState('')
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return toast.error('Name the insight in a few words')
     const s = useApp.getState()
-    const i = s.addInsight({ title: title.trim(), body: body.trim() || undefined, type, tags: parseTags(tags), links })
+    const i = s.addInsight({ title: title.trim(), body: body.trim() || undefined, type, tags: parseTags(tags), links, confidence })
     if (applyTo) s.linkInsight(i.id, applyTo as Ref)
     onSaved?.(i.id)
     toast.success('Insight saved', { description: applyTo ? 'Linked to the client deliverable too.' : undefined })
@@ -51,6 +52,13 @@ function Form({ links, seed, onDone, onSaved }: { links: Ref[]; seed: string; on
           <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="hooks, ugc" />
         </Field>
       </div>
+      <Field label="Confidence" hint="Only “proven” when you have repeatable results with data.">
+        <Select value={confidence} onChange={(e) => setConfidence(e.target.value as typeof confidence)}>
+          <option value="hypothesis">Hypothesis — not tested yet</option>
+          <option value="tested">Tested — tried, early signal</option>
+          <option value="proven">Proven — repeatable, backed by data</option>
+        </Select>
+      </Field>
       {deliverables.length > 0 && (
         <Field label="Apply to client work (optional)">
           <Select value={applyTo} onChange={(e) => setApplyTo(e.target.value)}>

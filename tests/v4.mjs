@@ -44,11 +44,12 @@ const state = () => page.evaluate(() => JSON.parse(localStorage.getItem('command
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 console.log('Mission screen')
-await step('header summarises objectives, risk and shutdown', async () => {
+await step('hero summarises objectives, risk and shutdown', async () => {
   await go('/home')
-  await main.getByText(/^Mission · /).waitFor()
-  await main.getByText(/objectives? open/).waitFor()
-  await main.getByText('at risk', { exact: true }).waitFor()
+  const glance = main.getByLabel('Today at a glance').first()
+  await glance.getByText(/objectives? open/).waitFor()
+  await glance.getByText(/at risk/).waitFor()
+  await glance.getByText(/to shutdown|Shutdown/).waitFor()
 })
 await step('add a countdown and see days left', async () => {
   const d = new Date()
@@ -75,7 +76,8 @@ await step('overdue work shows as at risk', async () => {
   await main.getByText(/Overdue since yesterday/).first().waitFor()
 })
 await step('focus mode runs fullscreen and logs time on finish', async () => {
-  await main.getByRole('button', { name: /Start focus|Focus on this/ }).click()
+  await main.getByRole('button', { name: 'Start focus' }).click()
+  await main.getByRole('button', { name: 'Enter Focus Mode' }).click()
   const dlg = page.getByRole('dialog', { name: 'Focus mode' })
   await dlg.waitFor()
   await dlg.getByRole('button', { name: 'Pause' }).click()
@@ -96,12 +98,15 @@ await step('focus mode runs fullscreen and logs time on finish', async () => {
   assert.equal(logs.length, before + 1)
   assert.ok(logs.at(-1).minutes >= 11)
 })
-await step('modules can be hidden from the Mission screen', async () => {
-  await page.getByRole('button', { name: 'Customize mission screen' }).click()
-  await page.getByRole('button', { name: 'Creative practice' }).click()
+await step('dashboard modules can be hidden and reordered', async () => {
+  await main.getByRole('button', { name: 'Customize' }).click()
+  await page.getByRole('button', { name: 'Recent activity', exact: true }).click()
+  await page.getByRole('button', { name: 'Move Countdowns up' }).click()
   await page.keyboard.press('Escape')
-  assert.equal(await main.getByText('Creative practice', { exact: true }).count(), 0)
-  assert.ok((await state()).settings.hiddenMissionModules.includes('practice'))
+  assert.equal(await main.getByRole('heading', { name: 'Recent activity' }).count(), 0)
+  const a = (await state()).settings.appearance
+  assert.ok(a.homeHidden.includes('activity'))
+  assert.ok(a.homeOrder.indexOf('countdowns') < a.homeOrder.indexOf('risk'))
 })
 
 console.log('Planner proposals')
@@ -138,23 +143,22 @@ await step('a proposal waits in evening planning and only changes the calendar w
 })
 
 console.log('Workspaces & phone')
-await step('hidden workspaces disappear from the switcher', async () => {
+await step('hidden areas disappear from the sidebar', async () => {
   await go('/settings')
   await main.getByRole('switch', { name: 'Show Creative Lab' }).click()
-  await page.locator('aside').getByRole('button').first().click()
-  const pop = page.locator('[data-radix-popper-content-wrapper]')
-  await pop.getByText('TPS Business').waitFor()
-  assert.equal(await pop.getByText('Creative Lab').count(), 0)
-  await page.keyboard.press('Escape')
+  const side = page.locator('aside nav[aria-label=Main]')
+  await side.getByRole('button', { name: /Clients/ }).waitFor()
+  assert.equal(await side.getByRole('button', { name: /Creative Lab/ }).count(), 0)
   await main.getByRole('switch', { name: 'Show Creative Lab' }).click()
+  await side.getByRole('button', { name: /Creative Lab/ }).waitFor()
 })
-await step('phone: Mission in the bottom nav and a Spaces sheet', async () => {
+await step('phone: Home in the bottom nav and an Everything sheet', async () => {
   await page.setViewportSize({ width: 390, height: 844 })
   await go('/home')
-  const nav = page.locator('nav[aria-label=Main]')
-  await nav.getByRole('button', { name: 'Mission' }).waitFor()
-  await nav.getByRole('button', { name: 'Spaces' }).click()
-  await page.getByRole('dialog', { name: 'Spaces' }).getByText('Creative Lab').click()
+  const nav = page.locator('nav[aria-label=Main]').last()
+  await nav.getByRole('button', { name: 'Home' }).waitFor()
+  await nav.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('dialog', { name: 'Everything' }).getByText('Creative Lab').click()
   await page.waitForTimeout(200)
   assert.match(page.url(), /#\/lab\//)
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)

@@ -5,7 +5,7 @@ import { Button, Card, Empty, Segmented } from '@/components/ui'
 import type { ClientStatus } from '@/domain/entities'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
-import { useUI } from '@/store/ui'
+import { useUI, useIntent } from '@/store/ui'
 import { ClientDialog } from '@/features/tps/ClientDialog'
 import { clientHealth, useDeliverableRows, type DeliverableRow } from '@/features/tps/hooks'
 import { HealthPill } from '@/features/tps/components'
@@ -27,6 +27,7 @@ export default function ClientsPage() {
   const rows = useDeliverableRows()
   const [filter, setFilter] = useState<ClientStatus>('active')
   const [creating, setCreating] = useState(false)
+  useIntent('new', () => setCreating(true))
   const go = useUI((s) => s.go)
 
   const cards = useMemo(

@@ -48,7 +48,7 @@ const RAIL_MODULES = [
   { id: 'inbox', label: 'Inbox' },
   { id: 'goals', label: 'Goals & milestones' },
 ]
-const DEFAULT_HIDDEN = ['autopilot', 'targets', 'training', 'money', 'deliverables', 'practice']
+const DEFAULT_HIDDEN = ['autopilot', 'targets', 'deliverables', 'practice']
 
 function RiskModule({ now }: { now: Date }) {
   const risks = useRisks(now)

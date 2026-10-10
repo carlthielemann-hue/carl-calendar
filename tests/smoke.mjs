@@ -50,20 +50,24 @@ await page.evaluate(() => localStorage.clear())
 await page.reload()
 
 console.log('Home & navigation')
-await step('mission screen shows now, mission, at risk, countdowns, client attention, practice, targets', async () => {
+await step('dashboard shows hero, priorities, focus hub, clients, activity, calendar, inbox, goals', async () => {
   await go('/home')
-  for (const t of ['Now', 'Today’s mission', 'At risk', 'Countdowns', 'Client work needing attention', 'Creative practice', 'This week’s targets'])
-    await main.getByText(t, { exact: true }).first().waitFor({ timeout: 5000 })
+  await main.getByRole('heading', { name: /Good (morning|afternoon|evening|night),/ }).waitFor()
+  for (const t of ['Today’s priorities', 'Focus Hub', 'Active clients', 'Recent activity', 'Inbox', 'Goals & milestones', 'Countdowns'])
+    await main.getByRole('heading', { name: new RegExp(`^${t}`) }).first().waitFor({ timeout: 5000 })
+  await main.getByText('At risk', { exact: true }).first().waitFor()
+  await main.getByLabel('Today at a glance').first().getByText(/objectives? open/).waitFor()
 })
-await step('workspace switcher changes sidebar and content', async () => {
-  await page.getByRole('button', { name: /Switch workspace/ }).first().click()
-  await page.getByRole('button', { name: /TPS Business/ }).click()
-  await main.getByRole('heading', { name: 'TPS Business' }).waitFor()
-  await page.getByRole('navigation', { name: 'Workspace' }).getByRole('button', { name: /Pipeline/ }).waitFor()
-  // G-chord back to Personal, then number key opens a page
+await step('sidebar areas, area tabs and keyboard navigation', async () => {
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /Acquisition/ }).click()
+  await main.getByRole('heading', { name: 'Pipeline' }).waitFor()
+  await main.getByRole('navigation', { name: 'Acquisition pages' }).getByRole('button', { name: 'Applications' }).click()
+  await main.getByRole('heading', { name: 'Applications' }).waitFor()
+  // G-chord to Today, then number keys open its tabs
+  await blur()
   await page.keyboard.press('g')
   await page.keyboard.press('p')
-  await page.keyboard.press('3')
+  await page.keyboard.press('2')
   await main.getByRole('heading', { name: 'Tasks' }).waitFor()
 })
 
@@ -161,15 +165,16 @@ await step('scorecard counts it automatically', async () => {
 await step('pipeline: add lead and log outreach', async () => {
   await go('/tps/pipeline')
   await page.getByRole('button', { name: 'Lead', exact: true }).click()
-  await page.getByLabel('Lead or company').fill('E2E prospect')
+  await page.getByLabel('Prospect or job').fill('E2E prospect')
+  await page.getByLabel('Job post / brief (paste)').fill('Looking for a UGC scriptwriter for a skincare brand')
   await page.getByRole('button', { name: 'Add lead' }).click()
   await main.getByText('E2E prospect').click()
   await page.getByRole('button', { name: 'Outreach', exact: true }).click()
   await page.getByText('Outreach logged').waitFor()
   await page.keyboard.press('Escape')
   await page.waitForTimeout(150)
-  const col = main.locator('div', { has: page.getByText('Contacted', { exact: true }) }).filter({ hasText: 'E2E prospect' })
-  assert.ok((await col.count()) > 0, 'lead moved to Contacted')
+  const col = main.locator('div', { has: page.getByText('Applied / contacted', { exact: true }) }).filter({ hasText: 'E2E prospect' })
+  assert.ok((await col.count()) > 0, 'lead moved to Applied / contacted')
 })
 
 console.log('Creative Lab')
@@ -199,6 +204,7 @@ await step('the insight is visible on the client deliverable', async () => {
 })
 await step('practice planner + global search', async () => {
   await go('/lab/planner')
+  await main.getByRole('tab', { name: 'This week', exact: true }).click()
   await main.getByText('This week’s ads').waitFor()
   await page.keyboard.press('Control+k')
   await page.getByRole('textbox', { name: 'Command' }).fill('E2E testimonial')

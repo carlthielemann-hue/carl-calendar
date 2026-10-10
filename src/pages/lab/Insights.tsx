@@ -50,6 +50,11 @@ function Detail({ insight }: { insight: Insight }) {
           ))}
         </Select>
         <Input key={`g-${insight.id}`} defaultValue={insight.tags.join(', ')} onBlur={(e) => st.updateInsight(insight.id, { tags: parseTags(e.target.value) })} placeholder="tags" aria-label="Tags" />
+        <Select value={insight.confidence ?? 'hypothesis'} onChange={(e) => st.updateInsight(insight.id, { confidence: e.target.value as 'hypothesis' | 'tested' | 'proven' })} aria-label="Confidence" className="col-span-2">
+          <option value="hypothesis">Hypothesis — not tested yet</option>
+          <option value="tested">Tested — early signal</option>
+          <option value="proven">Proven — repeatable, backed by data</option>
+        </Select>
       </div>
       <Textarea key={`b-${insight.id}`} rows={5} defaultValue={insight.body ?? ''} onBlur={(e) => st.updateInsight(insight.id, { body: e.target.value })} placeholder="Why it works. When to use it. An example line." />
 
@@ -187,6 +192,7 @@ export default function InsightsPage() {
                   </span>
                   <span className="mt-0.5 block truncate text-[11.5px] text-muted">
                     {i.type}
+                    {i.confidence === 'proven' ? <span className="text-ok"> · proven</span> : i.confidence === 'tested' ? <span className="text-[#e5b06b]"> · tested</span> : <span className="text-faint"> · hypothesis</span>}
                     {appliedCount(i) > 0 && <span className="text-ok"> · applied ×{appliedCount(i)}</span>}
                     {i.tags.length > 0 && <span className="text-faint"> · {i.tags.map((t) => `#${t}`).join(' ')}</span>}
                   </span>

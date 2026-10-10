@@ -106,6 +106,13 @@ export interface Client {
 
 export type ProjectStatus = 'active' | 'paused' | 'done'
 
+export interface ProjectMilestone {
+  id: string
+  title: string
+  due?: string
+  done: boolean
+}
+
 export interface Project {
   id: string
   clientId: string
@@ -113,6 +120,7 @@ export interface Project {
   status: ProjectStatus
   dueDate?: string
   notes?: string
+  milestones?: ProjectMilestone[]
   createdAt: string
   isDemo?: boolean
 }
@@ -160,7 +168,7 @@ export interface Deliverable {
   isDemo?: boolean
 }
 
-export type OppStage = 'lead' | 'contacted' | 'conversation' | 'proposal' | 'won' | 'lost'
+export type OppStage = 'lead' | 'qualified' | 'contacted' | 'replied' | 'conversation' | 'call' | 'proposal' | 'won' | 'lost'
 export type OppChannel = 'Upwork' | 'X / Twitter' | 'Cold email' | 'Referral' | 'Community' | 'Inbound' | 'Other'
 export type ProposalStatus = 'none' | 'drafting' | 'sent' | 'accepted' | 'declined'
 export type TouchKind = 'outreach' | 'follow_up' | 'call' | 'proposal' | 'note'
@@ -190,6 +198,17 @@ export interface Opportunity {
   proposalSentAt?: string
   /** Set when the opportunity is won and converted. */
   clientId?: string
+  /** Where exactly it came from, e.g. "Discord · DTC Hub", "LinkedIn post" */
+  source?: string
+  /** The job post / brief, pasted */
+  description?: string
+  budget?: string
+  /** What the budget is based on (stated in post, client history…) */
+  budgetEvidence?: string
+  /** 1 (poor) – 5 (perfect) */
+  fit?: 1 | 2 | 3 | 4 | 5
+  fitNotes?: string
+  portfolioIds?: string[]
   createdAt: string
   isDemo?: boolean
 }
@@ -318,6 +337,8 @@ export interface Insight {
   /** Linked ads, analyses, other insights, deliverables… */
   links: Ref[]
   favorite: boolean
+  /** hypothesis = untested idea, tested = tried once, proven = repeatable result with data */
+  confidence?: 'hypothesis' | 'tested' | 'proven'
   createdAt: string
   isDemo?: boolean
 }
@@ -566,13 +587,35 @@ export interface AiOutput {
 
 /* ---------------- Content (X) ---------------- */
 
+export type ContentStatus = 'idea' | 'research' | 'draft' | 'review' | 'approved' | 'scheduled' | 'posted'
+export interface ContentMetrics {
+  impressions?: number
+  likes?: number
+  replies?: number
+  reposts?: number
+  saves?: number
+  clicks?: number
+  followers?: number
+  recordedAt: string
+}
 export interface ContentPost {
   id: string
   text: string
-  status: 'idea' | 'draft' | 'scheduled' | 'posted'
+  status: ContentStatus
+  /** Default X (older posts) */
+  platform?: 'x' | 'linkedin'
+  format?: 'post' | 'thread' | 'carousel' | 'article' | 'video'
+  hook?: string
+  pillar?: string
   scheduledFor?: string
   postedUrl?: string
+  postedAt?: string
   notes?: string
+  researchRefs?: string[]
+  /** Repurposed from another post */
+  sourceId?: string
+  /** Entered by you from the platform's analytics (no API) */
+  metrics?: ContentMetrics
   createdAt: string
 }
 

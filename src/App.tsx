@@ -37,6 +37,9 @@ const ROUTES: Record<string, ReturnType<typeof lazy>> = {
   'tps/integrations': page(() => import('@/pages/tps/Integrations')),
   'tps/studio': page(() => import('@/pages/tps/Studio')),
   'tps/content': page(() => import('@/pages/tps/Content')),
+  'tps/projects': page(() => import('@/pages/tps/Projects')),
+  'tps/portfolio': page(() => import('@/pages/tps/Portfolio')),
+  'tps/applications': page(() => import('@/pages/tps/Applications')),
   'lab/overview': page(() => import('@/pages/lab/Overview')),
   'lab/planner': page(() => import('@/pages/lab/Planner')),
   'lab/analyses': page(() => import('@/pages/lab/Analyses')),
@@ -61,6 +64,10 @@ const ROUTES: Record<string, ReturnType<typeof lazy>> = {
   'home/goals': page(() => import('@/pages/home/Goals')),
   'knowledge/brain': page(() => import('@/pages/knowledge/Brain')),
   'knowledge/inbox': page(() => import('@/pages/knowledge/Inbox')),
+  'knowledge/canvas': page(() => import('@/pages/knowledge/Canvas')),
+  'knowledge/universe': page(() => import('@/pages/knowledge/Universe')),
+  'home/analytics': page(() => import('@/pages/home/Analytics')),
+  'home/timeline': page(() => import('@/pages/home/Timeline')),
   'cue/team': page(() => import('@/pages/cue/Team')),
   'cue/runs': page(() => import('@/pages/cue/Runs')),
   'cue/approvals': page(() => import('@/pages/cue/Approvals')),
@@ -80,6 +87,7 @@ const DETAIL: Record<string, ReturnType<typeof lazy>> = {
   'lab/analyses': page(() => import('@/pages/lab/AnalysisDetail')),
   'lab/library': page(() => import('@/pages/lab/AdDetail')),
   'knowledge/brain': page(() => import('@/pages/knowledge/DocDetail')),
+  'knowledge/canvas': page(() => import('@/pages/knowledge/Canvas')),
 }
 
 function useTheme() {

@@ -147,28 +147,27 @@ export function SectionTabs({ mobile = false }: { mobile?: boolean }) {
   if (sec.tabs.length < 2 || (loc.space === 'home' && !loc.page)) return null
   if (mobile)
     return (
-      <div className="flex gap-1 overflow-x-auto px-3 pb-2 [scrollbar-width:none]">
+      <nav aria-label={`${sec.label} pages`} className="flex gap-1 overflow-x-auto px-3 pb-2 [scrollbar-width:none]">
         {sec.tabs.map((t) => (
-          <button key={t.path} onClick={() => go(t.path)} className={cn('h-7 shrink-0 rounded-full px-3 text-[12.5px] font-medium transition-colors', path === t.path ? 'bg-fg text-bg' : 'bg-panel-2 text-muted')}>
+          <button key={t.path} onClick={() => go(t.path)} aria-current={path === t.path ? 'page' : undefined} className={cn('h-7 shrink-0 rounded-full px-3 text-[12.5px] font-medium transition-colors', path === t.path ? 'bg-fg text-bg' : 'bg-panel-2 text-muted')}>
             {t.label}
           </button>
         ))}
-      </div>
+      </nav>
     )
   return (
-    <div className="mx-auto mb-5 hidden w-full max-w-[1320px] items-center gap-1 border-b border-line md:flex" role="tablist" aria-label={sec.label}>
+    <nav className="mx-auto mb-5 hidden w-full max-w-[1320px] items-center gap-1 border-b border-line md:flex" aria-label={`${sec.label} pages`}>
       {sec.tabs.map((t) => (
         <button
           key={t.path}
-          role="tab"
-          aria-selected={path === t.path}
+          aria-current={path === t.path ? 'page' : undefined}
           onClick={() => go(t.path)}
           className={cn('-mb-px border-b-2 px-3 pt-1 pb-2.5 text-[13px] transition-colors', path === t.path ? 'border-accent font-medium text-fg' : 'border-transparent text-muted hover:text-fg')}
         >
           {t.label}
         </button>
       ))}
-    </div>
+    </nav>
   )
 }
 

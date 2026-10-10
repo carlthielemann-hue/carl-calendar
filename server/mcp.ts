@@ -189,6 +189,134 @@ async function notifyApproval(env: Env, r: ApprovalRequest) {
 
 const TOOLS: Tool[] = [
 
+  /* ---------------- Operations / Acquisition / Content support ---------------- */
+  {
+    name: 'get_projects_overview',
+    title: 'Projects overview',
+    description: 'Active client projects with deadlines, milestones, deliverable counts and the next due deliverable. For Operations Cue status summaries.',
+    inputSchema: { type: 'object', properties: { client: { type: 'string' }, include_done: { type: 'boolean' } }, additionalProperties: false },
+    level: 'read',
+    run: async (a, ctx) => {
+      const s = await ctx.state()
+      const today = todayKey(ctx.env)
+      const client = str(a, 'client') ? findClient(s, str(a, 'client')!) : undefined
+      const rows = deliverableSummary(s, today)
+      return {
+        projects: s.projects
+          .filter((p) => (a.include_done === true || p.status !== 'done') && (!client || p.clientId === client.id))
+          .map((p) => {
+            const ds = rows.filter((d) => s.deliverables.find((x) => x.id === d.id)?.projectId === p.id)
+            const open = ds.filter((d) => d.waiting_on !== 'done')
+            return {
+              id: p.id,
+              name: p.name,
+              client: s.clients.find((c) => c.id === p.clientId)?.name,
+              status: p.status,
+              deadline: p.dueDate ?? null,
+              milestones: (p.milestones ?? []).map((m) => ({ title: m.title, due: m.due ?? null, done: m.done })),
+              deliverables_open: open.length,
+              deliverables_total: ds.length,
+              next_due: open.filter((d) => d.due).sort((x, y) => String(x.due).localeCompare(String(y.due)))[0] ?? null,
+              onboarding: (() => {
+                const ob = s.onboardings.find((o) => o.id === p.clientId)
+                return ob ? { done: ob.steps.filter((x) => x.done).length, total: ob.steps.length } : null
+              })(),
+            }
+          }),
+      }
+    },
+  },
+  {
+    name: 'get_acquisition_pipeline',
+    title: 'Acquisition pipeline',
+    description: 'Open opportunities with stage, source, fit, budget evidence, follow-up date and recent touches. For Acquisition Cue.',
+    inputSchema: { type: 'object', properties: { stage: { type: 'string' } }, additionalProperties: false },
+    level: 'read',
+    run: async (a, ctx) => {
+      const s = await ctx.state()
+      const stage = str(a, 'stage')
+      return {
+        opportunities: s.opportunities
+          .filter((o) => (stage ? o.stage === stage : o.stage !== 'won' && o.stage !== 'lost'))
+          .map((o) => ({ id: o.id, name: o.name, company: o.company ?? null, channel: o.channel, source: o.source ?? null, stage: o.stage, fit: o.fit ?? null, budget: o.budget ?? null, budget_evidence: o.budgetEvidence ?? null, next_follow_up: o.nextFollowUp ?? null, url: o.url ?? null, brief: o.description?.slice(0, 4000) ?? null, touches: o.touches.slice(-5).map((t) => ({ at: t.at, kind: t.kind, note: t.note ?? null })) })),
+      }
+    },
+  },
+  {
+    name: 'create_opportunity',
+    title: 'Add an opportunity to the pipeline',
+    description: 'Add a lead you found or were given (job post, prospect). It lands in the New column for Carl to qualify. This does not contact anyone. Skips duplicates by URL.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        company: { type: 'string' },
+        channel: { type: 'string', enum: ['Upwork', 'X / Twitter', 'Cold email', 'Referral', 'Community', 'Inbound', 'Other'] },
+        source: { type: 'string', description: 'Where exactly, e.g. "Discord · DTC Hub", "LinkedIn post"' },
+        url: { type: 'string' },
+        brief: { type: 'string', description: 'The job post or prospect notes' },
+        budget: { type: 'string' },
+        budget_evidence: { type: 'string' },
+        fit: { type: 'number', description: '1–5, with your reasoning in fit_notes' },
+        fit_notes: { type: 'string' },
+      },
+      required: ['name'],
+      additionalProperties: false,
+    },
+    level: 'write',
+    run: async (a, ctx) => {
+      const s = await ctx.state()
+      const url = str(a, 'url')
+      const dup = url ? s.opportunities.find((o) => o.url && o.url.replace(/\/$/, '') === url.replace(/\/$/, '')) : undefined
+      if (dup) return { ok: true, id: dup.id, duplicate: true, message: 'Already in the pipeline.' }
+      const id = `o-${randomId(8)}`
+      const fit = Number(a.fit)
+      await writeRecord(ctx.env, 'opportunities', id, {
+        id,
+        name: str(a, 'name', true)!.slice(0, 160),
+        company: str(a, 'company'),
+        channel: str(a, 'channel') ?? 'Other',
+        source: str(a, 'source') ?? (ctx.via ? `via ${ctx.via}` : undefined),
+        url,
+        description: str(a, 'brief'),
+        budget: str(a, 'budget'),
+        budgetEvidence: str(a, 'budget_evidence'),
+        fit: fit >= 1 && fit <= 5 ? Math.round(fit) : undefined,
+        fitNotes: str(a, 'fit_notes'),
+        stage: 'lead',
+        proposalStatus: 'none',
+        touches: [],
+        createdAt: nowIso(),
+      })
+      await logActivity(ctx.env, `New opportunity from ${ctx.via ?? 'AI'}: ${str(a, 'name', true)}`, `opportunity:${id}`)
+      return { ok: true, id }
+    },
+  },
+  {
+    name: 'save_content_draft',
+    title: 'Save a content draft',
+    description: 'Save an X or LinkedIn post idea or draft into Content OS for Carl to review. It is never published — Carl posts it himself.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string' },
+        platform: { type: 'string', enum: ['x', 'linkedin'] },
+        status: { type: 'string', enum: ['idea', 'research', 'draft', 'review'], description: 'Default draft' },
+        hook: { type: 'string' },
+        format: { type: 'string', enum: ['post', 'thread', 'carousel', 'article', 'video'] },
+        notes: { type: 'string', description: 'Research/sources behind it' },
+      },
+      required: ['text'],
+      additionalProperties: false,
+    },
+    level: 'write',
+    run: async (a, ctx) => {
+      const id = `post-${randomId(8)}`
+      const text = str(a, 'text', true)!
+      await writeRecord(ctx.env, 'posts', id, { id, text, status: str(a, 'status') ?? 'draft', platform: str(a, 'platform') ?? 'x', hook: str(a, 'hook') ?? text.split('\n')[0].slice(0, 140), format: str(a, 'format'), notes: str(a, 'notes') ? `${str(a, 'notes')}\n\n(Drafted via ${ctx.via ?? 'AI'})` : `Drafted via ${ctx.via ?? 'AI'}`, createdAt: nowIso() })
+      return { ok: true, id, message: 'Saved to Content OS for review. Not published.' }
+    },
+  },
   /* ---------------- Business Brain ---------------- */
   {
     name: 'search_business_knowledge',
