@@ -102,6 +102,15 @@ export interface Settings {
   /** Content OS: your voice guide and content pillars */
   contentVoice?: string
   contentPillars?: string[]
+  /* Command Center 2.1 */
+  notificationPrefs?: import('@/domain/entities3').NotificationPrefs
+  /** Opportunity qualification criteria (weights editable) */
+  acqCriteria?: import('@/domain/entities3').QualificationCriterion[]
+  voiceProfile?: import('@/domain/entities3').VoiceProfile
+  /** X / LinkedIn handles the publishing workflow posts to (display only — no credentials) */
+  socialAccounts?: { x?: string; linkedin?: string }
+  /** Opt-in: allow pasted ChatGPT/Claude conversation excerpts to become content opportunities */
+  allowConversationExcerpts?: boolean
   /** This device only: full dashboard or minimal focus layout */
   homeMode: 'command' | 'focus'
 }

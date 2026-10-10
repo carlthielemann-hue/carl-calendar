@@ -1,4 +1,5 @@
 /** Shape of the whole app state (data only). Shared by the client store and the Worker. */
+import { ARRAY_COLLS, MAP_COLLS } from './syncSchema'
 import type { CalEvent, Settings, Task, WeeklyPlan } from '@/lib/types'
 import type {
   ActivityEntry,
@@ -44,6 +45,7 @@ import type {
   WeekScore,
 } from './entities'
 import type { Achievement, Affirmation, AffirmationPlaylist, AgentRun, ApplicationDraft, ApprovalRequest, CaptureItem, ClientContact, ClientOnboarding, DailySnapshot, DayRoutine, Decision, FocusSession, FutureLetter, IdeaCanvas, JournalEntry, KnowledgeDoc, MeetingNote, Place, PortfolioPiece, RoutineRun, VisionBoard } from './entities2'
+import type { AgentTask, AgentSchedule, AppNotification, Company, PublicationJob, ContentOpportunity, WatchSource, IntelFinding, FeedbackObservation, ImprovementRec } from './entities3'
 
 export interface GoogleState {
   connected: boolean
@@ -125,6 +127,17 @@ export interface Data {
   portfolio: PortfolioPiece[]
   appDrafts: ApplicationDraft[]
   canvases: IdeaCanvas[]
+  /* Command Center 2.1 */
+  agentTasks: AgentTask[]
+  schedules: AgentSchedule[]
+  notifications: AppNotification[]
+  companies: Company[]
+  publications: PublicationJob[]
+  contentOpps: ContentOpportunity[]
+  watchlist: WatchSource[]
+  findings: IntelFinding[]
+  observations: FeedbackObservation[]
+  improvements: ImprovementRec[]
   /* Shared */
   metrics: Metric[]
   scorecards: Record<string, WeekScore>
@@ -133,4 +146,12 @@ export interface Data {
   settings: Settings
   google: GoogleState
   hasDemoData: boolean
+}
+
+/** A blank Data object (every collection empty) — for tests and server defaults. */
+export function emptyData(): Data {
+  const d: Record<string, unknown> = { stages: [], settings: {}, google: { connected: false }, hasDemoData: false }
+  for (const c of ARRAY_COLLS) d[c] = []
+  for (const c of MAP_COLLS) d[c] = {}
+  return d as unknown as Data
 }

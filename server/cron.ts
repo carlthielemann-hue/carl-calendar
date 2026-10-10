@@ -126,6 +126,12 @@ export async function scheduled(env: Env) {
   } catch (e) {
     await logIntegration(env, 'push', false, `alerts failed: ${(e as Error).message}`.slice(0, 300))
   }
+  // Command Center 2.1: scheduled posts nobody picked up, and the daily briefing in the bell.
+  try {
+    await opsTick(env, today, nowMin, prefs.morning ? mins(prefs.morningTime) : 7 * 60)
+  } catch (e) {
+    await logIntegration(env, 'cue', false, `ops tick failed: ${(e as Error).message}`.slice(0, 300))
+  }
   await env.DB.prepare('DELETE FROM notifications WHERE created_at < ?').bind(new Date(Date.now() - 14 * 86400000).toISOString()).run()
   await env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(new Date().toISOString()).run()
 }
@@ -171,4 +177,27 @@ export async function plannerRun(env: Env, s: AppStateLike, today: string, opts:
     await writeRecord(env, 'proposals', id, p)
   }
   return out
+}
+
+/**
+ * Reconciliation only — never executes anything: flags publication jobs that are 30+ minutes
+ * overdue (no executor claimed them) and drops the day's briefing into the notification centre.
+ */
+async function opsTick(env: Env, today: string, nowMin: number, morningMin: number) {
+  const { createNotice } = await import('./notices')
+  const s = await loadState(env)
+  const late = (s.publications ?? []).filter((j) => j.status === 'queued' && Date.parse(j.scheduledFor) < Date.now() - 30 * 60000)
+  for (const j of late)
+    await createNotice(env, { category: 'urgent', title: 'Scheduled post not published yet', body: `${j.platform === 'linkedin' ? 'LinkedIn' : 'X'} · due ${j.scheduledFor.slice(0, 16).replace('T', ' ')} UTC — no publishing workflow picked it up. Publish it manually or check Manus.`, ref: `publication:${j.id}`, path: '/tps/content-calendar', agent: 'content', dedupeKey: `publate:${j.id}` })
+  const sent = (await getMeta<Record<string, string>>(env, 'ops_sent')) ?? {}
+  if (sent.briefing !== today && nowMin >= morningMin) {
+    const { buildDailyBriefing } = await import('@/domain/briefing')
+    const b = buildDailyBriefing(s, new Date())
+    const parts = [['opportunities', 'opportunities'], ['outreach', 'outreach drafts'], ['content', 'posts to review'], ['agents', 'agent results'], ['blockers', 'blockers/decisions']]
+      .map(([k, label]) => (b.counts[k] ? `${b.counts[k]} ${label}` : ''))
+      .filter(Boolean)
+    await createNotice(env, { category: 'routine', title: 'Your daily briefing is ready', body: parts.length ? parts.join(' · ') : 'Quiet day: nothing waiting for you.', path: '/home/briefing', agent: 'main', dedupeKey: `briefing:${today}` })
+    sent.briefing = today
+    await setMeta(env, 'ops_sent', sent)
+  }
 }

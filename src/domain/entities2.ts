@@ -201,6 +201,18 @@ export interface AgentRun {
   outputRefs: string[]
   error?: string
   externalId?: string
+  /* ---- Coordination (2.1) ---- */
+  purpose?: string
+  taskId?: string
+  scheduleId?: string
+  /** Business records the run touched */
+  refs?: string[]
+  /** Sources consulted (URLs) */
+  sourceRefs?: string[]
+  blocker?: string
+  approvalIds?: string[]
+  manusUrl?: string
+  idempotencyKey?: string
   createdAt: string
   updatedAt: string
 }
@@ -233,6 +245,17 @@ export interface ApprovalRequest {
   /** Reported by whoever executed it after approval (never the app) */
   executedAt?: string
   executionNote?: string
+  /* ---- 2.1 ---- */
+  /** Record the action is about, e.g. "appdraft:a-1", "post:p-2", "opportunity:o-3" */
+  targetRef?: string
+  /** Hash of the exact payload that was approved (executors must match it) */
+  payloadHash?: string
+  approver?: string
+  executionRef?: string
+  executionStatus?: 'succeeded' | 'failed'
+  /** Earlier request this one revises */
+  resubmittedFrom?: string
+  idempotencyKey?: string
   createdAt: string
   updatedAt: string
 }
@@ -257,6 +280,9 @@ export const KNOWLEDGE_CATEGORIES = [
   'Portfolio',
   'Acquisition research',
   'Content research',
+  'Copywriting practice',
+  'Conversation excerpt',
+  'Industry intelligence',
   'General',
 ] as const
 
@@ -304,7 +330,14 @@ export interface CaptureItem {
 
 export interface ClientContact {
   id: string
-  clientId: string
+  /** Set for client contacts; prospects have a companyId instead */
+  clientId?: string
+  companyId?: string
+  /** platform → URL/handle (public profiles) */
+  profiles?: Record<string, string>
+  /** Where the contact details came from (lawfully obtained only) */
+  source?: string
+  history?: { at: string; text: string }[]
   name: string
   role?: string
   email?: string
@@ -384,6 +417,22 @@ export interface ApplicationDraft {
   portfolioIds: string[]
   /** Manually marked — the app never sends */
   sentAt?: string
+  /* ---- Outreach (2.1): this record is the canonical outreach / proposal draft ---- */
+  channel?: 'email' | 'x-dm' | 'linkedin-dm' | 'upwork' | 'other'
+  contactId?: string
+  companyId?: string
+  /** What the personalisation is based on */
+  personalization?: string
+  versions?: import('./entities3').ContentVersion[]
+  approvalId?: string
+  /** Who actually sent it: Carl by hand, or an agent after approval */
+  sentVia?: string
+  executionRef?: string
+  followUpAt?: string
+  replies?: { at: string; text: string }[]
+  outcome?: 'replied' | 'no-reply' | 'call' | 'won' | 'lost' | 'bounced'
+  by?: import('./entities3').AgentActor
+  idempotencyKey?: string
   createdAt: string
   updatedAt: string
 }

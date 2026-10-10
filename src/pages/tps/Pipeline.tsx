@@ -24,7 +24,7 @@ export const OPP_STAGES: { id: OppStage; label: string; color: string }[] = [
   { id: 'won', label: 'Won', color: 'var(--ok)' },
   { id: 'lost', label: 'Lost', color: 'var(--danger)' },
 ]
-const CHANNELS: OppChannel[] = ['Upwork', 'X / Twitter', 'Cold email', 'Referral', 'Community', 'Inbound', 'Other']
+const CHANNELS: OppChannel[] = ['Upwork', 'X / Twitter', 'LinkedIn', 'Cold email', 'Inbound email', 'Referral', 'Community', 'Inbound', 'Website', 'Other']
 
 /** Stages with your renamed labels, minus hidden ones (Lost toggles separately). */
 export function useOppStages() {
@@ -63,7 +63,7 @@ function StageSettings() {
     </Popover.Root>
   )
 }
-const TOUCH_LABEL: Record<TouchKind, string> = { outreach: 'Outreach', follow_up: 'Follow-up', call: 'Call', proposal: 'Proposal sent', note: 'Note' }
+const TOUCH_LABEL: Record<TouchKind, string> = { outreach: 'Outreach', follow_up: 'Follow-up', call: 'Call', proposal: 'Proposal sent', note: 'Note', reply: 'Reply' }
 
 const lastTouch = (o: Opportunity) => o.touches[o.touches.length - 1]
 const money = (v?: number) => (v ? `€${v.toLocaleString('de-DE')}` : '')

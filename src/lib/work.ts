@@ -128,7 +128,47 @@ export function describeRef(s: AppState, r: string): { label: string; sub?: stri
     }
     case 'appdraft': {
       const d = s.appDrafts.find((x) => x.id === p.id)
-      return d ? { label: d.title, sub: `Application · ${d.status}`, path: '/tps/applications' } : null
+      return d ? { label: d.title, sub: `${d.kind === 'proposal' ? 'Proposal' : 'Outreach'} · ${d.status}`, path: '/tps/applications' } : null
+    }
+    case 'agenttask': {
+      const t = s.agentTasks.find((x) => x.id === p.id)
+      return t ? { label: t.title, sub: `Cue task · ${t.status}`, path: '/cue/tasks' } : null
+    }
+    case 'schedule': {
+      const x = s.schedules.find((y) => y.id === p.id)
+      return x ? { label: x.name, sub: `Schedule · ${x.recurrence}`, path: '/cue/schedules' } : null
+    }
+    case 'company': {
+      const c = s.companies.find((x) => x.id === p.id)
+      return c ? { label: c.name, sub: `Company${c.domain ? ` · ${c.domain}` : ''}`, path: `/tps/companies` } : null
+    }
+    case 'publication': {
+      const j = s.publications.find((x) => x.id === p.id)
+      return j ? { label: j.text.slice(0, 60), sub: `Publication · ${j.status}`, path: '/tps/content-calendar' } : null
+    }
+    case 'contentopp': {
+      const o = s.contentOpps.find((x) => x.id === p.id)
+      return o ? { label: o.angle, sub: `Content idea · ${o.status}`, path: '/tps/content-ideas' } : null
+    }
+    case 'watch': {
+      const w = s.watchlist.find((x) => x.id === p.id)
+      return w ? { label: w.name, sub: `Watchlist · ${w.kind}`, path: '/knowledge/watchlist' } : null
+    }
+    case 'finding': {
+      const f = s.findings.find((x) => x.id === p.id)
+      return f ? { label: f.title, sub: `Finding · ${f.topic}`, path: '/knowledge/intel' } : null
+    }
+    case 'observation': {
+      const o = s.observations.find((x) => x.id === p.id)
+      return o ? { label: o.text.slice(0, 70), sub: `Feedback · ${o.polarity}`, path: '/lab/improve' } : null
+    }
+    case 'improvement': {
+      const r = s.improvements.find((x) => x.id === p.id)
+      return r ? { label: r.title, sub: `Improvement · ${r.status}`, path: '/lab/improve' } : null
+    }
+    case 'notification': {
+      const n = s.notifications.find((x) => x.id === p.id)
+      return n ? { label: n.title, sub: 'Notification', path: n.path } : null
     }
     case 'canvas': {
       const c = s.canvases.find((x) => x.id === p.id)

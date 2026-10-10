@@ -14,6 +14,7 @@ export const ARRAY_COLLS = [
   'exercises', 'routines', 'workouts', 'bodyweight',
   'transactions', 'accounts', 'subscriptions', 'savingsGoals', 'moves', 'goals', 'boards',
   'visionBoards', 'journal', 'achievements', 'snapshots', 'futureLetters', 'places', 'affirmations', 'playlists', 'focusSessions', 'dayRoutines', 'routineRuns', 'agentRuns', 'approvals', 'knowledgeDocs', 'captures', 'contacts', 'meetings', 'decisions', 'onboardings', 'portfolio', 'appDrafts', 'canvases',
+  'agentTasks', 'schedules', 'notifications', 'companies', 'publications', 'contentOpps', 'watchlist', 'findings', 'observations', 'improvements',
 ] as const
 export const MAP_COLLS = ['topThree', 'weekly', 'dayPlans', 'scorecards'] as const
 export const CONFIG_KEYS = ['stages', 'settings'] as const

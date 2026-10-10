@@ -14,6 +14,7 @@ import { DEFAULT_MONEY_SETTINGS, DEFAULT_STUDY_PREFS } from '@/domain/entities'
 import { BUILTIN_EXERCISES } from '@/domain/fitness'
 import { isAccountMode, storeKey } from './mode'
 import { DEFAULT_APPEARANCE, DEFAULT_FOCUS_PREFS, DEFAULT_VOICE_PREFS, type Achievement, type Affirmation, type AffirmationPlaylist, type AgentRun, type ApplicationDraft, type ApprovalRequest, type CaptureItem, type ClientContact, type ClientOnboarding, type DailySnapshot, type DayRoutine, type Decision, type FocusSession, type FutureLetter, type IdeaCanvas, type JournalEntry, type KnowledgeDoc, type MeetingNote, type Place, type PortfolioPiece, type RoutineRun, type VisionBoard } from '@/domain/entities2'
+import { DEFAULT_NOTIFICATION_PREFS, type AgentTask, type AgentSchedule, type AppNotification, type Company, type PublicationJob, type ContentOpportunity, type WatchSource, type IntelFinding, type FeedbackObservation, type ImprovementRec } from '@/domain/entities3'
 import type {
   AdRef,
   AiOutput,
@@ -143,6 +144,16 @@ export interface Collections {
   portfolio: PortfolioPiece
   appDrafts: ApplicationDraft
   canvases: IdeaCanvas
+  agentTasks: AgentTask
+  schedules: AgentSchedule
+  notifications: AppNotification
+  companies: Company
+  publications: PublicationJob
+  contentOpps: ContentOpportunity
+  watchlist: WatchSource
+  findings: IntelFinding
+  observations: FeedbackObservation
+  improvements: ImprovementRec
 }
 export type CollKey = keyof Collections
 export const COLL_REF: Record<CollKey, EntityType> = {
@@ -193,6 +204,16 @@ export const COLL_REF: Record<CollKey, EntityType> = {
   portfolio: 'portfolio',
   appDrafts: 'appdraft',
   canvases: 'canvas',
+  agentTasks: 'agenttask',
+  schedules: 'schedule',
+  notifications: 'notification',
+  companies: 'company',
+  publications: 'publication',
+  contentOpps: 'contentopp',
+  watchlist: 'watch',
+  findings: 'finding',
+  observations: 'observation',
+  improvements: 'improvement',
 }
 
 interface Actions {
@@ -346,6 +367,16 @@ function initialData(): Data {
     portfolio: [],
     appDrafts: [],
     canvases: [],
+    agentTasks: [],
+    schedules: [],
+    notifications: [],
+    companies: [],
+    publications: [],
+    contentOpps: [],
+    watchlist: [],
+    findings: [],
+    observations: [],
+    improvements: [],
     settings: DEFAULT_SETTINGS,
     google: { connected: false, calendarId: 'primary', events: [] },
     hasDemoData: true,
@@ -815,7 +846,7 @@ export const useApp = create<AppState>()(
           set({
             events: [], tasks: [], topThree: {}, weekly: {}, dayPlans: {}, clients: [], projects: [], deliverables: [], opportunities: [],
             ads: [], analyses: [], plans: [], insights: [], scorecards: {}, focusLogs: [], activity: [], hasDemoData: false,
-            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [], transactions: [], accounts: [], subscriptions: [], savingsGoals: [], moves: [], goals: [], boards: [], visionBoards: [], journal: [], achievements: [], snapshots: [], futureLetters: [], places: [], affirmations: [], playlists: [], focusSessions: [], dayRoutines: [], routineRuns: [], agentRuns: [], approvals: [], knowledgeDocs: [], captures: [], contacts: [], meetings: [], decisions: [], onboardings: [], portfolio: [], appDrafts: [], canvases: [],
+            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [], transactions: [], accounts: [], subscriptions: [], savingsGoals: [], moves: [], goals: [], boards: [], visionBoards: [], journal: [], achievements: [], snapshots: [], futureLetters: [], places: [], affirmations: [], playlists: [], focusSessions: [], dayRoutines: [], routineRuns: [], agentRuns: [], approvals: [], knowledgeDocs: [], captures: [], contacts: [], meetings: [], decisions: [], onboardings: [], portfolio: [], appDrafts: [], canvases: [], agentTasks: [], schedules: [], notifications: [], companies: [], publications: [], contentOpps: [], watchlist: [], findings: [], observations: [], improvements: [],
           }),
       }
     },
@@ -838,6 +869,7 @@ export const useApp = create<AppState>()(
             appearance: { ...DEFAULT_APPEARANCE, ...p.settings?.appearance },
             focus: { ...DEFAULT_FOCUS_PREFS, ...p.settings?.focus },
             voice: { ...DEFAULT_VOICE_PREFS, ...p.settings?.voice },
+            notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS, ...p.settings?.notificationPrefs },
           },
           google: { ...current.google, ...p.google },
         }
@@ -935,6 +967,16 @@ function migrateV2(p: Record<string, unknown>): Record<string, unknown> {
     portfolio: [],
     appDrafts: [],
     canvases: [],
+    agentTasks: [],
+    schedules: [],
+    notifications: [],
+    companies: [],
+    publications: [],
+    contentOpps: [],
+    watchlist: [],
+    findings: [],
+    observations: [],
+    improvements: [],
   }
 }
 

@@ -66,6 +66,16 @@ export type EntityType =
   | 'portfolio'
   | 'appdraft'
   | 'canvas'
+  | 'agenttask'
+  | 'schedule'
+  | 'notification'
+  | 'company'
+  | 'publication'
+  | 'contentopp'
+  | 'watch'
+  | 'finding'
+  | 'observation'
+  | 'improvement'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -169,9 +179,9 @@ export interface Deliverable {
 }
 
 export type OppStage = 'lead' | 'qualified' | 'contacted' | 'replied' | 'conversation' | 'call' | 'proposal' | 'won' | 'lost'
-export type OppChannel = 'Upwork' | 'X / Twitter' | 'Cold email' | 'Referral' | 'Community' | 'Inbound' | 'Other'
+export type OppChannel = 'Upwork' | 'X / Twitter' | 'LinkedIn' | 'Cold email' | 'Inbound email' | 'Referral' | 'Community' | 'Inbound' | 'Website' | 'Other'
 export type ProposalStatus = 'none' | 'drafting' | 'sent' | 'accepted' | 'declined'
-export type TouchKind = 'outreach' | 'follow_up' | 'call' | 'proposal' | 'note'
+export type TouchKind = 'outreach' | 'follow_up' | 'call' | 'proposal' | 'note' | 'reply'
 
 export interface Touch {
   id: string
@@ -209,6 +219,29 @@ export interface Opportunity {
   fit?: 1 | 2 | 3 | 4 | 5
   fitNotes?: string
   portfolioIds?: string[]
+  /* ---- Opportunity intelligence (2.1) ---- */
+  /** Canonical company / contact (deduped across X, LinkedIn, Upwork, email) */
+  companyId?: string
+  contactId?: string
+  kind?: 'job-post' | 'prospect' | 'inbound' | 'referral' | 'partnership' | 'other'
+  discoveredAt?: string
+  /** Every place this opportunity was seen */
+  evidence?: import('./entities3').OppEvidence[]
+  /** criterion id → score with explanation */
+  scores?: Record<string, import('./entities3').CriterionScore>
+  confidence?: 'low' | 'medium' | 'high'
+  urgency?: 'low' | 'normal' | 'high'
+  /** e.g. job post closes */
+  expiresAt?: string
+  assignedAgent?: import('./entities2').CueAgentId
+  nextAction?: string
+  /** Research behind it, e.g. "research:r-1", "doc:kd-2", "agenttask:t-3" */
+  researchRefs?: string[]
+  outcome?: string
+  lostReason?: string
+  origin?: 'manual' | 'agent'
+  via?: string
+  idempotencyKey?: string
   createdAt: string
   isDemo?: boolean
 }
@@ -587,7 +620,7 @@ export interface AiOutput {
 
 /* ---------------- Content (X) ---------------- */
 
-export type ContentStatus = 'idea' | 'research' | 'draft' | 'review' | 'approved' | 'scheduled' | 'posted'
+export type ContentStatus = 'idea' | 'research' | 'draft' | 'review' | 'approved' | 'scheduled' | 'posted' | 'failed' | 'canceled'
 export interface ContentMetrics {
   impressions?: number
   likes?: number
@@ -616,6 +649,23 @@ export interface ContentPost {
   sourceId?: string
   /** Entered by you from the platform's analytics (no API) */
   metrics?: ContentMetrics
+  /* ---- Publishing (2.1) ---- */
+  versions?: import('./entities3').ContentVersion[]
+  /** Exact text that was approved; editing it materially invalidates the approval */
+  approvedText?: string
+  approvedHash?: string
+  approvedAt?: string
+  approvalId?: string
+  /** IANA zone the time was chosen in */
+  timezone?: string
+  account?: string
+  /** How it gets published once approved */
+  publishVia?: 'manus' | 'manual'
+  /** Content opportunity it came from */
+  opportunityId?: string
+  by?: import('./entities3').AgentActor
+  idempotencyKey?: string
+  updatedAt?: string
   createdAt: string
 }
 
@@ -946,3 +996,4 @@ export interface Goal {
 }
 
 export * from './entities2'
+export * from './entities3'

@@ -77,7 +77,7 @@ function searchIndex(s: AppState): { ref: Ref; text: string }[] {
     ...s.captures.filter((c) => c.status === 'inbox').map((c) => ({ ref: `capture:${c.id}` as Ref, text: `${c.text ?? ''} ${c.url ?? ''} ${c.transcript ?? ''} ${c.fileName ?? ''} capture inbox` })),
     ...s.agentRuns.map((r) => ({ ref: `agentrun:${r.id}` as Ref, text: `${r.title} ${r.input ?? ''} ${(r.outputText ?? '').slice(0, 2000)} cue ${r.agent}` })),
     ...s.approvals.map((r) => ({ ref: `approval:${r.id}` as Ref, text: `${r.title} ${r.destination} approval ${r.status}` })),
-    ...s.contacts.map((c) => ({ ref: `contact:${c.id}` as Ref, text: `${c.name} ${c.role ?? ''} ${c.email ?? ''} ${clientName.get(c.clientId) ?? ''} contact` })),
+    ...s.contacts.map((c) => ({ ref: `contact:${c.id}` as Ref, text: `${c.name} ${c.role ?? ''} ${c.email ?? ''} ${clientName.get(c.clientId ?? '') ?? ''} contact` })),
     ...s.meetings.map((m) => ({ ref: `meeting:${m.id}` as Ref, text: `${m.title} ${m.notes.slice(0, 2000)} ${m.decisions ?? ''} meeting ${clientName.get(m.clientId ?? '') ?? ''}` })),
     ...s.decisions.map((d) => ({ ref: `decision:${d.id}` as Ref, text: `${d.title} ${d.decision} decision` })),
     ...s.portfolio.map((p) => ({ ref: `portfolio:${p.id}` as Ref, text: `${p.title} ${p.kind} ${p.description ?? ''} ${p.tags.join(' ')} portfolio` })),

@@ -8,17 +8,14 @@ import { cn } from '@/lib/utils'
 import { openRef } from '@/lib/work'
 import { useApp } from '@/store/app'
 import { agentOf, AgentMark } from '@/features/cue/shared'
+import { decideApproval } from '@/lib/ops'
 
 const RISK: Record<ApprovalRequest['risk'], string> = { low: 'text-ok bg-[rgba(69,185,124,0.12)]', medium: 'text-[#e5b06b] bg-[rgba(229,165,75,0.14)]', high: 'text-danger bg-[rgba(239,107,107,0.14)]' }
 const STATUS_LABEL: Record<ApprovalStatus, string> = { pending: 'Waiting for you', approved: 'Approved', rejected: 'Rejected', changes: 'Changes requested' }
 const ACTION_LABEL: Record<ApprovalRequest['actionType'], string> = { email: 'Send email', post: 'Publish post', proposal: 'Submit proposal', dm: 'Send DM', file: 'Change file', calendar: 'Change calendar', other: 'Action' }
 
-export function decide(r: ApprovalRequest, decision: ApprovalStatus, opts: { note?: string; payload?: string } = {}) {
-  const now = new Date().toISOString()
-  const edited = opts.payload !== undefined && opts.payload !== r.payload ? opts.payload : undefined
-  useApp.getState().patch('approvals', r.id, { status: decision, decisions: [...r.decisions, { at: now, decision, note: opts.note?.trim() || undefined, editedPayload: edited }], updatedAt: now })
-  useApp.getState().log('tps', `${decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Rejected' : 'Requested changes on'}: ${r.title}`, `approval:${r.id}`)
-}
+/** Decisions go through ops.decideApproval (it also updates linked drafts). */
+export const decide = decideApproval
 
 function Request({ r }: { r: ApprovalRequest }) {
   const [payload, setPayload] = useState(r.decisions.at(-1)?.editedPayload ?? r.payload)
