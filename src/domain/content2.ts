@@ -173,7 +173,11 @@ export function detectContentOpportunities(
   return out
     .sort((a, b) => b.weight - a.weight)
     .slice(0, opts.limit ?? 8)
-    .map(({ weight: _w, ...c }) => c)
+    .map((c) => {
+      const { weight, ...rest } = c
+      void weight
+      return rest
+    })
 }
 
 /** Turn a kept candidate into a stored opportunity. */

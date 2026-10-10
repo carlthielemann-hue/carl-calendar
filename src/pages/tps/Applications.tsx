@@ -7,7 +7,9 @@ import type { ApplicationDraft } from '@/domain/entities2'
 import { cn, uid } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { createRequest } from '@/features/cue/shared'
+import { agentOf, createRequest } from '@/features/cue/shared'
+import { isMaterialChange } from '@/domain/content2'
+import { decideApproval, markDraftSent, requestDraftApproval } from '@/lib/ops'
 
 const KIND_LABEL: Record<ApplicationDraft['kind'], string> = { proposal: 'Upwork proposal', outreach: 'Outreach', 'follow-up': 'Follow-up', 'call-prep': 'Call prep', template: 'Template' }
 const STATUS: ApplicationDraft['status'][] = ['draft', 'review', 'approved', 'sent']
@@ -24,6 +26,24 @@ function Editor({ d }: { d: ApplicationDraft }) {
     setTitle(d.title)
   }, [d.id, d.body, d.title])
   const patch = (p: Partial<ApplicationDraft>) => useApp.getState().patch('appDrafts', d.id, { ...p, updatedAt: new Date().toISOString() })
+  const approval = useApp((s) => s.approvals.find((a) => a.id === d.approvalId))
+  const [dest, setDest] = useState('')
+  /** Saving a body edit: a material change to approved text revokes the approval. */
+  const saveBody = () => {
+    if (body === d.body) return
+    const now = new Date().toISOString()
+    const approvedText = approval?.status === 'approved' ? (approval.decisions.at(-1)?.editedPayload ?? approval.payload) : undefined
+    if (approval && (approval.status === 'pending' || isMaterialChange(approvedText, body))) {
+      if (approval.status === 'approved' && !approval.executedAt) {
+        useApp.getState().patch('approvals', approval.id, { status: 'changes', decisions: [...approval.decisions, { at: now, decision: 'changes', note: 'Edited after approval — needs approving again' }], updatedAt: now })
+        toast('Approval revoked — the text changed', { description: 'Approve the new version before anyone sends it.' })
+        patch({ body, status: 'draft', versions: [...(d.versions ?? []), { text: body, at: now, by: 'carl' as const }] })
+        return
+      }
+      if (approval.status === 'pending') useApp.getState().patch('approvals', approval.id, { payload: body, updatedAt: now })
+    }
+    patch({ body, versions: [...(d.versions ?? []), { text: body, at: now, by: 'carl' as const }].slice(-30) })
+  }
   const opp = opps.find((o) => o.id === d.opportunityId)
   const words = body.trim() ? body.trim().split(/\s+/).length : 0
   return (
@@ -65,13 +85,49 @@ function Editor({ d }: { d: ApplicationDraft }) {
           </Select>
         )}
       </div>
+      {(d.by && d.by !== 'carl') || d.personalization || d.channel || (d.versions?.length ?? 0) > 1 ? (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+          {d.by && d.by !== 'carl' && d.by !== 'system' && <span>Drafted by {agentOf(d.by).name}</span>}
+          {d.channel && <span>Channel: {d.channel}</span>}
+          {(d.versions?.length ?? 0) > 1 && <span>{d.versions!.length} versions</span>}
+          {d.personalization && <span className="w-full text-fg-2">Personalised on: {d.personalization}</span>}
+        </div>
+      ) : null}
+      {d.kind !== 'template' && d.status !== 'sent' && (
+        <div className={cn('mt-3 rounded-xl border px-3 py-2.5 text-[12.5px]', approval?.status === 'approved' ? 'border-[color-mix(in_srgb,var(--ok)_40%,var(--line))]' : 'border-line')} aria-label="Approval">
+          {!approval || approval.status === 'rejected' || approval.status === 'changes' ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted">{approval?.status === 'changes' ? 'Changes requested — edit, then ask again.' : approval?.status === 'rejected' ? 'Rejected.' : 'Want Cue to send it for you? It needs your approval first.'}</span>
+              <input value={dest} onChange={(e) => setDest(e.target.value)} placeholder="Where it goes (email, Upwork job…)" className="h-8 min-w-[200px] flex-1 rounded-lg border border-line bg-panel-2 px-2 text-[12.5px] outline-none" aria-label="Destination" />
+              <Button size="sm" variant="secondary" disabled={!dest.trim() || !body.trim()} onClick={() => (saveBody(), requestDraftApproval(d.id, dest.trim()), toast.success('Added to your Approval Inbox'))}>
+                Request approval
+              </Button>
+            </div>
+          ) : approval.status === 'pending' ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[#e5b06b]">Waiting for your approval{approval.agent ? ` · ${agentOf(approval.agent).name}` : ''} → {approval.destination}</span>
+              <span className="flex-1" />
+              <Button size="sm" variant="ghost" onClick={() => (decideApproval(approval, 'rejected'), toast('Rejected'))}>
+                Reject
+              </Button>
+              <Button size="sm" variant="primary" onClick={() => (decideApproval(approval, 'approved', { payload: body }), toast.success('Approved', { description: 'Cue may now send exactly this text. Nothing was sent yet.' }))}>
+                Approve this text
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-ok">Approved{approval.executedAt ? ` · sent ${format(new Date(approval.executedAt), 'd MMM HH:mm')}` : ' — Cue may send exactly this text'}</span>
+            </div>
+          )}
+        </div>
+      )}
       {opp?.description && (
         <details className="mt-3 rounded-xl border border-line bg-panel-2 px-3 py-2 text-[12.5px]">
           <summary className="cursor-pointer text-muted">The job post</summary>
           <p className="mt-2 whitespace-pre-wrap text-fg-2">{opp.description}</p>
         </details>
       )}
-      <Textarea value={body} onChange={(e) => setBody(e.target.value)} onBlur={() => body !== d.body && patch({ body })} rows={16} className="mt-3 text-[14px] leading-relaxed" placeholder={d.kind === 'call-prep' ? 'Goals for the call, questions to ask, what to show, your price.' : 'Open with their problem, not your bio. Prove it with one relevant result. Clear next step.'} aria-label="Draft" />
+      <Textarea value={body} onChange={(e) => setBody(e.target.value)} onBlur={saveBody} rows={16} className="mt-3 text-[14px] leading-relaxed" placeholder={d.kind === 'call-prep' ? 'Goals for the call, questions to ask, what to show, your price.' : 'Open with their problem, not your bio. Prove it with one relevant result. Clear next step.'} aria-label="Draft" />
       <div className="mt-1 text-right text-[11.5px] text-faint tnum">{words} words</div>
       {d.kind !== 'template' && portfolio.length > 0 && (
         <div className="mt-2">
@@ -123,8 +179,8 @@ function Editor({ d }: { d: ApplicationDraft }) {
               variant="primary"
               confirmLabel="I sent it myself"
               onConfirm={() => {
-                patch({ status: 'sent', sentAt: new Date().toISOString() })
-                if (opp) useApp.getState().logTouch(opp.id, d.kind === 'proposal' ? 'proposal' : d.kind === 'follow-up' ? 'follow_up' : 'outreach', d.title)
+                saveBody()
+                markDraftSent(d.id)
                 toast.success('Marked as sent', { description: opp ? 'Logged on the opportunity.' : undefined })
               }}
             >
@@ -135,7 +191,7 @@ function Editor({ d }: { d: ApplicationDraft }) {
           <Trash2 className="h-3.5 w-3.5" />
         </ConfirmButton>
       </div>
-      <p className="mt-2 text-[11.5px] text-faint">Command Center never submits proposals or sends messages. Copy it, send it on Upwork/email/DM, then mark it sent.</p>
+      <p className="mt-2 text-[11.5px] text-faint">Command Center never submits proposals or sends messages itself. Send it yourself and mark it sent — or approve it and let Cue send exactly the approved text.</p>
     </Card>
   )
 }
@@ -161,13 +217,13 @@ export default function ApplicationsPage() {
     useUI.setState({ intent: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intent])
-  const list = useMemo(() => [...drafts].filter((d) => filter === 'all' || d.kind === filter).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), [drafts, filter])
+  const list = useMemo(() => [...drafts].filter((d) => filter === 'all' || d.kind === filter).sort((a, b) => (a.status === 'review' ? 0 : 1) - (b.status === 'review' ? 0 : 1) || b.updatedAt.localeCompare(a.updatedAt)), [drafts, filter])
   const current = drafts.find((d) => d.id === sel) ?? list[0]
   return (
     <div className="mx-auto w-full max-w-[1320px]">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-[26px] font-semibold">Applications</h1>
+          <h1 className="font-display text-[26px] font-semibold">Outreach & proposals</h1>
           <p className="text-[13px] text-muted">
             Proposals, outreach, follow-ups and call prep. {drafts.filter((d) => d.status === 'sent').length} sent · {drafts.filter((d) => d.status !== 'sent' && d.kind !== 'template').length} in progress.
           </p>
@@ -200,6 +256,7 @@ export default function ApplicationsPage() {
               <button key={d.id} onClick={() => setSel(d.id)} className={cn('w-full rounded-xl px-3 py-2 text-left hover:bg-hover', current?.id === d.id && 'bg-panel-2')}>
                 <span className="block truncate text-[13px]">{d.title}</span>
                 <span className="text-[11px] text-faint">
+                  {d.status === 'review' && <span className="mr-1 text-[#e5b06b]">● needs you ·</span>}
                   {KIND_LABEL[d.kind]} · {d.status} · {format(new Date(d.updatedAt), 'd MMM')}
                 </span>
               </button>

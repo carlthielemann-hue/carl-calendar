@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button, ConfirmButton, Dialog, Field, Input, Select, Textarea } from '@/components/ui'
+import { OppIntel } from '@/features/acquisition/Intel'
 import type { OppChannel, OppStage, Opportunity, ProposalStatus, TouchKind } from '@/domain/entities'
 import { dateKey } from '@/lib/dates'
 import { cn } from '@/lib/utils'
@@ -234,10 +235,10 @@ function NewOppDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
   )
 }
 
-function OppDialog({ id, onClose }: { id: string | null; onClose: () => void }) {
+export function OppDialog({ id, onClose }: { id: string | null; onClose: () => void }) {
   const o = useApp((s) => s.opportunities.find((x) => x.id === id))
   return (
-    <Dialog open={!!o} onOpenChange={(v) => !v && onClose()} title={o?.name ?? 'Lead'} className="max-w-[600px]">
+    <Dialog open={!!o} onOpenChange={(v) => !v && onClose()} title={o?.name ?? 'Lead'} className="max-w-[720px]">
       {o && <OppBody o={o} onClose={onClose} />}
     </Dialog>
   )
@@ -255,6 +256,7 @@ function OppBody({ o, onClose }: { o: Opportunity; onClose: () => void }) {
   }
   return (
     <div className="flex flex-col gap-4 pb-2">
+      <OppIntel o={o} />
       <div className="grid grid-cols-2 gap-2">
         <Field label="Name">
           <Input defaultValue={o.name} onBlur={(e) => e.target.value.trim() && e.target.value !== o.name && set({ name: e.target.value.trim() })} />
