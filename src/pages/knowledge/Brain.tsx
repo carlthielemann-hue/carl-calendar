@@ -20,7 +20,10 @@ function useBrainItems() {
   const meetings = useApp((s) => s.meetings)
   const decisions = useApp((s) => s.decisions)
   const portfolio = useApp((s) => s.portfolio)
-  return useMemo(() => brainItems({ knowledgeDocs, research, clients, insights, concepts, feedback, meetings, decisions, portfolio }), [knowledgeDocs, research, clients, insights, concepts, feedback, meetings, decisions, portfolio])
+  const companies = useApp((s) => s.companies)
+  const opportunities = useApp((s) => s.opportunities)
+  const findings = useApp((s) => s.findings)
+  return useMemo(() => brainItems({ knowledgeDocs, research, clients, insights, concepts, feedback, meetings, decisions, portfolio, companies, opportunities, findings }), [knowledgeDocs, research, clients, insights, concepts, feedback, meetings, decisions, portfolio, companies, opportunities, findings])
 }
 
 function Highlight({ text, q }: { text: string; q: string }) {

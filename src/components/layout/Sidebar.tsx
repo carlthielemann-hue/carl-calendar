@@ -4,6 +4,7 @@ import { Kbd, Sheet } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useSync } from '@/lib/sync'
+import { NotificationBell } from '@/features/notifications/Center'
 import { DockBar } from '@/features/dock/DockBar'
 import { Wallpaper } from '@/features/appearance/wallpaper'
 import { isAccountMode } from '@/store/mode'
@@ -90,6 +91,7 @@ export function Sidebar() {
         <button onClick={() => go('/home')} aria-label="Home">
           <Wordmark />
         </button>
+        <NotificationBell />
       </div>
 
       <button
@@ -180,9 +182,12 @@ export function MobileTopBar() {
         <button onClick={() => useUI.getState().go('/home')} aria-label="Home">
           <Wordmark compact />
         </button>
-        <button aria-label="Search" onClick={() => useUI.getState().setPalette(true)} className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-hover">
-          <Search className="h-4 w-4" />
-        </button>
+        <span className="flex items-center gap-1">
+          <NotificationBell />
+          <button aria-label="Search" onClick={() => useUI.getState().setPalette(true)} className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-hover">
+            <Search className="h-4 w-4" />
+          </button>
+        </span>
       </div>
       <SectionTabs mobile />
     </div>

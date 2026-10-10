@@ -6,7 +6,7 @@ import { Button, Card, ConfirmButton, Empty, Select } from '@/components/ui'
 import { CUE_AGENTS, type AgentRun } from '@/domain/entities2'
 import { cn, uid } from '@/lib/utils'
 import { useApp } from '@/store/app'
-import { agentOf, AgentMark, handoffPrompt, RUN_STATUS } from '@/features/cue/shared'
+import { agentOf, AgentMark, runPrompt, RUN_STATUS } from '@/features/cue/shared'
 
 const DOC_CATEGORY: Record<string, string> = { creative: 'Creative brief', acquisition: 'Acquisition research', content: 'Content research', operations: 'Project history', main: 'General' }
 
@@ -91,7 +91,7 @@ function RunRow({ r }: { r: AgentRun }) {
                 <Button
                   variant="secondary"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(handoffPrompt(r)).catch(() => {})
+                    await navigator.clipboard.writeText(runPrompt(r)).catch(() => {})
                     toast.success('Prompt copied — paste it into Manus')
                   }}
                 >

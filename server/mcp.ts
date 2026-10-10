@@ -343,7 +343,7 @@ const TOOLS: Tool[] = [
         query: { type: 'string' },
         client: { type: 'string', description: 'Client id or name — limits results to that client plus general business knowledge' },
         category: { type: 'string' },
-        type: { type: 'string', enum: ['doc', 'research', 'brand', 'insight', 'concept', 'feedback', 'meeting', 'decision', 'portfolio'] },
+        type: { type: 'string', enum: ['doc', 'research', 'brand', 'insight', 'concept', 'feedback', 'meeting', 'decision', 'portfolio', 'company', 'opportunity', 'finding'] },
         limit: { type: 'number' },
       },
       required: ['query'],

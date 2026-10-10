@@ -87,6 +87,12 @@ function searchIndex(s: AppState): { ref: Ref; text: string }[] {
     ...s.affirmations.map((a) => ({ ref: `affirmation:${a.id}` as Ref, text: `${a.text} ${a.category} affirmation` })),
     ...s.achievements.map((a) => ({ ref: `achievement:${a.id}` as Ref, text: `${a.title} ${a.notes ?? ''} win achievement` })),
     ...s.places.map((p) => ({ ref: `place:${p.id}` as Ref, text: `${p.name} ${p.country ?? ''} ${p.notes ?? ''} travel` })),
+    ...s.companies.map((c) => ({ ref: `company:${c.id}` as Ref, text: `${c.name} ${c.domain ?? ''} ${c.industry ?? ''} ${c.aliases.join(' ')} ${(c.summary ?? '').slice(0, 1500)} company prospect` })),
+    ...s.agentTasks.map((t) => ({ ref: `agenttask:${t.id}` as Ref, text: `${t.title} ${t.instructions ?? ''} ${(t.output ?? '').slice(0, 1500)} cue task ${t.assignee}` })),
+    ...s.contentOpps.map((o) => ({ ref: `contentopp:${o.id}` as Ref, text: `${o.angle} ${o.why} ${o.excerpt ?? ''} content idea` })),
+    ...s.findings.map((f) => ({ ref: `finding:${f.id}` as Ref, text: `${f.title} ${f.summary} ${f.topic} ${f.creator ?? ''} industry finding` })),
+    ...s.improvements.map((r) => ({ ref: `improvement:${r.id}` as Ref, text: `${r.title} ${r.action} improvement` })),
+    ...s.schedules.map((x) => ({ ref: `schedule:${x.id}` as Ref, text: `${x.name} ${x.purpose} ${x.recurrence} schedule` })),
   ]
 }
 

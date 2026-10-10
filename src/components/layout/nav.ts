@@ -100,6 +100,8 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'team', label: 'AI Team', icon: Bot },
     { page: 'runs', label: 'Activity', icon: Activity },
     { page: 'approvals', label: 'Approvals', icon: ShieldCheck },
+    { page: 'tasks', label: 'Tasks & hand-offs', icon: ListChecks },
+    { page: 'schedules', label: 'Schedules', icon: CalendarClock },
   ],
   knowledge: [
     { page: 'brain', label: 'Business Brain', icon: Brain },
@@ -196,8 +198,8 @@ export interface Section {
 }
 
 export const SECTIONS: Section[] = [
-  { id: 'home', label: 'Home', icon: House, path: '/home', tabs: [{ path: '/home', label: 'Dashboard' }, { path: '/home/goals', label: 'Goals' }, { path: '/home/analytics', label: 'Analytics' }, { path: '/home/timeline', label: 'Time Machine' }] },
-  { id: 'cue', label: 'Cue', badge: 'AI', icon: Bot, path: '/cue/team', tabs: [{ path: '/cue/team', label: 'AI Team' }, { path: '/cue/runs', label: 'Activity' }, { path: '/cue/approvals', label: 'Approvals' }, { path: '/tps/studio', label: 'AI Studio' }] },
+  { id: 'home', label: 'Home', icon: House, path: '/home', tabs: [{ path: '/home', label: 'Dashboard' }, { path: '/home/briefing', label: 'Briefing' }, { path: '/home/goals', label: 'Goals' }, { path: '/home/analytics', label: 'Analytics' }, { path: '/home/timeline', label: 'Time Machine' }] },
+  { id: 'cue', label: 'Cue', badge: 'AI', icon: Bot, path: '/cue/team', tabs: [{ path: '/cue/team', label: 'AI Team' }, { path: '/cue/tasks', label: 'Tasks & hand-offs' }, { path: '/cue/approvals', label: 'Approvals' }, { path: '/cue/runs', label: 'Activity' }, { path: '/cue/schedules', label: 'Schedules' }, { path: '/tps/studio', label: 'AI Studio' }] },
   { id: 'today', label: 'Today', icon: CalendarCheck, path: '/personal/overview', tabs: [{ path: '/personal/overview', label: 'Today' }, { path: '/personal/tasks', label: 'Tasks' }, { path: '/personal/tomorrow', label: 'Plan tomorrow' }, { path: '/personal/planning', label: 'Weekly planning' }] },
   { id: 'clients', label: 'Clients', icon: Users, path: '/tps/clients', space: 'tps', tabs: [{ path: '/tps/clients', label: 'Clients' }, { path: '/tps/overview', label: 'Business overview' }, { path: '/tps/portfolio', label: 'Portfolio' }, { path: '/tps/scorecard', label: 'Scorecard' }] },
   { id: 'acquisition', label: 'Acquisition', icon: Columns3, path: '/tps/acquisition', space: 'tps', tabs: [{ path: '/tps/acquisition', label: 'Intelligence' }, { path: '/tps/pipeline', label: 'Pipeline' }, { path: '/tps/applications', label: 'Outreach & proposals' }, { path: '/tps/companies', label: 'Companies' }] },

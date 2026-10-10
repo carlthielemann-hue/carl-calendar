@@ -6,9 +6,10 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Dialog, Field, Input, Select, Textarea } from '@/components/ui'
 import { CUE_AGENTS, type AgentRun, type CueAgentId } from '@/domain/entities2'
+import type { AgentTask } from '@/domain/entities3'
+import { handOff } from '@/lib/ops'
 import { api, useCloud } from '@/lib/cloud'
 import { openAi } from '@/lib/dock'
-import { uid } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { isAccountMode } from '@/store/mode'
 
@@ -57,32 +58,36 @@ export function useConnectedApps() {
 }
 
 /** The prompt to paste into Manus (or ChatGPT with its Manus plugin) so the agent picks the work up. */
-export function handoffPrompt(r: AgentRun) {
-  const a = agentOf(r.agent)
+export function handoffPrompt(t: AgentTask) {
+  const a = agentOf(t.assignee)
   return [
     `You are ${a.name} (${a.role}).`,
-    `In Command Center (MCP connector), call cue_list_requests with agent "${r.agent}", pick up request ${r.id} ("${r.title}"),`,
-    `mark it running with cue_update_run, do the work, then report the result with cue_update_run (status completed, output).`,
-    `Before any external action (sending, posting, submitting), call cue_request_approval and wait for approval.`,
+    `In Command Center (MCP connector), call cue_list_tasks with agent "${t.assignee}" and pick up task ${t.id} ("${t.title}").`,
+    `Set it in_progress with cue_update_task, do the work, log it with cue_record_run (task_id ${t.id}), save outputs as records (research, drafts) and finish with cue_update_task (status done, output, output_refs).`,
+    `If another Cue should take part, hand off with cue_create_task. Before any external action (sending, posting, submitting), get Carl's approval first.`,
   ].join(' ')
 }
 
-export function createRequest(p: { agent: CueAgentId; title: string; input?: string; clientId?: string; projectId?: string }) {
-  const now = new Date().toISOString()
-  const run: AgentRun = { id: uid('run-'), agent: p.agent, title: p.title, input: p.input, clientId: p.clientId, projectId: p.projectId, status: 'queued', requestedBy: 'carl', outputRefs: [], createdAt: now, updatedAt: now }
-  useApp.getState().put('agentRuns', run)
-  return run
+/** Prompt for older queued requests (created before tasks existed). */
+export function runPrompt(r: AgentRun) {
+  const a = agentOf(r.agent)
+  return `You are ${a.name} (${a.role}). In Command Center (MCP connector), call cue_list_requests with agent "${r.agent}", pick up request ${r.id} ("${r.title}"), mark it running with cue_update_run, do the work, then report with cue_update_run (status completed, output). Before any external action, get Carl's approval first.`
+}
+
+/** Hand work to a Cue: an AgentTask the agent picks up (the run it does is recorded separately). */
+export function createRequest(p: { agent: CueAgentId; title: string; input?: string; clientId?: string; projectId?: string; refs?: string[] }) {
+  return handOff({ assignee: p.agent, title: p.title, instructions: p.input, refs: [...(p.refs ?? []), ...(p.clientId ? [`client:${p.clientId}`] : []), ...(p.projectId ? [`project:${p.projectId}`] : [])] })
 }
 
 export function Composer({ agent: initial, onClose }: { agent?: CueAgentId; onClose: () => void }) {
   const clients = useApp((s) => s.clients)
   const projects = useApp((s) => s.projects)
   const [f, setF] = useState({ agent: initial ?? ('main' as CueAgentId), title: '', input: '', clientId: '', projectId: '' })
-  const [made, setMade] = useState<AgentRun | null>(null)
+  const [made, setMade] = useState<AgentTask | null>(null)
   if (made) {
     const prompt = handoffPrompt(made)
     return (
-      <Dialog open onOpenChange={(v) => !v && onClose()} title="Request saved" description={`${agentOf(made.agent).name} will see it the next time it checks Command Center.`}>
+      <Dialog open onOpenChange={(v) => !v && onClose()} title="Request saved" description={`${agentOf(made.assignee).name} will see it the next time it checks Command Center.`}>
         <div className="flex flex-col gap-3 pb-2 text-[13px]">
           <p className="text-muted">Manus agents pick up requests when they run (scheduled, or when you tell them). To start it now, paste this into Manus — or into ChatGPT with the Manus plugin:</p>
           <pre className="rounded-xl border border-line bg-panel-2 p-3 text-[12px] whitespace-pre-wrap text-fg-2">{prompt}</pre>

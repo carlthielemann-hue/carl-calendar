@@ -1,5 +1,5 @@
 import { addDays, format, formatDistanceToNowStrict, isSameDay, startOfWeek } from 'date-fns'
-import { Bell, Bot, ChevronLeft, ChevronRight, CircleHelp, Dumbbell, GraduationCap, Inbox, Layers, Target, Timer, Users, Video } from 'lucide-react'
+import { ListTodo, Bot, ChevronLeft, ChevronRight, CircleHelp, Dumbbell, GraduationCap, Inbox, Layers, Target, Timer, Users, Video } from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
 import { useMemo, useState } from 'react'
 import { Card, Empty } from '@/components/ui'
@@ -40,8 +40,8 @@ export function TopActions() {
       </button>
       <Popover.Root>
         <Popover.Trigger asChild>
-          <button aria-label={`Notifications${count ? ` (${count})` : ''}`} className="relative grid h-10 w-10 place-items-center rounded-xl text-muted hover:bg-hover hover:text-fg">
-            <Bell className="h-[18px] w-[18px]" />
+          <button aria-label={`Needs you${count ? ` (${count})` : ''}`} title="Needs you" className="relative grid h-10 w-10 place-items-center rounded-xl text-muted hover:bg-hover hover:text-fg">
+            <ListTodo className="h-[18px] w-[18px]" />
             {count > 0 && <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-accent" />}
           </button>
         </Popover.Trigger>

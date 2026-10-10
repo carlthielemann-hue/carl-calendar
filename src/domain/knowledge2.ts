@@ -7,7 +7,7 @@
 import type { Data } from './state'
 import { BRAND_SECTIONS } from './entities'
 
-export type BrainSource = 'doc' | 'research' | 'brand' | 'insight' | 'concept' | 'feedback' | 'meeting' | 'decision' | 'portfolio'
+export type BrainSource = 'doc' | 'research' | 'brand' | 'insight' | 'concept' | 'feedback' | 'meeting' | 'decision' | 'portfolio' | 'company' | 'opportunity' | 'finding'
 
 export interface BrainItem {
   ref: string
@@ -37,9 +37,12 @@ export const SOURCE_LABEL: Record<BrainSource, string> = {
   meeting: 'Meeting notes',
   decision: 'Decision',
   portfolio: 'Portfolio',
+  company: 'Company',
+  opportunity: 'Opportunity',
+  finding: 'Industry finding',
 }
 
-type Src = Pick<Data, 'knowledgeDocs' | 'research' | 'clients' | 'insights' | 'concepts' | 'feedback' | 'meetings' | 'decisions' | 'portfolio'>
+type Src = Pick<Data, 'knowledgeDocs' | 'research' | 'clients' | 'insights' | 'concepts' | 'feedback' | 'meetings' | 'decisions' | 'portfolio'> & Partial<Pick<Data, 'companies' | 'opportunities' | 'findings'>>
 
 /** Flatten every business-knowledge record into searchable items. */
 export function brainItems(s: Src): BrainItem[] {
@@ -57,6 +60,12 @@ export function brainItems(s: Src): BrainItem[] {
   for (const m of s.meetings ?? []) out.push({ ref: `meeting:${m.id}`, source: 'meeting', title: m.title, text: `${m.notes} ${m.decisions ?? ''} ${m.attendees ?? ''}`, category: 'Meeting notes', clientId: m.clientId, projectId: m.projectId, updatedAt: m.createdAt, access: m.clientId ? 'client' : 'business' })
   for (const d of s.decisions ?? []) out.push({ ref: `decision:${d.id}`, source: 'decision', title: d.title, text: `${d.decision} ${d.context ?? ''}`, category: 'Decision', clientId: d.clientId, projectId: d.projectId, updatedAt: d.createdAt, access: d.clientId ? 'client' : 'business' })
   for (const p of s.portfolio ?? []) out.push({ ref: `portfolio:${p.id}`, source: 'portfolio', title: p.title, text: `${p.description ?? ''} ${p.kind} ${p.tags.join(' ')} ${p.results.map((r) => `${r.metric} ${r.value}`).join(' ')}`, category: 'Portfolio', clientId: p.clientId, url: p.url, updatedAt: p.createdAt, access: 'business' })
+  for (const c of s.companies ?? []) out.push({ ref: `company:${c.id}`, source: 'company', title: c.name, text: [c.summary, c.industry, c.businessModel, c.products, c.market, c.domain, c.fitIndicators.join(' '), c.aliases.join(' ')].filter(Boolean).join(' '), category: 'Acquisition research', clientId: c.clientId, url: c.website, updatedAt: c.updatedAt, access: c.clientId ? 'client' : 'business' })
+  for (const o of s.opportunities ?? []) {
+    if (o.isDemo) continue
+    out.push({ ref: `opportunity:${o.id}`, source: 'opportunity', title: o.name, text: [o.description, o.company, o.fitNotes, o.nextAction, ...Object.values(o.scores ?? {}).map((x) => x.why)].filter(Boolean).join(' '), category: 'Acquisition research', clientId: o.clientId, url: o.url, updatedAt: o.discoveredAt ?? o.createdAt, access: o.clientId ? 'client' : 'business' })
+  }
+  for (const f of s.findings ?? []) if (f.status !== 'archived') out.push({ ref: `finding:${f.id}`, source: 'finding', title: f.title, text: `${f.summary} ${f.claims.join(' ')} ${f.evidence ?? ''} ${f.topic} ${f.creator ?? ''} ${f.whyItMatters ?? ''}`, category: 'Industry intelligence', url: f.url, updatedAt: f.discoveredAt, access: 'business' })
   return out
 }
 

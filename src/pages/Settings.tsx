@@ -30,6 +30,7 @@ import { CloudGoogleSection } from '@/features/settings/CloudGoogle'
 import { WidgetsSection } from '@/features/settings/Widgets'
 import { AppearanceSection } from '@/features/settings/Appearance'
 import { NotificationsSection } from '@/features/settings/Notifications'
+import { NotificationCenterPrefs } from '@/features/settings/NotificationCenterPrefs'
 import { useCloud } from '@/lib/cloud'
 import { isAccountMode } from '@/store/mode'
 import { CATEGORY_IDS, CATEGORY_LABELS, DEFAULT_CATEGORY_COLORS } from '@/lib/categories'
@@ -421,6 +422,7 @@ export default function SettingsPage() {
         {account && cloudUp ? <CloudGoogleSection /> : <GoogleSection />}
 
         <NotificationsSection />
+        <NotificationCenterPrefs />
 
         <WidgetsSection />
 

@@ -8,6 +8,7 @@ import { useApp } from '@/store/app'
 import { useIntent, useUI } from '@/store/ui'
 import { Wallpaper } from '@/features/appearance/wallpaper'
 import { AgentMark, Composer, RUN_STATUS, useConnectedApps } from '@/features/cue/shared'
+import { coordinationState } from '@/domain/coordination'
 
 function Connections() {
   const { loading, apps, error } = useConnectedApps()
@@ -54,26 +55,31 @@ export default function CueTeam() {
   const go = useUI((s) => s.go)
   const [compose, setCompose] = useState<CueAgentId | 'any' | null>(null)
   useIntent('compose', () => setCompose('any'))
-  const stats = useMemo(() => {
-    const week = Date.now() - 7 * 86400000
-    return Object.fromEntries(
-      CUE_AGENTS.map((a) => {
-        const mine = runs.filter((r) => r.agent === a.id)
-        const last = [...mine].sort((x, y) => y.updatedAt.localeCompare(x.updatedAt))[0]
-        return [
-          a.id,
-          {
-            queued: mine.filter((r) => r.status === 'queued').length,
-            running: mine.filter((r) => r.status === 'running').length,
-            doneWeek: mine.filter((r) => r.status === 'completed' && Date.parse(r.updatedAt) > week).length,
-            pending: approvals.filter((p) => p.agent === a.id && p.status === 'pending').length,
-            last,
-            latestOutput: [...mine].filter((r) => r.status === 'completed' && r.outputText).sort((x, y) => y.updatedAt.localeCompare(x.updatedAt))[0],
-          },
-        ]
-      }),
-    )
-  }, [runs, approvals])
+  const tasks = useApp((s) => s.agentTasks)
+  const schedules = useApp((s) => s.schedules)
+  const opps = useApp((s) => s.opportunities)
+  const drafts = useApp((s) => s.appDrafts)
+  const posts = useApp((s) => s.posts)
+  const pubs = useApp((s) => s.publications)
+  const deliverables = useApp((s) => s.deliverables)
+  const stages = useApp((s) => s.stages)
+  const clients = useApp((s) => s.clients)
+  const coord = useMemo(() => coordinationState({ agentRuns: runs, agentTasks: tasks, schedules, approvals, opportunities: opps, appDrafts: drafts, posts, deliverables, stages, clients, publications: pubs, contentOpps: [] }, new Date()), [runs, tasks, schedules, approvals, opps, drafts, posts, deliverables, stages, clients, pubs])
+  const stats = useMemo(
+    () =>
+      Object.fromEntries(
+        coord.agents.map((a) => {
+          const mine = runs.filter((r) => r.agent === a.id)
+          const mineTasks = tasks.filter((t) => t.assignee === a.id)
+          const latest = [
+            ...mine.filter((r) => r.status === 'completed' && r.outputText).map((r) => ({ title: r.title, text: r.outputText!, at: r.updatedAt })),
+            ...mineTasks.filter((t) => t.status === 'done' && t.output).map((t) => ({ title: t.title, text: t.output!, at: t.updatedAt })),
+          ].sort((x, y) => y.at.localeCompare(x.at))[0]
+          return [a.id, { ...a, pending: approvals.filter((p) => p.agent === a.id && p.status === 'pending').length, latest }]
+        }),
+      ),
+    [coord, runs, tasks, approvals],
+  )
   const pending = approvals.filter((a) => a.status === 'pending').length
 
   return (
@@ -114,13 +120,15 @@ export default function CueTeam() {
                     <h2 className="font-display text-[17px] font-semibold">{a.name}</h2>
                     <p className="text-[12.5px] text-muted">{a.role}</p>
                   </div>
-                  <span className="shrink-0 text-[11px] text-faint">{st.last ? `last ${formatDistanceToNowStrict(new Date(st.last.updatedAt))} ago` : 'no activity yet'}</span>
+                  <span className={cn('shrink-0 rounded-md px-1.5 py-0.5 text-[11px]', st.liveness === 'active' ? 'bg-[rgba(69,185,124,0.14)] text-ok' : st.liveness === 'configured' ? 'bg-[rgba(229,165,75,0.14)] text-[#e5b06b]' : 'bg-panel-2 text-faint')} title={st.lastSeenAt ? `last report ${formatDistanceToNowStrict(new Date(st.lastSeenAt))} ago` : undefined}>
+                    {st.liveness === 'active' ? `active · ${formatDistanceToNowStrict(new Date(st.lastSeenAt!))} ago` : st.liveness === 'configured' ? 'set up · not reporting' : 'not connected yet'}
+                  </span>
                 </div>
                 <div className="mt-4 grid grid-cols-4 gap-2 text-center">
                   {[
-                    ['Waiting', st.queued, RUN_STATUS.queued.color],
-                    ['Running', st.running, RUN_STATUS.running.color],
-                    ['Done 7d', st.doneWeek, RUN_STATUS.completed.color],
+                    ['Open', st.openTasks, RUN_STATUS.queued.color],
+                    ['Blocked', st.blocked, '#ef6b6b'],
+                    ['Done 7d', st.doneThisWeek, RUN_STATUS.completed.color],
                     ['Approvals', st.pending, '#e5a54b'],
                   ].map(([l, n, c]) => (
                     <div key={l as string} className="rounded-xl bg-panel-2 py-2">
@@ -131,18 +139,19 @@ export default function CueTeam() {
                     </div>
                   ))}
                 </div>
-                {st.latestOutput && (
-                  <button onClick={() => go('/cue/runs')} className="mt-3 rounded-xl border border-line px-3 py-2 text-left hover:bg-hover">
-                    <div className="text-[11px] text-faint">Latest output · {st.latestOutput.title}</div>
-                    <div className="line-clamp-2 text-[12.5px] text-fg-2">{st.latestOutput.outputText}</div>
+                {st.latest && (
+                  <button onClick={() => go('/cue/tasks')} className="mt-3 rounded-xl border border-line px-3 py-2 text-left hover:bg-hover">
+                    <div className="text-[11px] text-faint">Latest output · {st.latest.title}</div>
+                    <div className="line-clamp-2 text-[12.5px] text-fg-2">{st.latest.text}</div>
                   </button>
                 )}
+                {st.schedules > 0 && <p className="mt-2 text-[11.5px] text-faint">{st.schedules} recurring workflow{st.schedules === 1 ? '' : 's'} in Manus</p>}
                 <div className="mt-auto flex gap-2 pt-4">
                   <Button variant="secondary" onClick={() => setCompose(a.id)}>
                     <Bot className="h-3.5 w-3.5" /> Hand off
                   </Button>
-                  <Button variant="ghost" onClick={() => go('/cue/runs')}>
-                    Activity <ArrowRight className="h-3.5 w-3.5" />
+                  <Button variant="ghost" onClick={() => go('/cue/tasks')}>
+                    Tasks <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </Card>
@@ -150,6 +159,26 @@ export default function CueTeam() {
           })}
         </div>
         <div className="flex min-w-0 flex-col gap-5">
+          <Card className="p-5" aria-label="Coordination">
+            <h2 className="font-display mb-2 text-[16px] font-semibold">Coordination</h2>
+            <ul className="space-y-1.5 text-[12.5px]">
+              {[
+                [coord.readyPackages.length, 'opportunity packages ready for you', '/tps/acquisition'],
+                [coord.pendingApprovals.length, 'approvals waiting', '/cue/approvals'],
+                [coord.openHandoffs.length, 'open hand-offs between Cues', '/cue/tasks'],
+                [coord.blocked.length, 'blocked tasks', '/cue/tasks'],
+                [coord.failedRuns.length, 'failed runs (7 days)', '/cue/runs'],
+                [coord.staleSchedules.length, 'schedules needing attention', '/cue/schedules'],
+              ].map(([n, label, path]) => (
+                <li key={label as string}>
+                  <button onClick={() => go(path as string)} className="flex w-full items-center gap-2 text-left hover:text-fg">
+                    <span className={cn('font-display w-6 text-right tnum', (n as number) ? 'text-fg' : 'text-faint')}>{n as number}</span>
+                    <span className="text-muted">{label as string}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Card>
           <Connections />
           <Card className="p-5 text-[12.5px] text-muted">
             <h2 className="font-display mb-2 text-[16px] font-semibold text-fg">How it works</h2>

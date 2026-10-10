@@ -16,6 +16,7 @@ import { AffirmationQuickPlay } from '@/features/affirmations/QuickPlay'
 import { RoutinesCard } from '@/features/routines/RoutinesCard'
 import { Wallpaper } from '@/features/appearance/wallpaper'
 import { useTop } from '@/features/overview/TopThree'
+import { ReadyCard } from '@/pages/home/Briefing'
 
 type Span = 'half' | 'full'
 interface ModuleDef {
@@ -27,6 +28,7 @@ interface ModuleDef {
 
 /** Everything the main column can show, in default order. Hide and reorder in "Customize". */
 export const DASH_MODULES: ModuleDef[] = [
+  { id: 'ready', label: 'Ready for you', span: 'full', render: () => <ReadyCard /> },
   { id: 'priorities', label: 'Today’s priorities', span: 'half', render: (now) => <PrioritiesCard now={now} /> },
   { id: 'focus', label: 'Focus Hub', span: 'half', render: (now) => <FocusHubCard now={now} /> },
   { id: 'clients', label: 'Active clients', span: 'half', render: () => <ClientsCard /> },
@@ -55,11 +57,15 @@ function RiskModule({ now }: { now: Date }) {
   return <AtRiskCard risks={risks} />
 }
 
+const TOP_NEW = ['ready']
+
 export function useDashboardLayout() {
   const a = useApp((s) => s.settings.appearance)
   const all = [...DASH_MODULES.map((m) => m.id), ...RAIL_MODULES.map((m) => m.id)]
   const saved = (a.homeOrder ?? []).filter((id) => all.includes(id))
-  const order = [...saved, ...all.filter((id) => !saved.includes(id))]
+  const fresh = all.filter((id) => !saved.includes(id))
+  // New cards that belong on top (added after you customized) go first, the rest at the end.
+  const order = [...fresh.filter((id) => TOP_NEW.includes(id)), ...saved, ...fresh.filter((id) => !TOP_NEW.includes(id))]
   const hidden = a.homeHidden ?? DEFAULT_HIDDEN
   return { order, hidden }
 }

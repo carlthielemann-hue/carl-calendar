@@ -387,7 +387,7 @@ function OppBody({ o, onClose }: { o: Opportunity; onClose: () => void }) {
         <Button
           variant="secondary"
           onClick={() => {
-            createRequest({ agent: 'acquisition', title: `Qualify & draft for: ${o.name}`, input: [o.description, o.url, o.budget && `Budget: ${o.budget}`, `Opportunity id: ${o.id}`].filter(Boolean).join('\n\n') })
+            createRequest({ agent: 'acquisition', title: `Qualify & draft for: ${o.name}`, input: [o.description, o.url, o.budget && `Budget: ${o.budget}`, `Opportunity id: ${o.id}`].filter(Boolean).join('\n\n'), refs: [`opportunity:${o.id}`] })
             toast.success('Sent to Acquisition Cue’s queue', { description: 'It drafts; any proposal comes back for your approval.' })
           }}
         >
