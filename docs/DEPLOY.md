@@ -200,6 +200,14 @@ syncs like everything else. To let Manus use Cue, reconnect the Command Center M
 so it sees the new `cue_*` and knowledge tools; Settings → Integrations shows when each connected app
 last called in. See [COMMAND_CENTER_BUILD_STATUS.md](COMMAND_CENTER_BUILD_STATUS.md) for what is verified.
 
+### After updating to Command Center 2.1
+
+No migration and no new secrets. `git pull`, `npm install`, `npm run deploy`; reload the app on
+each device. Then follow [MANUS_INTEGRATION.md](MANUS_INTEGRATION.md): reconnect the Manus
+connector (new tools), give each Cue its instructions, and register recurring workflows. Push for
+the new notification categories uses the same device subscription as before. Choose which
+categories push in Settings → Notification centre.
+
 ### Notifications and widgets
 
 * **Pop-ups**: Settings → Notifications → *Enable on this device* — on iPhone only from the Home

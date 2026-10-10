@@ -60,9 +60,11 @@ await step('dashboard shows hero, priorities, focus hub, clients, activity, cale
 })
 await step('sidebar areas, area tabs and keyboard navigation', async () => {
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /Acquisition/ }).click()
+  await main.getByRole('heading', { name: 'Opportunity intelligence' }).waitFor()
+  await main.getByRole('navigation', { name: 'Acquisition pages' }).getByRole('button', { name: 'Pipeline' }).click()
   await main.getByRole('heading', { name: 'Pipeline' }).waitFor()
-  await main.getByRole('navigation', { name: 'Acquisition pages' }).getByRole('button', { name: 'Applications' }).click()
-  await main.getByRole('heading', { name: 'Applications' }).waitFor()
+  await main.getByRole('navigation', { name: 'Acquisition pages' }).getByRole('button', { name: 'Outreach & proposals' }).click()
+  await main.getByRole('heading', { name: 'Outreach & proposals' }).waitFor()
   // G-chord to Today, then number keys open its tabs
   await blur()
   await page.keyboard.press('g')

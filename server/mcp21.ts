@@ -415,6 +415,9 @@ export const TOOLS_21: Tool[] = [
     run: async (a, ctx) => {
       let s = await ctx.state()
       const criteria = criteriaOf(s.settings?.acqCriteria)
+      // A retry of the same call (same idempotency key) changes nothing.
+      const retry = idem(a) && s.opportunities.find((o) => o.idempotencyKey === idem(a))
+      if (retry) return { ok: true, opportunity_id: retry.id, duplicate: true, merged_into: retry.name, fit: fitScore(retry.scores, criteria).score }
       const budget = str(a, 'budget')
       if (budget && !str(a, 'budget_evidence')) throw new ToolError('A budget needs budget_evidence (where it is stated). Leave budget empty if unknown.')
       const now = nowIso()

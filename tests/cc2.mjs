@@ -127,10 +127,10 @@ await step('hand off work to Cue: request saved with a copyable prompt, nothing 
   await page.getByRole('dialog', { name: 'Request saved' }).waitFor()
   await page.getByRole('dialog').getByText(/Find 5 Upwork jobs/).first().waitFor()
   const s = await state()
-  const run = s.agentRuns.find((r) => r.title === 'Find 5 Upwork jobs for VSL scripts')
-  assert.ok(run)
-  assert.equal(run.requestedBy, 'carl')
-  assert.ok(!['running', 'completed'].includes(run.status), 'not shown as running before an agent picks it up')
+  const task = s.agentTasks.find((t) => t.title === 'Find 5 Upwork jobs for VSL scripts')
+  assert.ok(task, 'hand-off stored as an agent task')
+  assert.equal(task.from, 'carl')
+  assert.equal(task.status, 'open', 'waiting for pickup, not shown as running')
 })
 await step('approval inbox: edit the payload, approve — recorded, never executed by the app', async () => {
   await seed(

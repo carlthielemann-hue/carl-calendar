@@ -146,6 +146,32 @@ Users can rename/add/reorder stages; the app only reasons about the stage *kind*
 * **Zustand rule** — never return a new array (filter/map/sort) from a `useApp` selector; select the raw
   array and derive with `useMemo`, otherwise React re-renders forever.
 
+## 3d. Command Center 2.1 — AI-native operating layer
+
+Manus executes (agents, browsing, schedules, posting/sending). Command Center holds the shared
+records, coordination state, approvals and notifications. It never executes anything external.
+
+* **Collections** (`domain/entities3.ts`): `agentTasks` (assignments + Cue→Cue hand-offs), `schedules`
+  (mirror of Manus workflows), `notifications`, `companies`, `publications` (approved post jobs),
+  `contentOpps`, `watchlist`, `findings`, `observations`, `improvements`. Extended instead of
+  duplicated: `opportunities` (evidence, criteria scores, company/contact, urgency…), `appDrafts`
+  (canonical outreach/proposal: versions, approval, execution), `contacts` (prospects), `posts`
+  (approved text + hash, publish via), `agentRuns` and `approvals` (target, hash, execution).
+* **Pure domain** shared by app and Worker: `acquisition.ts` (matching, scores, ranking, stats,
+  briefing), `content2.ts` (hash, material change, confidentiality, detection, job rules),
+  `coordination.ts`, `briefing.ts`, `intel.ts` (clusters + honest strength), `improve.ts` (themes,
+  evidence levels, recommendations).
+* **Execution safety**: an approval is a decision record. Executors must match the approved payload
+  hash (`record_outreach_sent`, `claim_publication_job`). Claims lock a job; reports are idempotent;
+  a material edit after approval revokes it and cancels queued jobs (`lib/ops.ts` on the client,
+  `server/mcp21.ts` on the server).
+* **Idempotency**: creates accept `idempotency_key`; natural keys dedupe too (URL, domain, source ref).
+* **Notifications**: `server/notices.ts` writes synced notification records (dedupe key, 40/hour agent
+  limit) and pushes per category preference. The 15-minute cron only reconciles: it flags overdue
+  unclaimed jobs and posts the daily-briefing notice. No second scheduler.
+* **Client actions**: `src/lib/ops.ts` is the only place UI code changes approval / publication /
+  hand-off / improvement state, so every screen follows the same rules.
+
 ## 4. Persistence and sync
 
 Two data sets, chosen per device (`src/store/mode.ts`):
@@ -208,6 +234,12 @@ are Worker secrets. The browser only holds the session cookie.
 * `npm run test:cc2` — CC2 end to end: dashboard, affirmations (simulated speech), journal, sealed
   letters, Cue hand-off, approve-with-edit, Business Brain add + search, capture filing, projects,
   canvas → task, universe/analytics/timeline, phone overflow.
+* `npm run test:ops21` — 2.1 UI: approve/schedule/edit-revokes, content ideas from practice,
+  outreach approval, acquisition intel + hand-off, improvement patterns, industry digest,
+  notification centre, briefing, phone layouts.
+* `npm run test:ops21-server` — acceptance scenarios A–G against `wrangler dev` (fresh DB): proactive
+  acquisition, agent collaboration, content from practice, scheduled publishing, industry
+  intelligence, feedback → improvement, Main Cue briefing.
 * `npm run test:server` — API + MCP against `wrangler dev`: auth, sync + conflicts, files, OAuth
   (DCR + PKCE + consent), tools, permissions, revocation, push queue, unconfigured providers,
   Cue run + approval flow, Business Brain isolation/privacy/versioning, opportunity dedupe, content drafts.

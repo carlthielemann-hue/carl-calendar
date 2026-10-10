@@ -1,11 +1,78 @@
-# Command Center 2.0 — build status
+# Command Center — build status
 
 Last updated: 2026-10-10 · branch `claude/personal-command-center-j4seaw`
 
 This file is the honest state of the build. "Done" means built **and** covered by an automated
-test, or checked by hand where noted. Anything that depends on a real outside account
-(Manus, Google, a phone's voices or microphone) is listed under **Not verified** until it has
-been tried for real.
+test (or checked by hand where noted). Anything that depends on a real outside account (Manus,
+X, LinkedIn, email, Google, a phone) is listed under **Not verified** until it has been tried
+for real. The Manus contract is in [MANUS_INTEGRATION.md](MANUS_INTEGRATION.md).
+
+# 2.1 — AI-native operating layer
+
+## Audit (state before 2.1 → what was done)
+
+Architecture found: Vite + React SPA with a Zustand store, synced as generic records to a
+Cloudflare Worker (Hono, D1 `records` table, KV, OAuth-protected MCP at `/mcp`). New entities
+therefore need **no migration**. They are new synced collections, and existing models were
+extended rather than duplicated.
+
+| Requirement | Before 2.1 | Now |
+| --- | --- | --- |
+| Agent runs / approvals | Partial — `agentRuns`, `approvals`, MCP request/approve/report tools | Improved — runs link to task, schedule, refs, sources, Manus URL; approvals carry target record, payload hash, approver, execution status, resubmission chain |
+| Agent tasks & hand-offs | Missing | Done — `agentTasks` (assignment) with Cue → Cue hand-offs, refs, outputs, blockers; Tasks & hand-offs board |
+| Schedules | Missing | Done — `schedules` mirror Manus workflows; runs reported; failures notify; no second scheduler |
+| Coordination for Main Cue | Missing | Done — `coordinationState` (liveness, blocked, hand-offs, ready packages, deadlines, failed runs/publications, stale schedules) + MCP tool |
+| Notifications | Partial — web push queue (morning/evening/alerts), no in-app centre | Done — notification centre (bell, categories, read state synced, dedupe, rate limit, push per category); push is best-effort as before |
+| Activity history / audit | Partial — activity log | Improved — consequential agent actions logged with the connector name |
+| Companies (canonical) | Missing (company was a free-text field) | Done — `companies` with domain/handle/name matching, merge, client link |
+| Contacts | Partial — client contacts only | Improved — prospects with company, profiles, source/provenance |
+| Opportunities | Partial — pipeline with fit 1–5, budget evidence | Improved — kind, evidence per source, criteria scores with reasons, confidence, urgency, expiry, assigned Cue, next action, research refs, outcome; dedupe |
+| Qualification & ranking | Missing | Done — configurable weighted criteria, coverage-aware score, ranking, Top Opportunities briefing |
+| Outreach & proposals | Partial — `appDrafts`, manual "mark sent" | Improved — canonical outreach record: versions, channel, personalisation, approval link, exact-text execution check, replies, follow-ups |
+| Acquisition dashboard & analytics | Partial — pipeline board | Done — intelligence dashboard, follow-ups, source performance, conversion |
+| Content workspace | Partial — Content OS board/calendar(month)/performance, manual posting | Improved — day/week/month calendar, drag reschedule, quick composer, approval with hash, publication jobs, history, statuses failed/canceled |
+| Publishing via Manus | Missing | Done (contract) — claim/report with exact payload; duplicates impossible; edit-after-approval cancels; overdue jobs flagged. **Not verified with a real Manus publish** |
+| Content opportunities | Missing | Done — stored opportunities, detection from practice/analyses/insights/addressed revisions, confidentiality classes |
+| ChatGPT / conversation insights | Missing | Done — opt-in "Save to Content Brain" for pasted excerpts; nothing is read from any account |
+| Voice profile | Partial — free-text voice + pillars | Improved — structured profile, examples only from approved/published posts |
+| Watchlist & industry findings | Missing | Done — watchlist, findings with provenance, clustering, honest strength, weekly digest, links to Lab/content/tasks |
+| Feedback intelligence | Partial — client feedback per deliverable | Done — observations + client feedback pooled, themes, evidence levels (observation/hypothesis/pattern) |
+| Improvement engine | Missing | Done — recommendations with evidence, start → Lab task, finish with measured result, progress since start |
+| Daily briefing | Partial — morning push brief (personal) | Done — Main Cue briefing from records (page, dashboard card, MCP, morning notice) |
+| Business Brain links | Partial | Improved — search covers companies, opportunities, findings; Cmd+K covers tasks, ideas, improvements, schedules; refs connect records across workspaces |
+| Practice exercises (hook rewrites…) | Partial — ad analyses only; hook rewriting only as a scorecard metric | Improved — practice log (Business Brain "Copywriting practice") in app and over MCP |
+
+## Not verified with real accounts
+- A real Manus agent using the 2.1 tools (simulated client only; scenarios A–G pass).
+- Manus scheduled tasks actually running and reporting.
+- Manus publishing to X / LinkedIn, or sending email/DMs/Upwork proposals from your accounts.
+- Push delivery of the new notification categories to a real phone (same push path as before).
+
+## Not built (2.1)
+- Direct X / LinkedIn / Gmail / Upwork APIs inside Command Center — by design, execution stays in Manus.
+- Automatic import of post performance from X / LinkedIn (entered by hand).
+- Automatic reading of ChatGPT history (not possible without an export; paste-in only).
+- LLM-written content suggestions inside the app: detection is rule-based on your own records.
+  Drafting is done by Content Cue in Manus.
+
+## Tests for 2.1 (all passing)
+| Suite | Result |
+| --- | --- |
+| `npm test` (incl. `ops21.test.ts`: dedupe, scoring, hash/approval, detection, patterns, clusters, coordination, briefing) | 89 passed |
+| `test:ops21-server` — scenarios A–G against a fresh local Worker | 15 passed |
+| `test:ops21` — 2.1 UI end to end (local) | 15 passed |
+| `test:server` / `test:sync` / `test:widgets` (fresh DB) | 29 / 14 / 5 passed |
+| `test:e2e`, `test:cc2`, `test:v3`, `test:v4`, `test:school`, `test:fitness`, `test:money`, `test:goals`, `test:vault` | all passed |
+
+Bugs found and fixed while testing 2.1: a retried `submit_opportunity` with the same idempotency
+key added an extra sighting (now a no-op); the empty quick composer showed an "Empty post" warning.
+
+## Next actions
+1. Deploy, then reconnect the Manus connector (new tools).
+2. Give each Cue the rules from MANUS_INTEGRATION.md §2 and run **one** real task per Cue.
+3. First real publish: approve one post with "Manus publishes", watch the job go claimed → published.
+
+# 2.0 — status (unchanged)
 
 ## Done
 

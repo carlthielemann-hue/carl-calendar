@@ -20,6 +20,12 @@ Knowledge · Calendar, plus a **Life** group for My Space, School, Fitness and M
 | **TPS** | Clients (+ onboarding, people) · Projects with milestones · Acquisition pipeline + application studio · Portfolio · Content OS for X and LinkedIn |
 | **My Space** (private) | Vision boards · Journal + daily snapshots · Achievements · Future-Me letters · Travel · Affirmations Studio · Focus history |
 
+**2.1 — AI-native layer:** opportunity intelligence (canonical companies, scored + explained leads,
+outreach approvals), Content calendar with approval-gated publishing via Manus, content ideas from
+your own work, industry intelligence with honest evidence levels, an improvement engine driven by
+real feedback, Cue tasks/hand-offs/schedules, a notification centre and a daily briefing. Manus
+setup: [docs/MANUS_INTEGRATION.md](docs/MANUS_INTEGRATION.md).
+
 What's done, what's unverified and what isn't built: [docs/COMMAND_CENTER_BUILD_STATUS.md](docs/COMMAND_CENTER_BUILD_STATUS.md).
 
 ## Life areas and earlier modules
