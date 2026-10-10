@@ -198,7 +198,7 @@ export const SECTIONS: Section[] = [
   { id: 'acquisition', label: 'Acquisition', icon: Columns3, path: '/tps/acquisition', space: 'tps', tabs: [{ path: '/tps/acquisition', label: 'Intelligence' }, { path: '/tps/pipeline', label: 'Pipeline' }, { path: '/tps/applications', label: 'Outreach & proposals' }, { path: '/tps/companies', label: 'Companies' }] },
   { id: 'projects', label: 'Projects', icon: FolderKanban, path: '/tps/projects', space: 'tps', tabs: [{ path: '/tps/projects', label: 'Projects' }, { path: '/tps/deliverables', label: 'Deliverables' }] },
   { id: 'lab', label: 'Creative Lab', icon: FlaskConical, path: '/lab/overview', space: 'lab', tabs: (PAGES.lab ?? []).map((p) => ({ path: `/lab/${p.page}`, label: p.label })) },
-  { id: 'content', label: 'Content', icon: PenLine, path: '/tps/content', space: 'tps', tabs: [{ path: '/tps/content', label: 'Content OS' }] },
+  { id: 'content', label: 'Content', icon: PenLine, path: '/tps/content-calendar', space: 'tps', tabs: [{ path: '/tps/content-calendar', label: 'Calendar' }, { path: '/tps/content-ideas', label: 'Ideas' }, { path: '/tps/content', label: 'Board & performance' }] },
   { id: 'knowledge', label: 'Knowledge', icon: Brain, path: '/knowledge/brain', tabs: (PAGES.knowledge ?? []).map((p) => ({ path: `/knowledge/${p.page}`, label: p.label })) },
   { id: 'calendar', label: 'Calendar', icon: CalendarDays, path: '/personal/calendar', tabs: [{ path: '/personal/calendar', label: 'Calendar' }] },
   { id: 'me', label: 'My Space', icon: Sparkle, path: '/me/overview', tabs: (PAGES.me ?? []).map((p) => ({ path: `/me/${p.page}`, label: p.label })) },

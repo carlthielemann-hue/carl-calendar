@@ -7,8 +7,22 @@ import type { ContentMetrics, ContentPost, ContentStatus } from '@/domain/entiti
 import { dateKey } from '@/lib/dates'
 import { cn, uid } from '@/lib/utils'
 import { useApp } from '@/store/app'
-import { useIntent } from '@/store/ui'
+import { useIntent, useIntentPrefix } from '@/store/ui'
 import { createRequest } from '@/features/cue/shared'
+import { PublishPanel } from '@/features/content/Publish'
+import { VoiceProfileDialog } from '@/features/content/Voice'
+import { editPostText } from '@/lib/ops'
+
+function SourceLine({ id }: { id: string }) {
+  const o = useApp((s) => s.contentOpps.find((x) => x.id === id))
+  if (!o) return null
+  return (
+    <p className="text-[12px] text-muted">
+      From content idea: <span className="text-fg-2">{o.angle}</span>
+      {o.confidentiality === 'generalize' && <span className="ml-1 text-[#e5b06b]">· client work — general lesson only</span>}
+    </p>
+  )
+}
 
 /** Stable fallback: a new [] inside a store selector re-renders forever. */
 const NO_PILLARS: string[] = []
@@ -22,7 +36,11 @@ export const CONTENT_STAGES: { id: ContentStatus; label: string; color: string }
   { id: 'approved', label: 'Approved', color: '#c9a27a' },
   { id: 'scheduled', label: 'Scheduled', color: '#e5a54b' },
   { id: 'posted', label: 'Published', color: '#45b97c' },
+  { id: 'failed', label: 'Failed', color: '#ef6b6b' },
+  { id: 'canceled', label: 'Canceled', color: '#5f5c58' },
 ]
+/** Stages you set by hand; approved/scheduled/published only come from the approval workflow. */
+const MANUAL_STAGES: ContentStatus[] = ['idea', 'research', 'draft', 'review']
 const platformOf = (p: ContentPost) => p.platform ?? 'x'
 const PLATFORM_LABEL = { x: 'X', linkedin: 'LinkedIn' } as const
 
@@ -32,7 +50,7 @@ function composeUrl(p: ContentPost, text: string) {
 
 const engagement = (m?: ContentMetrics) => (m ? (m.likes ?? 0) + (m.replies ?? 0) * 2 + (m.reposts ?? 0) * 3 + (m.saves ?? 0) * 2 : 0)
 
-function PostDialog({ p, onClose }: { p: ContentPost; onClose: () => void }) {
+export function PostDialog({ p, onClose }: { p: ContentPost; onClose: () => void }) {
   const st = useApp.getState()
   const pillars = useApp((s) => s.settings.contentPillars ?? NO_PILLARS)
   const [text, setText] = useState(p.text)
@@ -41,13 +59,18 @@ function PostDialog({ p, onClose }: { p: ContentPost; onClose: () => void }) {
   const platform = platformOf(p)
   const limit = LIMIT[platform]
   const patch = (x: Partial<ContentPost>) => st.patch('posts', p.id, x)
-  const saveText = () => text !== p.text && patch({ text, format: platform === 'x' && text.length > LIMIT.x ? 'thread' : p.format })
+  const saveText = () => {
+    if (text === p.text) return
+    const r = editPostText(p.id, text)
+    if (platform === 'x' && text.length > LIMIT.x && p.format !== 'thread') patch({ format: 'thread' })
+    if (r.invalidated) toast('Approval revoked — the text changed', { description: 'Any scheduled publication was canceled. Approve the new version.' })
+  }
   return (
     <Dialog open onOpenChange={(v) => !v && (saveText(), onClose())} title={`${PLATFORM_LABEL[platform]} ${p.format ?? 'post'}`} className="max-w-[680px]">
       <div className="flex flex-col gap-3 pb-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={p.status} onChange={(e) => patch({ status: e.target.value as ContentStatus, ...(e.target.value === 'posted' && !p.postedAt ? { postedAt: new Date().toISOString() } : {}) })} className="w-[150px]" aria-label="Stage">
-            {CONTENT_STAGES.map((s) => (
+          <Select value={p.status} onChange={(e) => patch({ status: e.target.value as ContentStatus })} disabled={!MANUAL_STAGES.includes(p.status) && p.status !== 'canceled'} className="w-[150px]" aria-label="Stage">
+            {CONTENT_STAGES.filter((s) => MANUAL_STAGES.includes(s.id) || s.id === p.status).map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
               </option>
@@ -84,14 +107,8 @@ function PostDialog({ p, onClose }: { p: ContentPost; onClose: () => void }) {
         <Field label="Research & notes">
           <Textarea rows={2} defaultValue={p.notes ?? ''} onBlur={(e) => patch({ notes: e.target.value || undefined })} placeholder="Sources, data, the insight behind it" />
         </Field>
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Schedule (you post it)">
-            <Input type="datetime-local" value={p.scheduledFor ?? ''} onChange={(e) => patch({ scheduledFor: e.target.value || undefined, status: e.target.value && !['posted'].includes(p.status) ? 'scheduled' : p.status })} />
-          </Field>
-          <Field label="Live post link">
-            <Input defaultValue={p.postedUrl ?? ''} onBlur={(e) => patch({ postedUrl: e.target.value || undefined, ...(e.target.value && p.status !== 'posted' ? { status: 'posted', postedAt: new Date().toISOString() } : {}) })} placeholder="https://…" />
-          </Field>
-        </div>
+        <PublishPanel p={p} text={text} onBeforeApprove={saveText} />
+        {p.opportunityId && <SourceLine id={p.opportunityId} />}
         {p.status === 'posted' && (
           <div>
             <div className="mb-1 text-[12px] font-medium text-muted">Performance (from {PLATFORM_LABEL[platform]} analytics — entered by you)</div>
@@ -149,7 +166,7 @@ function PostDialog({ p, onClose }: { p: ContentPost; onClose: () => void }) {
             <Trash2 className="h-3.5 w-3.5" />
           </ConfirmButton>
         </div>
-        <p className="text-[11.5px] text-faint">Nothing is ever published automatically — you post it, then paste the link here.</p>
+        <p className="text-[11.5px] text-faint">Nothing is published without your approval. Approved + scheduled posts are published by Manus through a publication job (exactly this text), or by you.</p>
       </div>
     </Dialog>
   )
@@ -304,40 +321,6 @@ function Performance({ posts, open }: { posts: ContentPost[]; open: (p: ContentP
   )
 }
 
-function VoiceGuide({ onClose }: { onClose: () => void }) {
-  const s = useApp((x) => x.settings)
-  const [voice, setVoice] = useState(s.contentVoice ?? '')
-  const [pillars, setPillars] = useState((s.contentPillars ?? []).join('\n'))
-  return (
-    <Dialog open onOpenChange={(v) => !v && onClose()} title="Voice & pillars" description="Your personal-brand rules. Content Cue reads them before drafting.">
-      <div className="flex flex-col gap-3 pb-2">
-        <Field label="Brand voice">
-          <Textarea rows={7} value={voice} onChange={(e) => setVoice(e.target.value)} placeholder={'Direct, specific, no fluff. Teach from real client work (no names).\nNever: “game-changer”, emojis in hooks, engagement bait.'} />
-        </Field>
-        <Field label="Content pillars (one per line)">
-          <Textarea rows={4} value={pillars} onChange={(e) => setPillars(e.target.value)} placeholder={'Creative strategy teardowns\nDTC copy lessons\nBuilding in public at 18'} />
-        </Field>
-        <Button
-          variant="primary"
-          className="self-end"
-          onClick={() => {
-            useApp.getState().updateSettings({
-              contentVoice: voice.trim() || undefined,
-              contentPillars: pillars
-                .split('\n')
-                .map((p) => p.trim())
-                .filter(Boolean),
-            })
-            onClose()
-          }}
-        >
-          Save
-        </Button>
-      </div>
-    </Dialog>
-  )
-}
-
 export default function ContentOS() {
   const posts = useApp((s) => s.posts)
   const [view, setView] = useState<'board' | 'calendar' | 'performance'>('board')
@@ -348,6 +331,7 @@ export default function ContentOS() {
   const [voice, setVoice] = useState(false)
   const [focusNew, setFocusNew] = useState(false)
   useIntent('new', () => setFocusNew(true))
+  useIntentPrefix('open:', (id) => setOpenId(id))
   const shown = posts.filter((p) => platform === 'all' || platformOf(p) === platform)
   const openPost = posts.find((p) => p.id === openId)
   const add = (status: ContentStatus) => {
@@ -363,7 +347,7 @@ export default function ContentOS() {
         <div>
           <h1 className="font-display text-[26px] font-semibold">Content OS</h1>
           <p className="text-[13px] text-muted">
-            X & LinkedIn · {posts.filter((p) => !['posted'].includes(p.status)).length} in progress · {week} published this week. You publish; Command Center never posts.
+            X & LinkedIn · {posts.filter((p) => !['posted', 'canceled'].includes(p.status)).length} in progress · {week} published this week. Nothing goes out without your approval.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -378,7 +362,7 @@ export default function ContentOS() {
             ]}
           />
           <Button variant="ghost" onClick={() => setVoice(true)}>
-            Voice & pillars
+            Voice profile
           </Button>
         </div>
       </div>
@@ -410,7 +394,7 @@ export default function ContentOS() {
         <Performance posts={shown} open={(p) => setOpenId(p.id)} />
       )}
       {openPost && <PostDialog key={openPost.id} p={openPost} onClose={() => setOpenId(null)} />}
-      {voice && <VoiceGuide onClose={() => setVoice(false)} />}
+      {voice && <VoiceProfileDialog onClose={() => setVoice(false)} />}
     </div>
   )
 }

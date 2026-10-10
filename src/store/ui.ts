@@ -140,3 +140,15 @@ export function useIntent(name: string, fn: () => void) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intent, name])
 }
+
+/** Like useIntent, for intents carrying an argument: "open:<id>" → fn("<id>"). */
+export function useIntentPrefix(prefix: string, fn: (arg: string) => void) {
+  const intent = useUI((s) => s.intent)
+  useEffect(() => {
+    if (intent?.startsWith(prefix)) {
+      useUI.setState({ intent: null })
+      fn(intent.slice(prefix.length))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intent, prefix])
+}
