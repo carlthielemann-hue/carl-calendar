@@ -1,211 +1,209 @@
-import { format } from 'date-fns'
-import { ArrowUpRight, FlaskConical, Gauge, Layers } from 'lucide-react'
-import { Card, CardHeader, Checkbox, Empty } from '@/components/ui'
+import * as Popover from '@radix-ui/react-popover'
+import { ArrowDown, ArrowUp, Eye, EyeOff, LayoutDashboard, SlidersHorizontal, Target } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { DemoBanner } from '@/components/DemoBanner'
-import { dateKey, fromDateKey } from '@/lib/dates'
-import { useDayOccurrences } from '@/lib/hooks'
+import { Card } from '@/components/ui'
+import { dateKey } from '@/lib/dates'
 import { useNow } from '@/lib/useNow'
 import { cn } from '@/lib/utils'
-import { toggleWorkItem } from '@/lib/work'
 import { useApp } from '@/store/app'
-import { useUI } from '@/store/ui'
-import { AtRiskCard, AutopilotCard, CountdownsCard, GoalsCard, MoneyCard, TrainingCard, MissionHeader, useMissionVisible, useRisks } from '@/features/mission/Modules'
-import { startFocus } from '@/features/mission/focus'
-import type { Occurrence } from '@/lib/types'
-import { NowNext } from '@/features/overview/NowNext'
-import { TopThree, useTop } from '@/features/overview/TopThree'
-import { attentionRows, HEALTH_COLOR, useDeliverableRows } from '@/features/tps/hooks'
-import { KIND_LABEL } from '@/domain/stages'
-import { fmtValue, PACE_COLOR, PACE_LABEL, useCurrentWeekKey, useScorecard } from '@/features/scorecard/hooks'
-import { usePracticeWeek } from '@/features/lab/hooks'
-import { dueLabel } from '@/features/tasks/TaskRow'
+import { AtRiskCard, AutopilotCard, CountdownsCard, MoneyCard, TrainingCard, useRisks } from '@/features/mission/Modules'
+import { Hero, greeting } from '@/features/dashboard/Hero'
+import { ActivityCard, ClientsCard, FocusHubCard, PrioritiesCard, VisionStrip } from '@/features/dashboard/Cards'
+import { CalendarRail, GoalsRail, InboxCard, TopActions } from '@/features/dashboard/Rail'
+import { ClientAttention, PracticeCard, Targets } from '@/features/dashboard/Legacy'
+import { AffirmationQuickPlay } from '@/features/affirmations/QuickPlay'
+import { RoutinesCard } from '@/features/routines/RoutinesCard'
+import { Wallpaper } from '@/features/appearance/wallpaper'
+import { useTop } from '@/features/overview/TopThree'
 
-function LinkHeader({ to, label }: { to: string; label: string }) {
-  return (
-    <button onClick={() => useUI.getState().go(to)} className="inline-flex items-center gap-1 text-[12px] text-muted hover:text-fg">
-      {label} <ArrowUpRight className="h-3 w-3" />
-    </button>
-  )
+type Span = 'half' | 'full'
+interface ModuleDef {
+  id: string
+  label: string
+  span: Span
+  render: (now: Date) => ReactNode
 }
 
-function ClientAttention({ now }: { now: Date }) {
-  const rows = attentionRows(useDeliverableRows()).slice(0, 5)
-  const go = useUI((s) => s.go)
-  return (
-    <Card>
-      <CardHeader title="Client work needing attention" icon={<Layers />} action={<LinkHeader to="/tps/clients" label="Clients" />} />
-      {rows.length === 0 ? (
-        <Empty title="All client work is on track" hint="Nothing overdue, at risk or waiting on revisions." className="py-6" />
-      ) : (
-        <ul className="px-1.5 pb-2">
-          {rows.map((r) => (
-            <li key={r.d.id}>
-              <button onClick={() => go(`/tps/deliverables/${r.d.id}`)} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-hover">
-                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: HEALTH_COLOR[r.health] }} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px]">{r.d.title}</span>
-                  <span className="block truncate text-[11.5px] text-muted">
-                    {r.client?.name} · {r.d.blocked ? `Blocked: ${r.d.blocked}` : r.court === 'client' ? `Waiting on client ${r.waitingDays ?? 0}d` : KIND_LABEL[r.stage.kind]}
-                  </span>
-                </span>
-                {r.d.due && <span className={cn('shrink-0 text-[11.5px] tnum', r.health === 'behind' ? 'text-danger' : 'text-muted')}>{dueLabel(r.d, now)}</span>}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  )
+/** Everything the main column can show, in default order. Hide and reorder in "Customize". */
+export const DASH_MODULES: ModuleDef[] = [
+  { id: 'priorities', label: 'Today’s priorities', span: 'half', render: (now) => <PrioritiesCard now={now} /> },
+  { id: 'focus', label: 'Focus Hub', span: 'half', render: (now) => <FocusHubCard now={now} /> },
+  { id: 'clients', label: 'Active clients', span: 'half', render: () => <ClientsCard /> },
+  { id: 'activity', label: 'Recent activity', span: 'half', render: () => <ActivityCard /> },
+  { id: 'risk', label: 'At risk', span: 'half', render: (now) => <RiskModule now={now} /> },
+  { id: 'countdowns', label: 'Countdowns', span: 'half', render: (now) => <CountdownsCard now={now} /> },
+  { id: 'affirmations', label: 'Affirmations', span: 'half', render: () => <AffirmationQuickPlay /> },
+  { id: 'routines', label: 'Routines', span: 'half', render: () => <RoutinesCard /> },
+  { id: 'vision', label: 'Vision board', span: 'full', render: () => <VisionStrip /> },
+  { id: 'deliverables', label: 'Client work needing attention', span: 'half', render: (now) => <ClientAttention now={now} /> },
+  { id: 'practice', label: 'Creative practice', span: 'half', render: (now) => <PracticeCard now={now} /> },
+  { id: 'autopilot', label: 'Autopilot log', span: 'full', render: () => <AutopilotCard /> },
+  { id: 'targets', label: 'Weekly targets', span: 'full', render: (now) => <Targets now={now} /> },
+  { id: 'training', label: 'Training', span: 'half', render: (now) => <TrainingCard now={now} /> },
+  { id: 'money', label: 'Money pulse', span: 'half', render: (now) => <MoneyCard now={now} /> },
+]
+const RAIL_MODULES = [
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'inbox', label: 'Inbox' },
+  { id: 'goals', label: 'Goals & milestones' },
+]
+const DEFAULT_HIDDEN = ['autopilot', 'targets', 'training', 'money', 'deliverables', 'practice']
+
+function RiskModule({ now }: { now: Date }) {
+  const risks = useRisks(now)
+  return <AtRiskCard risks={risks} />
 }
 
-function PracticeCard({ now }: { now: Date }) {
-  const wk = useCurrentWeekKey(now)
-  const { plan, items, done, target } = usePracticeWeek(wk)
-  const today = dateKey(now)
-  const queue = items
-    .filter((r) => r.a.status !== 'done')
-    .sort((a, b) => (a.a.plannedDate ?? '9').localeCompare(b.a.plannedDate ?? '9'))
-    .slice(0, 3)
-  const color = useApp((s) => s.settings.categoryColors.lab)
-  return (
-    <Card>
-      <CardHeader title="Creative practice" icon={<FlaskConical />} action={<LinkHeader to="/lab/planner" label="Planner" />} />
-      {!plan ? (
-        <Empty title="No practice plan this week" hint="Pick the ads you’ll analyze — it takes five minutes." action={<button onClick={() => useUI.getState().go('/lab/planner')} className="text-[12.5px] font-medium text-fg underline-offset-2 hover:underline">Plan this week</button>} className="py-6" />
-      ) : (
-        <div className="px-4 pb-3">
-          <div className="flex items-baseline justify-between">
-            <span className="text-[22px] font-semibold tnum">
-              {done}
-              <span className="text-[14px] text-faint">/{target}</span>
-            </span>
-            <span className="text-[12px] text-muted">analyses this week{plan.focus ? ` · ${plan.focus}` : ''}</span>
-          </div>
-          <div className="mt-2 flex gap-1">
-            {Array.from({ length: Math.max(target, items.length) }, (_, i) => (
-              <span key={i} className="h-1.5 flex-1 rounded-full" style={{ background: i < done ? color : 'var(--line-strong)' }} />
-            ))}
-          </div>
-          <ul className="mt-3 -mx-2">
-            {queue.map((r) => (
-              <li key={r.a.id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-hover">
-                <Checkbox checked={false} onChange={() => toggleWorkItem(`analysis:${r.a.id}`)} color={color} label={`Mark ${r.ad?.title} analyzed`} size={16} />
-                <button onClick={() => useUI.getState().go(`/lab/analyses/${r.a.id}`)} className="min-w-0 flex-1 truncate text-left text-[13px]">
-                  {r.ad?.title}
-                </button>
-                <span className={cn('text-[11.5px]', r.a.plannedDate && r.a.plannedDate < today ? 'text-danger' : 'text-faint')}>
-                  {r.a.plannedDate ? (r.a.plannedDate === today ? 'Today' : format(fromDateKey(r.a.plannedDate), 'EEE')) : 'Queue'}
-                </span>
-              </li>
-            ))}
-            {queue.length === 0 && <li className="px-2 py-1.5 text-[12.5px] text-ok">Practice plan complete for this week.</li>}
-          </ul>
+export function useDashboardLayout() {
+  const a = useApp((s) => s.settings.appearance)
+  const all = [...DASH_MODULES.map((m) => m.id), ...RAIL_MODULES.map((m) => m.id)]
+  const saved = (a.homeOrder ?? []).filter((id) => all.includes(id))
+  const order = [...saved, ...all.filter((id) => !saved.includes(id))]
+  const hidden = a.homeHidden ?? DEFAULT_HIDDEN
+  return { order, hidden }
+}
+
+function setLayout(patch: { homeOrder?: string[]; homeHidden?: string[] }) {
+  const st = useApp.getState()
+  st.updateSettings({ appearance: { ...st.settings.appearance, ...patch } })
+}
+
+function Customize() {
+  const { order, hidden } = useDashboardLayout()
+  const labels = Object.fromEntries([...DASH_MODULES, ...RAIL_MODULES].map((m) => [m.id, m.label]))
+  const move = (id: string, d: -1 | 1) => {
+    const list = [...order]
+    const i = list.indexOf(id)
+    const j = i + d
+    if (j < 0 || j >= list.length) return
+    ;[list[i], list[j]] = [list[j], list[i]]
+    setLayout({ homeOrder: list })
+  }
+  const toggle = (id: string) => setLayout({ homeHidden: hidden.includes(id) ? hidden.filter((x) => x !== id) : [...hidden, id] })
+  const section = (ids: string[], title: string) => (
+    <>
+      <div className="px-2 pt-2 pb-1 text-[11px] font-medium tracking-wide text-faint uppercase">{title}</div>
+      {ids.map((id) => (
+        <div key={id} className="flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-hover">
+          <button onClick={() => toggle(id)} className="flex flex-1 items-center gap-2 text-left text-[12.5px]" aria-pressed={!hidden.includes(id)}>
+            {hidden.includes(id) ? <EyeOff className="h-3.5 w-3.5 text-faint" /> : <Eye className="h-3.5 w-3.5 text-accent" />}
+            <span className={hidden.includes(id) ? 'text-faint' : ''}>{labels[id]}</span>
+          </button>
+          <button aria-label={`Move ${labels[id]} up`} onClick={() => move(id, -1)} className="grid h-6 w-6 place-items-center rounded text-faint hover:text-fg">
+            <ArrowUp className="h-3 w-3" />
+          </button>
+          <button aria-label={`Move ${labels[id]} down`} onClick={() => move(id, 1)} className="grid h-6 w-6 place-items-center rounded text-faint hover:text-fg">
+            <ArrowDown className="h-3 w-3" />
+          </button>
         </div>
-      )}
-    </Card>
+      ))}
+    </>
   )
-}
-
-function Targets({ now }: { now: Date }) {
-  const wk = useCurrentWeekKey(now)
-  const { rows } = useScorecard(wk)
-  const pinned = rows.filter((r) => r.metric.pinned)
-  const list = (pinned.length ? pinned : rows).slice(0, 6)
+  const mainIds = order.filter((id) => DASH_MODULES.some((m) => m.id === id))
+  const railIds = order.filter((id) => RAIL_MODULES.some((m) => m.id === id))
   return (
-    <Card>
-      <CardHeader title="This week’s targets" icon={<Gauge />} action={<LinkHeader to="/tps/scorecard" label="Scorecard" />} />
-      {list.length === 0 ? (
-        <Empty title="No targets yet" hint="Add weekly targets in the scorecard." className="py-6" />
-      ) : (
-        <ul className="grid gap-x-6 gap-y-3 px-4 pb-4 sm:grid-cols-2">
-          {list.map((r) => (
-            <li key={r.metric.id}>
-              <div className="flex items-baseline justify-between gap-2 text-[12.5px]">
-                <span className="truncate text-fg-2">{r.metric.name}</span>
-                <span className="shrink-0 tnum text-muted">
-                  <span className="text-fg">{fmtValue(r.actual, r.metric.unit)}</span> / {fmtValue(r.target, r.metric.unit)}
-                </span>
-              </div>
-              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line">
-                <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.min(100, r.target ? (r.actual / r.target) * 100 : 100)}%`, background: PACE_COLOR[r.pace] }} />
-              </div>
-              <div className="mt-1 text-[11px]" style={{ color: PACE_COLOR[r.pace] }}>
-                {PACE_LABEL[r.pace]}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button className="inline-flex h-9 items-center gap-2 rounded-xl border border-line bg-panel px-3 text-[12.5px] text-muted hover:text-fg">
+          <SlidersHorizontal className="h-3.5 w-3.5" /> Customize
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content align="end" sideOffset={6} className="z-50 max-h-[70vh] w-[280px] overflow-y-auto rounded-2xl border border-line bg-elevated p-1.5 shadow-pop data-[state=open]:animate-pop">
+          {section(mainIds, 'Dashboard')}
+          {section(railIds, 'Side column')}
+          <button onClick={() => setLayout({ homeOrder: [], homeHidden: DEFAULT_HIDDEN })} className="mt-1 w-full rounded-lg px-2 py-1.5 text-left text-[12px] text-faint hover:bg-hover hover:text-fg">
+            Reset layout
+          </button>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 
-/** The Mission screen: what matters right now, across every workspace. */
+function ModeSwitch() {
+  const mode = useApp((s) => s.settings.homeMode)
+  const set = (m: 'command' | 'focus') => useApp.getState().updateSettings({ homeMode: m })
+  return (
+    <div className="inline-flex rounded-xl border border-line bg-panel p-1" role="radiogroup" aria-label="Dashboard mode">
+      {(
+        [
+          ['command', 'Command', LayoutDashboard],
+          ['focus', 'Focus', Target],
+        ] as const
+      ).map(([id, label, Icon]) => (
+        <button key={id} role="radio" aria-checked={(mode ?? 'command') === id} onClick={() => set(id)} className={cn('inline-flex h-7 items-center gap-1.5 rounded-lg px-3 text-[12.5px]', (mode ?? 'command') === id ? 'bg-panel-2 font-medium text-fg' : 'text-muted hover:text-fg')}>
+          <Icon className="h-3.5 w-3.5" /> {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Focus layout: only what you're doing now. */
+function FocusHome({ now }: { now: Date }) {
+  const wallpaper = useApp((s) => s.settings.appearance.wallpaper)
+  const name = useApp((s) => s.settings.appearance.name) || 'Carl'
+  const top = useTop(dateKey(now))
+  const next = top.find((t) => !t.done)
+  return (
+    <div className="relative -mx-4 -mt-4 min-h-[calc(100vh-40px)] overflow-hidden sm:-mx-6 md:-mx-8 md:-mt-7">
+      <div className="absolute inset-0 opacity-50">
+        <Wallpaper id={wallpaper} />
+      </div>
+      <div className="absolute inset-0 bg-[radial-gradient(80%_70%_at_50%_40%,rgba(10,10,11,0.35),var(--bg)_88%)]" />
+      <div className="relative mx-auto flex max-w-[620px] flex-col items-center px-4 pt-14 pb-16 text-center">
+        <p className="text-[12px] tracking-[0.2em] text-muted uppercase">
+          {greeting(now)}, {name}
+        </p>
+        <h1 className="font-display mt-3 text-[30px] leading-tight font-semibold sm:text-[38px]">{next ? next.title : 'Choose the one thing that matters.'}</h1>
+        {next?.context && <p className="mt-1 text-[14px] text-muted">{next.context}</p>}
+        <div className="mt-8 w-full max-w-[460px] text-left">
+          <FocusHubCard now={now} />
+        </div>
+        <div className="mt-4 w-full max-w-[460px] text-left">
+          <AffirmationQuickPlay compact />
+        </div>
+        <div className="mt-6">
+          <ModeSwitch />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Home: the cinematic Command Center dashboard. */
 export default function Home() {
   const now = useNow(30_000)
-  const occs = useDayOccurrences(now)
-  const top = useTop(dateKey(now))
-  const risks = useRisks(now)
-  const show = useMissionVisible()
-  const open = top.filter((t) => !t.done).length
-  const training = useApp((s) => s.routines.some((r) => r.active) || s.workouts.length > 0 || s.bodyweight.length > 0)
-  const hasMoney = useApp((s) => s.transactions.length > 0)
-
-  const focusOn = (current: Occurrence | undefined) => {
-    if (current) {
-      startFocus({ title: current.event.title, category: current.event.category, link: current.event.link, occurrenceKey: current.key, eventId: current.event.origin === 'planner' ? current.event.id : undefined, endsAt: current.end.getTime() })
-      return
-    }
-    const first = top.find((t) => !t.done)
-    startFocus({ title: first?.title ?? 'Deep work', category: first?.category ?? 'personal', link: first?.ref, endsAt: Date.now() + 50 * 60000 })
-  }
-
+  const mode = useApp((s) => s.settings.homeMode)
+  const { order, hidden } = useDashboardLayout()
+  if (mode === 'focus') return <FocusHome now={now} />
+  const main = order.map((id) => DASH_MODULES.find((m) => m.id === id)).filter((m): m is ModuleDef => !!m && !hidden.includes(m.id))
+  const rail = order.filter((id) => RAIL_MODULES.some((m) => m.id === id) && !hidden.includes(id))
   return (
-    <div className="mx-auto w-full max-w-[1320px]">
+    <div className="mx-auto w-full max-w-[1560px]">
       <DemoBanner />
-      <MissionHeader now={now} open={open} risks={risks} />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {show('now') && (
-          <div className="order-1 min-w-0 lg:col-span-8 lg:[&>*]:h-full">
-            <NowNext occs={occs} now={now} onFocus={focusOn} />
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-5">
+          <Hero now={now} />
+          <div className="flex items-center justify-end gap-2">
+            <ModeSwitch />
+            <Customize />
           </div>
-        )}
-        {show('countdowns') && (
-          <div className="order-4 min-w-0 lg:order-2 lg:col-span-4">
-            <CountdownsCard now={now} />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {main.map((m) => (
+              <div key={m.id} className={cn('min-w-0 empty:hidden [&>*]:h-full', m.span === 'full' && 'lg:col-span-2')}>
+                {m.render(now)}
+              </div>
+            ))}
           </div>
-        )}
-        {show('mission') && (
-          <div className="order-3 min-w-0 lg:col-span-5 lg:[&>*]:h-full">
-            <TopThree now={now} title="Today’s mission" />
-          </div>
-        )}
-        {show('risk') && (
-          <div className={cn('min-w-0 lg:order-4 lg:col-span-7', risks.some((r) => r.level === 'high') ? 'order-2' : 'order-5')}>
-            <AtRiskCard risks={risks} />
-          </div>
-        )}
-        {show('autopilot') && (
-          <div className="order-6 min-w-0 empty:hidden lg:col-span-12">
-            <AutopilotCard />
-          </div>
-        )}
-        {show('goals') && (
-          <div className="order-6 min-w-0 empty:hidden lg:col-span-12">
-            <GoalsCard now={now} />
-          </div>
-        )}
-        {show('week') && (
-          <div className="order-6 min-w-0 lg:col-span-12">
-            <Targets now={now} />
-          </div>
-        )}
-        <div className="order-7 grid min-w-0 gap-4 md:grid-cols-2 lg:col-span-12 xl:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
-          {show('fitness') && training && <TrainingCard now={now} />}
-          {show('money') && hasMoney && <MoneyCard now={now} />}
-          {show('clients') && <ClientAttention now={now} />}
-          {show('practice') && <PracticeCard now={now} />}
         </div>
+        <aside className="min-w-0 space-y-5" aria-label="Today at a glance">
+          <TopActions />
+          {rail.map((id) => (id === 'calendar' ? <CalendarRail key={id} now={now} /> : id === 'inbox' ? <InboxCard key={id} /> : <GoalsRail key={id} now={now} />))}
+          {rail.length === 0 && <Card className="p-4 text-[12.5px] text-muted">Side column hidden — turn modules back on in Customize.</Card>}
+        </aside>
       </div>
     </div>
   )

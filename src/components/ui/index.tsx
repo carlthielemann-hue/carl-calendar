@@ -114,7 +114,7 @@ export function Checkbox({
 /* ---------- Card ---------- */
 export function Card({ className, children, ...p }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('rounded-xl border border-line bg-panel', className)} {...p}>
+    <div className={cn('rounded-2xl border border-line bg-panel', className)} {...p}>
       {children}
     </div>
   )
@@ -122,10 +122,10 @@ export function Card({ className, children, ...p }: React.HTMLAttributes<HTMLDiv
 
 export function CardHeader({ title, icon, action, sub }: { title: string; icon?: ReactNode; action?: ReactNode; sub?: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-2.5">
+    <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-2.5">
       <div className="flex min-w-0 items-center gap-2">
         {icon && <span className="text-muted [&>svg]:h-[15px] [&>svg]:w-[15px]">{icon}</span>}
-        <h2 className="text-[13px] font-semibold tracking-tight text-fg">{title}</h2>
+        <h2 className="font-display text-[15px] font-semibold text-fg">{title}</h2>
         {sub && <span className="truncate text-[12px] text-faint">{sub}</span>}
       </div>
       {action}

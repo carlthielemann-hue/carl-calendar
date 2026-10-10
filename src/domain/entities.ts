@@ -45,6 +45,27 @@ export type EntityType =
   | 'savingsgoal'
   | 'goal'
   | 'board'
+  | 'visionboard'
+  | 'journal'
+  | 'achievement'
+  | 'snapshot'
+  | 'letter'
+  | 'place'
+  | 'affirmation'
+  | 'playlist'
+  | 'focus'
+  | 'dayroutine'
+  | 'agentrun'
+  | 'approval'
+  | 'doc'
+  | 'capture'
+  | 'contact'
+  | 'meeting'
+  | 'decision'
+  | 'onboarding'
+  | 'portfolio'
+  | 'appdraft'
+  | 'canvas'
 
 /** Serialised as "type:id". */
 export type Ref = `${EntityType}:${string}`
@@ -880,3 +901,5 @@ export interface Goal {
   status: 'active' | 'done' | 'dropped'
   createdAt: string
 }
+
+export * from './entities2'

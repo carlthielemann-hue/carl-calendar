@@ -93,6 +93,11 @@ export interface Settings {
   money: import('@/domain/entities').MoneySettings
   /** This device only: blur amounts (screen sharing, people around) */
   hideAmounts: boolean
+  appearance: import('@/domain/entities2').Appearance
+  focus: import('@/domain/entities2').FocusPrefs
+  voice: import('@/domain/entities2').VoicePrefs
+  /** This device only: full dashboard or minimal focus layout */
+  homeMode: 'command' | 'focus'
 }
 
 /** A concrete, dated instance of an event (recurring events expand into many). */

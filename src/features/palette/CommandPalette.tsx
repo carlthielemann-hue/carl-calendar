@@ -1,5 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { CalendarPlus, CheckSquare, CornerDownLeft, Keyboard, Lightbulb, Moon, PanelRight, Plus, Wallet, Search, Settings, UserPlus } from 'lucide-react'
+import { Bot, CalendarPlus, CheckSquare, CornerDownLeft, Inbox, Keyboard, Lightbulb, Moon, PanelRight, Plus, Wallet, Search, Settings, Timer, UserPlus } from 'lucide-react'
 import { dock, dockAvailable, getDockPrefs } from '@/lib/dock'
 import { openAiWithHint } from '@/features/dock/DockBar'
 import { useMemo, useState, type ReactNode } from 'react'
@@ -11,7 +11,10 @@ import { cn } from '@/lib/utils'
 import { describeRef } from '@/lib/work'
 import { useApp, type AppState } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { PAGES, SPACE_DEFS } from '@/components/layout/nav'
+import { SECTIONS, sectionFor } from '@/components/layout/nav'
+import { addCapture } from '@/features/capture/capture'
+import { createRequest } from '@/features/cue/shared'
+import { startTimer } from '@/features/mission/focus'
 import { parseQuickTx } from '@/domain/money'
 import { dateKey } from '@/lib/dates'
 import { addTransaction, announce } from '@/features/money/ui'
@@ -70,6 +73,20 @@ function searchIndex(s: AppState): { ref: Ref; text: string }[] {
     ...s.goals.map((x) => ({ ref: `goal:${x.id}` as Ref, text: `${x.title} ${x.why ?? ''} goal ${x.period}` })),
     ...s.routines.map((x) => ({ ref: `routine:${x.id}` as Ref, text: `${x.name} routine workout gym` })),
     ...s.workouts.filter((w) => w.endedAt).map((x) => ({ ref: `workout:${x.id}` as Ref, text: `${x.title} workout ${x.date}` })),
+    ...s.knowledgeDocs.map((d) => ({ ref: `doc:${d.id}` as Ref, text: `${d.title} ${d.category} ${d.tags.join(' ')} ${(d.body ?? '').slice(0, 3000)} ${clientName.get(d.clientId ?? '') ?? ''}` })),
+    ...s.captures.filter((c) => c.status === 'inbox').map((c) => ({ ref: `capture:${c.id}` as Ref, text: `${c.text ?? ''} ${c.url ?? ''} ${c.transcript ?? ''} ${c.fileName ?? ''} capture inbox` })),
+    ...s.agentRuns.map((r) => ({ ref: `agentrun:${r.id}` as Ref, text: `${r.title} ${r.input ?? ''} ${(r.outputText ?? '').slice(0, 2000)} cue ${r.agent}` })),
+    ...s.approvals.map((r) => ({ ref: `approval:${r.id}` as Ref, text: `${r.title} ${r.destination} approval ${r.status}` })),
+    ...s.contacts.map((c) => ({ ref: `contact:${c.id}` as Ref, text: `${c.name} ${c.role ?? ''} ${c.email ?? ''} ${clientName.get(c.clientId) ?? ''} contact` })),
+    ...s.meetings.map((m) => ({ ref: `meeting:${m.id}` as Ref, text: `${m.title} ${m.notes.slice(0, 2000)} ${m.decisions ?? ''} meeting ${clientName.get(m.clientId ?? '') ?? ''}` })),
+    ...s.decisions.map((d) => ({ ref: `decision:${d.id}` as Ref, text: `${d.title} ${d.decision} decision` })),
+    ...s.portfolio.map((p) => ({ ref: `portfolio:${p.id}` as Ref, text: `${p.title} ${p.kind} ${p.description ?? ''} ${p.tags.join(' ')} portfolio` })),
+    ...s.appDrafts.map((d) => ({ ref: `appdraft:${d.id}` as Ref, text: `${d.title} ${d.body.slice(0, 2000)} ${d.kind} application proposal` })),
+    ...s.canvases.map((c) => ({ ref: `canvas:${c.id}` as Ref, text: `${c.name} ${c.nodes.map((n) => n.text ?? '').join(' ').slice(0, 2000)} canvas board` })),
+    ...s.journal.map((j) => ({ ref: `journal:${j.id}` as Ref, text: `${j.title ?? ''} ${j.body.slice(0, 2000)} journal ${j.date}` })),
+    ...s.affirmations.map((a) => ({ ref: `affirmation:${a.id}` as Ref, text: `${a.text} ${a.category} affirmation` })),
+    ...s.achievements.map((a) => ({ ref: `achievement:${a.id}` as Ref, text: `${a.title} ${a.notes ?? ''} win achievement` })),
+    ...s.places.map((p) => ({ ref: `place:${p.id}` as Ref, text: `${p.name} ${p.country ?? ''} ${p.notes ?? ''} travel` })),
   ]
 }
 
@@ -94,6 +111,20 @@ const GROUP_LABEL: Record<string, string> = {
   goal: 'Goals',
   routine: 'Routines',
   workout: 'Workouts',
+  doc: 'Knowledge',
+  capture: 'Inbox',
+  agentrun: 'Cue runs',
+  approval: 'Approvals',
+  contact: 'Contacts',
+  meeting: 'Meetings',
+  decision: 'Decisions',
+  portfolio: 'Portfolio',
+  appdraft: 'Applications',
+  canvas: 'Canvases',
+  journal: 'Journal',
+  affirmation: 'Affirmations',
+  achievement: 'Achievements',
+  place: 'Travel',
 }
 
 /** "@research hooks" → only research; "@client" etc. match type keys or group labels. */
@@ -159,6 +190,51 @@ function PaletteBody({ close }: { close: () => void }) {
         run: () => {
           state.addTask({ title, due: parsed.due, dueTime: parsed.dueTime, priority: parsed.priority, category: parsed.category ?? defaultCat })
           toast.success('Task added', { description: title })
+          close()
+        },
+      })
+      list.push({
+        id: 'capture',
+        group: 'Create',
+        icon: <Inbox />,
+        label: (
+          <span>
+            Capture to inbox <span className="text-fg">“{q.trim().slice(0, 60)}”</span>
+          </span>
+        ),
+        run: () => {
+          addCapture({ kind: 'text', text: q.trim() })
+          toast.success('Captured', { description: 'File it later from Knowledge → Capture inbox.' })
+          close()
+        },
+      })
+      list.push({
+        id: 'ask-cue',
+        group: 'Create',
+        icon: <Bot />,
+        label: (
+          <span>
+            Hand to Cue <span className="text-fg">“{q.trim().slice(0, 60)}”</span>
+          </span>
+        ),
+        run: () => {
+          createRequest({ agent: 'main', title: q.trim() })
+          toast.success('Request saved for Main Cue', { description: 'Your Manus agents pick it up when they check in.' })
+          close()
+          ui.go('/cue/runs')
+        },
+      })
+      list.push({
+        id: 'focus-on',
+        group: 'Create',
+        icon: <Timer />,
+        label: (
+          <span>
+            Focus 50 min on <span className="text-fg">“{title}”</span>
+          </span>
+        ),
+        run: () => {
+          startTimer(state.settings.focus?.presets?.[1] ?? 50, { title, fullscreen: true })
           close()
         },
       })
@@ -249,14 +325,13 @@ function PaletteBody({ close }: { close: () => void }) {
         },
       )
     }
-    for (const sp of SPACE_DEFS) {
-      const pages = sp.id === 'home' ? [{ page: '', label: 'Mission', icon: sp.icon }, ...(PAGES.home ?? [])] : (PAGES[sp.id] ?? [{ page: '', label: sp.label, icon: sp.icon }])
-      for (const p of pages) {
-        const label = sp.id === 'home' ? p.label : `${sp.short} › ${p.label}`
-        if (query && !label.toLowerCase().includes(query)) continue
-        if (!query && sp.id !== 'home' && p.page !== 'overview' && sp.id !== ui.loc.space) continue
-        if (!query && sp.id === 'home' && p.page) continue
-        list.push({ id: `nav-${sp.id}-${p.page}`, group: 'Go to', icon: <p.icon />, label, run: () => (close(), ui.go(p.page ? `/${sp.id}/${p.page}` : `/${sp.id}`)) })
+    const current = sectionFor(ui.loc.space, ui.loc.page)
+    for (const sec of SECTIONS) {
+      for (const [i, t] of sec.tabs.entries()) {
+        const label = i === 0 ? sec.label : `${sec.label} › ${t.label}`
+        if (query && !label.toLowerCase().includes(query) && !t.label.toLowerCase().includes(query)) continue
+        if (!query && i > 0 && sec.id !== current.id) continue
+        list.push({ id: `nav-${sec.id}-${t.path}`, group: 'Go to', icon: <sec.icon />, label, run: () => (close(), ui.go(t.path)) })
       }
     }
     if (dockAvailable() && query)

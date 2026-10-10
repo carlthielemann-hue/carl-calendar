@@ -392,6 +392,19 @@ app.get('/api/mcp/grants', async (c) => {
   )
   return json({ grants })
 })
+/** Which connected apps used Command Center recently (from real MCP calls, not guesses). */
+app.get('/api/mcp/clients', async (c) => {
+  const seen = (await getMeta<Record<string, { name: string; lastAt: string; lastTool?: string; calls: number }>>(c.env, 'mcp_clients')) ?? {}
+  const r = await c.env.OAUTH_PROVIDER.listUserGrants(OWNER_ID).catch(() => ({ items: [] as { clientId: string; id: string; scope: string[]; createdAt: number }[] }))
+  const grants = await Promise.all(
+    r.items.map(async (g) => {
+      const client = await c.env.OAUTH_PROVIDER.lookupClient(g.clientId).catch(() => null)
+      const s = seen[g.clientId]
+      return { clientId: g.clientId, name: client?.clientName ?? s?.name ?? g.clientId, scope: g.scope, connectedAt: new Date(g.createdAt * 1000).toISOString(), lastAt: s?.lastAt ?? null, lastTool: s?.lastTool ?? null }
+    }),
+  )
+  return json({ clients: grants })
+})
 app.delete('/api/mcp/grants/:id', async (c) => {
   await c.env.OAUTH_PROVIDER.revokeGrant(c.req.param('id'), OWNER_ID)
   return json({ ok: true })
@@ -462,8 +475,8 @@ const defaultHandler = {
 }
 
 const mcpHandler = {
-  async fetch(req: Request, env: Env, ctx: ExecutionContext & { auth?: { scope: string[] } }) {
-    return mcpFetch(req, env, ctx.auth?.scope ?? ['mcp:read'])
+  async fetch(req: Request, env: Env, ctx: ExecutionContext & { auth?: { scope: string[]; clientId?: string } }) {
+    return mcpFetch(req, env, ctx.auth?.scope ?? ['mcp:read'], ctx.auth?.clientId)
   },
 }
 

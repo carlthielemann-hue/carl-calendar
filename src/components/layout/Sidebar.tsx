@@ -1,225 +1,189 @@
-import * as Popover from '@radix-ui/react-popover'
-import { CalendarDays, Check, CheckSquare, ChevronsUpDown, LayoutDashboard, LayoutGrid, Plus, Search, Settings } from 'lucide-react'
+import { ChevronDown, ChevronRight, LayoutGrid, Plus, Search, Settings as SettingsIcon, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { Kbd, Sheet } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useSync } from '@/lib/sync'
 import { DockBar } from '@/features/dock/DockBar'
+import { Wallpaper } from '@/features/appearance/wallpaper'
 import { isAccountMode } from '@/store/mode'
-import { useUI, type Space } from '@/store/ui'
-import { PAGES, spaceDef, visibleSpaces } from './nav'
+import { useUI } from '@/store/ui'
+import { sectionFor, visibleSections, type Section } from './nav'
 
-function SpaceMark({ space, size = 28 }: { space: Space; size?: number }) {
-  const d = spaceDef(space === 'settings' ? 'home' : space)
-  const Icon = d.icon
+const SYNC_LABEL: Record<string, string> = { off: 'starting', idle: 'synced', syncing: 'syncing', offline: 'offline', 'signed-out': 'signed out', error: 'sync issue' }
+
+export function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
-    <span
-      className="grid shrink-0 place-items-center rounded-lg"
-      style={{ width: size, height: size, background: `color-mix(in srgb, ${d.color} 16%, var(--panel-2))`, color: d.color }}
-    >
-      <Icon style={{ width: size * 0.5, height: size * 0.5 }} strokeWidth={2.2} />
+    <span className="block leading-none">
+      <span className={cn('font-display block font-bold tracking-[0.18em] text-fg', compact ? 'text-[15px]' : 'text-[19px]')}>CUE</span>
+      {!compact && <span className="mt-1 block text-[9.5px] font-medium tracking-[0.22em] text-muted">COMMAND CENTER</span>}
     </span>
   )
 }
 
-export function WorkspaceSwitcher({ compact = false }: { compact?: boolean }) {
-  const loc = useUI((s) => s.loc)
-  // Local state: desktop and mobile each render a switcher, so they must not share open state.
-  const [open, setOpen] = useState(false)
-  const goSpace = useUI((s) => s.goSpace)
-  const hiddenSpaces = useApp((s) => s.settings.hiddenSpaces)
-  const current = loc.space === 'settings' ? 'home' : loc.space
-  const d = spaceDef(current)
-  return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger asChild>
-        <button
-          className={cn(
-            'flex items-center gap-2.5 rounded-lg text-left transition-colors hover:bg-hover',
-            compact ? 'h-9 px-1.5' : 'h-11 w-full px-2',
-          )}
-          aria-label={`Workspace: ${d.label}. Switch workspace`}
-        >
-          <SpaceMark space={current} size={compact ? 24 : 28} />
-          <span className="min-w-0 flex-1 leading-tight">
-            <span className="block truncate text-[13.5px] font-semibold tracking-tight">{d.label}</span>
-            {!compact && <span className="block text-[10.5px] text-faint">Command Center</span>}
-          </span>
-          <ChevronsUpDown className="h-3.5 w-3.5 text-faint" />
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          align="start"
-          sideOffset={6}
-          className="z-50 w-[248px] rounded-xl border border-line bg-elevated p-1.5 shadow-pop data-[state=open]:animate-pop"
-        >
-          <div className="px-2 pt-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-faint">Workspaces</div>
-          {visibleSpaces(hiddenSpaces).map((s) => (
-            <button
-              key={s.id}
-              onClick={() => {
-                setOpen(false)
-                goSpace(s.id)
-              }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] hover:bg-hover"
-            >
-              <SpaceMark space={s.id} size={22} />
-              <span className="flex-1">{s.label}</span>
-              {current === s.id && <Check className="h-3.5 w-3.5 text-muted" />}
-              <span className="flex gap-0.5">
-                <Kbd>G</Kbd>
-                <Kbd>{s.key}</Kbd>
-              </span>
-            </button>
-          ))}
-          <div className="my-1 h-px bg-line" />
-          <button
-            onClick={() => {
-              setOpen(false)
-              useUI.getState().go('/settings')
-            }}
-            className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] text-muted hover:bg-hover hover:text-fg"
-          >
-            <Settings className="h-4 w-4" /> Settings
-          </button>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  )
+function usePendingApprovals() {
+  return useApp((s) => s.approvals.filter((a) => a.status === 'pending').length)
 }
 
-function NavItem({ active, onClick, icon: Icon, label, hint }: { active: boolean; onClick: () => void; icon: typeof Plus; label: string; hint?: string }) {
+function NavItem({ s, active }: { s: Section; active: boolean }) {
+  const go = useUI((x) => x.go)
+  const pending = usePendingApprovals()
+  const Icon = s.icon
   return (
     <button
-      onClick={onClick}
+      onClick={() => go(s.path)}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'group flex h-8 w-full items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors',
-        active ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg',
+        'group relative flex h-9 w-full items-center gap-3 rounded-xl px-3 text-[13.5px] transition-colors',
+        active ? 'bg-panel-2 text-fg' : 'text-muted hover:bg-hover hover:text-fg',
       )}
     >
-      <Icon className={cn('h-4 w-4', active ? 'text-fg' : 'text-faint group-hover:text-muted')} strokeWidth={active ? 2.2 : 1.8} />
-      <span className="flex-1 truncate text-left">{label}</span>
-      {hint && <span className="text-[10.5px] text-faint opacity-0 transition-opacity group-hover:opacity-100">{hint}</span>}
+      {active && <span className="absolute top-2 bottom-2 left-0 w-[2px] rounded-full bg-accent" />}
+      <Icon className={cn('h-[17px] w-[17px]', active ? 'text-fg' : 'text-faint group-hover:text-muted')} strokeWidth={active ? 2 : 1.7} />
+      <span className="flex-1 truncate text-left">{s.label}</span>
+      {s.badge && <span className="rounded-md bg-[color-mix(in_srgb,var(--accent)_18%,transparent)] px-1.5 py-px text-[10px] font-semibold text-accent">{s.badge}</span>}
+      {s.id === 'cue' && pending > 0 && (
+        <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-fg" title={`${pending} waiting for approval`}>
+          {pending}
+        </span>
+      )}
     </button>
   )
 }
 
-const SYNC_LABEL: Record<string, string> = { off: 'starting', idle: 'synced', syncing: 'syncing', offline: 'offline', 'signed-out': 'signed out', error: 'sync issue' }
+/** Small cinematic card: your featured vision image or wallpaper, with your line. */
+function VisionCard() {
+  const go = useUI((s) => s.go)
+  const a = useApp((s) => s.settings.appearance)
+  const featured = useApp((s) => s.visionBoards.flatMap((b) => b.items).find((i) => i.featured && i.kind === 'image'))
+  return (
+    <button onClick={() => go('/me/vision')} className="group relative block h-[150px] w-full overflow-hidden rounded-2xl border border-line text-left" aria-label="Open vision board">
+      {featured?.mediaId ? <FeaturedImg id={featured.mediaId} /> : <Wallpaper id={a.wallpaper} className="transition-transform duration-700 group-hover:scale-105" position="70% 40%" />}
+      <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+      <span className="font-display absolute right-3 bottom-3 left-3 text-[15px] leading-snug font-semibold text-[#f3e3cf]">{a.quote && a.quote.length < 46 ? a.quote : 'Discipline builds freedom.'}</span>
+    </button>
+  )
+}
+function FeaturedImg({ id }: { id: string }) {
+  return <Wallpaper id={`media:${id}`} className="transition-transform duration-700 group-hover:scale-105" />
+}
 
 export function Sidebar() {
   const loc = useUI((s) => s.loc)
   const go = useUI((s) => s.go)
   const setPalette = useUI((s) => s.setPalette)
-  const editTask = useUI((s) => s.editTask)
+  const hidden = useApp((s) => s.settings.hiddenSpaces)
+  const name = useApp((s) => s.settings.appearance.name) || 'Carl'
   const hasDemo = useApp((s) => s.hasDemoData)
   const google = useApp((s) => s.google)
   const sync = useSync((s) => s.phase)
   const account = isAccountMode()
-  const pages = PAGES[loc.space] ?? []
+  const current = sectionFor(loc.space, loc.page)
+  const sections = visibleSections(hidden)
+  const main = sections.filter((s) => !s.group && s.id !== 'settings')
+  const life = sections.filter((s) => s.group === 'life')
+  const [lifeOpen, setLifeOpen] = useState(() => life.some((s) => s.id === current.id))
 
   return (
-    <aside className="hidden h-full w-[236px] shrink-0 flex-col border-r border-line bg-bg px-3 py-3 md:flex">
-      <WorkspaceSwitcher />
+    <aside className="hidden h-full w-[244px] shrink-0 flex-col overflow-y-auto border-r border-line bg-bg px-3.5 py-5 md:flex">
+      <div className="flex items-center justify-between px-2">
+        <button onClick={() => go('/home')} aria-label="Home">
+          <Wordmark />
+        </button>
+      </div>
 
       <button
         onClick={() => setPalette(true)}
-        className="mt-3 mb-4 flex h-8 items-center gap-2 rounded-lg border border-line bg-panel px-2.5 text-[12.5px] text-muted transition-colors hover:border-line-strong hover:text-fg"
+        className="mt-6 mb-4 flex h-10 items-center gap-2.5 rounded-xl border border-line bg-panel px-3 text-[13px] text-muted transition-colors hover:border-line-strong hover:text-fg"
       >
-        <Search className="h-3.5 w-3.5" />
-        <span className="flex-1 text-left">Search or quick add…</span>
+        <Search className="h-4 w-4" />
+        <span className="flex-1 text-left">Search…</span>
         <Kbd>⌘K</Kbd>
       </button>
 
-      <nav className="flex flex-col gap-0.5" aria-label="Workspace">
-        <NavItem active={loc.space === 'home' && !loc.page} onClick={() => go('/home')} icon={spaceDef('home').icon} label="Mission" />
-        {pages.length > 0 && <div className="mt-3 mb-1 px-2.5 text-[11px] font-medium uppercase tracking-wide text-faint">{spaceDef(loc.space).label}</div>}
-        {pages.map((p, i) => (
-          <NavItem
-            key={p.page}
-            active={loc.page === p.page}
-            onClick={() => go(`/${loc.space}/${p.page}`)}
-            icon={p.icon}
-            label={p.label}
-            hint={String(i + 1)}
-          />
+      <nav className="flex flex-col gap-0.5" aria-label="Main">
+        {main.map((s) => (
+          <NavItem key={s.id} s={s} active={current.id === s.id} />
         ))}
-        {(loc.space === 'tps' || loc.space === 'lab' || loc.space === 'home') && (
+        {life.length > 0 && (
           <>
-            <div className="mt-4 mb-1 px-2.5 text-[11px] font-medium uppercase tracking-wide text-faint">Shared</div>
-            <NavItem active={false} onClick={() => go('/personal/overview')} icon={LayoutDashboard} label="Today" />
-            <NavItem active={false} onClick={() => go('/personal/tasks')} icon={CheckSquare} label="Tasks" />
-            <NavItem active={false} onClick={() => go('/personal/calendar')} icon={CalendarDays} label="Calendar" />
+            <button onClick={() => setLifeOpen(!lifeOpen)} className="mt-3 mb-0.5 flex items-center gap-1 px-3 text-[10.5px] font-semibold tracking-[0.14em] text-faint uppercase hover:text-muted" aria-expanded={lifeOpen}>
+              {lifeOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />} Life
+            </button>
+            {lifeOpen && life.map((s) => <NavItem key={s.id} s={s} active={current.id === s.id} />)}
           </>
         )}
+        <NavItem s={sections.find((s) => s.id === 'settings')!} active={current.id === 'settings'} />
       </nav>
 
-      <button
-        onClick={() => editTask('new', loc.space === 'tps' ? { category: 'tps' } : loc.space === 'lab' ? { category: 'lab' } : undefined)}
-        className="mt-4 flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-muted transition-colors hover:bg-hover hover:text-fg"
-      >
-        <Plus className="h-4 w-4 text-faint" />
-        <span className="flex-1 text-left">New task</span>
-        <Kbd>N</Kbd>
-      </button>
-
-      <div className="mt-auto space-y-1.5">
+      <div className="mt-auto space-y-3 pt-6">
+        <VisionCard />
         <DockBar />
-        <NavItem active={loc.space === 'settings'} onClick={() => go('/settings')} icon={Settings} label="Settings" />
-        <button
-          onClick={() => go('/settings')}
-          className="flex w-full items-center gap-2 rounded-lg border border-line bg-panel px-2.5 py-2 text-left transition-colors hover:border-line-strong"
-        >
-          <span
-            className={cn(
-              'h-1.5 w-1.5 rounded-full',
-              account ? (sync === 'idle' || sync === 'syncing' ? 'bg-ok' : 'bg-[#e5a54b]') : google.connected ? 'bg-ok' : hasDemo ? 'bg-[#ec8a45]' : 'bg-faint',
-            )}
-          />
-          <span className="text-[11.5px] leading-tight text-muted">
-            {account ? `Account · ${SYNC_LABEL[sync]}` : hasDemo ? 'Demo mode · sample data' : 'Local mode · this browser'}
-            {google.connected && ' · Google'}
-          </span>
-        </button>
-        <button onClick={() => useUI.getState().setShortcuts(true)} className="flex w-full items-center gap-2 px-1.5 text-[11.5px] text-faint hover:text-muted">
-          <Kbd>?</Kbd> Keyboard shortcuts
-        </button>
+        <div className="flex items-center gap-2.5 rounded-2xl border border-line bg-panel px-3 py-2.5">
+          <span className="font-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--accent)_22%,var(--panel-2))] text-[14px] font-bold text-accent">{name.slice(0, 1).toUpperCase()}</span>
+          <button onClick={() => go('/settings')} className="min-w-0 flex-1 text-left" title="Account & sync">
+            <span className="block truncate text-[13px] font-medium">{name}</span>
+            <span className="flex items-center gap-1.5 text-[11px] text-faint">
+              <span className={cn('h-1.5 w-1.5 rounded-full', account ? (sync === 'idle' || sync === 'syncing' ? 'bg-ok' : 'bg-[#e5a54b]') : hasDemo ? 'bg-[#ec8a45]' : 'bg-faint')} />
+              {account ? `Operator · ${SYNC_LABEL[sync]}` : hasDemo ? 'Demo data' : 'Local mode'}
+              {google.connected && ' · Google'}
+            </span>
+          </button>
+          <button onClick={() => go('/settings')} aria-label="Settings" className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-hover hover:text-fg">
+            <SettingsIcon className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </aside>
   )
 }
 
-/** Phone: workspace switcher + horizontally scrolling page tabs. */
-export function MobileTopBar() {
+/** Tabs for the current area (desktop: above the page, phone: chips under the top bar). */
+export function SectionTabs({ mobile = false }: { mobile?: boolean }) {
   const loc = useUI((s) => s.loc)
   const go = useUI((s) => s.go)
-  const pages = PAGES[loc.space] ?? []
+  const sec = sectionFor(loc.space, loc.page)
+  const path = loc.page ? `/${loc.space}/${loc.page}` : `/${loc.space}`
+  if (sec.tabs.length < 2 || (loc.space === 'home' && !loc.page)) return null
+  if (mobile)
+    return (
+      <div className="flex gap-1 overflow-x-auto px-3 pb-2 [scrollbar-width:none]">
+        {sec.tabs.map((t) => (
+          <button key={t.path} onClick={() => go(t.path)} className={cn('h-7 shrink-0 rounded-full px-3 text-[12.5px] font-medium transition-colors', path === t.path ? 'bg-fg text-bg' : 'bg-panel-2 text-muted')}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+    )
+  return (
+    <div className="mx-auto mb-5 hidden w-full max-w-[1320px] items-center gap-1 border-b border-line md:flex" role="tablist" aria-label={sec.label}>
+      {sec.tabs.map((t) => (
+        <button
+          key={t.path}
+          role="tab"
+          aria-selected={path === t.path}
+          onClick={() => go(t.path)}
+          className={cn('-mb-px border-b-2 px-3 pt-1 pb-2.5 text-[13px] transition-colors', path === t.path ? 'border-accent font-medium text-fg' : 'border-transparent text-muted hover:text-fg')}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function MobileTopBar() {
   return (
     <div className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur-xl md:hidden">
-      <div className="flex items-center justify-between gap-2 px-3 pt-2 pb-1">
-        <WorkspaceSwitcher compact />
+      <div className="flex items-center justify-between gap-2 px-4 pt-2.5 pb-2">
+        <button onClick={() => useUI.getState().go('/home')} aria-label="Home">
+          <Wordmark compact />
+        </button>
         <button aria-label="Search" onClick={() => useUI.getState().setPalette(true)} className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-hover">
           <Search className="h-4 w-4" />
         </button>
       </div>
-      {pages.length > 0 && (
-        <div className="flex gap-1 overflow-x-auto px-3 pb-2 [scrollbar-width:none]">
-          {pages.map((p) => (
-            <button
-              key={p.page}
-              onClick={() => go(`/${loc.space}/${p.page}`)}
-              className={cn(
-                'h-7 shrink-0 rounded-full px-3 text-[12.5px] font-medium transition-colors',
-                loc.page === p.page ? 'bg-fg text-bg' : 'bg-panel-2 text-muted',
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <SectionTabs mobile />
     </div>
   )
 }
@@ -227,69 +191,55 @@ export function MobileTopBar() {
 export function MobileNav() {
   const loc = useUI((s) => s.loc)
   const go = useUI((s) => s.go)
-  const hiddenSpaces = useApp((s) => s.settings.hiddenSpaces)
-  const [spaces, setSpaces] = useState(false)
-  const tpsVisible = !hiddenSpaces?.includes('tps')
-  const items: { label: string; icon: typeof Plus; path?: string; active: boolean; action?: () => void }[] = [
-    { label: 'Mission', icon: spaceDef('home').icon, path: '/home', active: loc.space === 'home' },
-    { label: 'Today', icon: LayoutDashboard, path: '/personal/overview', active: loc.space === 'personal' },
-    { label: 'Capture', icon: Plus, active: false, action: () => useUI.getState().setPalette(true) },
-    ...(tpsVisible ? [{ label: 'TPS', icon: spaceDef('tps').icon, path: '/tps/overview', active: loc.space === 'tps' }] : []),
-    { label: 'Spaces', icon: LayoutGrid, active: spaces || (loc.space !== 'home' && loc.space !== 'personal' && loc.space !== 'tps'), action: () => setSpaces(true) },
+  const hidden = useApp((s) => s.settings.hiddenSpaces)
+  const pending = usePendingApprovals()
+  const [more, setMore] = useState(false)
+  const current = sectionFor(loc.space, loc.page)
+  const items: { id: string; label: string; icon: typeof Plus; path?: string; action?: () => void }[] = [
+    { id: 'home', label: 'Home', icon: visibleSections(hidden)[0].icon, path: '/home' },
+    { id: 'today', label: 'Today', icon: visibleSections(hidden).find((s) => s.id === 'today')!.icon, path: '/personal/overview' },
+    { id: 'capture', label: 'Capture', icon: Plus, action: () => useUI.getState().setPalette(true) },
+    { id: 'cue', label: 'Cue', icon: ShieldCheck, path: '/cue/team' },
+    { id: 'more', label: 'More', icon: LayoutGrid, action: () => setMore(true) },
   ]
+  const isActive = (id: string) => (id === 'more' ? more || !['home', 'today', 'cue'].includes(current.id) : current.id === id)
   return (
     <>
-      <nav
-        aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-bg/90 px-1 pb-[max(env(safe-area-inset-bottom),4px)] pt-1 backdrop-blur-xl md:hidden"
-      >
-        {items.map(({ label, icon: Icon, path, active, action }) => (
+      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-bg/90 px-1 pt-1 pb-[max(env(safe-area-inset-bottom),4px)] backdrop-blur-xl md:hidden">
+        {items.map(({ id, label, icon: Icon, path, action }) => (
           <button
-            key={label}
-            onClick={() => (action ? action() : path && (loc.space === path.split('/')[1] ? go(path) : useUI.getState().goSpace(path.split('/')[1] as Space)))}
-            aria-current={active ? 'page' : undefined}
-            className={cn('flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium', active ? 'text-fg' : 'text-faint')}
+            key={id}
+            onClick={() => (action ? action() : path && go(path))}
+            aria-current={isActive(id) ? 'page' : undefined}
+            className={cn('relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium', isActive(id) ? 'text-fg' : 'text-faint')}
           >
-            {label === 'Capture' ? (
-              <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-fg text-bg">
+            {id === 'capture' ? (
+              <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-accent text-accent-fg">
                 <Icon className="h-4 w-4" strokeWidth={2.5} />
               </span>
             ) : (
-              <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.2 : 1.8} />
+              <Icon className="h-[18px] w-[18px]" strokeWidth={isActive(id) ? 2.2 : 1.8} />
             )}
+            {id === 'cue' && pending > 0 && <span className="absolute top-0.5 right-[calc(50%-16px)] h-2 w-2 rounded-full bg-accent" />}
             {label}
           </button>
         ))}
       </nav>
-      <Sheet open={spaces} onOpenChange={setSpaces} title="Spaces">
-        <div className="flex flex-col gap-1 p-2">
-          {visibleSpaces(hiddenSpaces).map((d) => (
+      <Sheet open={more} onOpenChange={setMore} title="Everything">
+        <div className="grid grid-cols-3 gap-2 p-3">
+          {visibleSections(hidden).map((s) => (
             <button
-              key={d.id}
+              key={s.id}
               onClick={() => {
-                setSpaces(false)
-                useUI.getState().goSpace(d.id)
+                setMore(false)
+                go(s.path)
               }}
-              className={cn('flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-hover', loc.space === d.id && 'bg-hover')}
+              className={cn('flex flex-col items-center gap-1.5 rounded-2xl border border-line px-2 py-3.5 text-[12px] hover:bg-hover', current.id === s.id && 'bg-panel-2')}
             >
-              <span className="grid h-9 w-9 place-items-center rounded-lg" style={{ background: `color-mix(in srgb, ${d.color} 16%, transparent)`, color: d.color }}>
-                <d.icon className="h-[18px] w-[18px]" />
-              </span>
-              <span className="text-[15px] font-medium">{d.label}</span>
+              <s.icon className="h-5 w-5 text-muted" />
+              {s.label}
             </button>
           ))}
-          <button
-            onClick={() => {
-              setSpaces(false)
-              go('/settings')
-            }}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-hover"
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-panel-2 text-muted">
-              <Settings className="h-[18px] w-[18px]" />
-            </span>
-            <span className="text-[15px] font-medium">Settings</span>
-          </button>
         </div>
       </Sheet>
     </>

@@ -61,10 +61,6 @@ export function toggleWorkItem(r: string) {
       })
       return
     }
-    case 'board': {
-      const b = s.boards.find((x) => x.id === p.id)
-      return b ? { label: b.name, sub: `Board · ${b.adIds.length} ads`, path: '/lab/library' } : null
-    }
     case 'analysis': {
       const a = s.analyses.find((x) => x.id === p.id)
       if (!a) return
@@ -94,6 +90,70 @@ export function describeRef(s: AppState, r: string): { label: string; sub?: stri
   const p = parseRef(r)
   if (!p) return null
   switch (p.type) {
+    case 'board': {
+      const b = s.boards.find((x) => x.id === p.id)
+      return b ? { label: b.name, sub: `Board · ${b.adIds.length} ads`, path: '/lab/library' } : null
+    }
+    case 'doc': {
+      const d = s.knowledgeDocs.find((x) => x.id === p.id)
+      return d ? { label: d.title, sub: `Knowledge · ${d.category}`, path: `/knowledge/brain/${d.id}` } : null
+    }
+    case 'capture': {
+      const c = s.captures.find((x) => x.id === p.id)
+      return c ? { label: (c.text || c.fileName || c.url || 'Capture').slice(0, 80), sub: 'Inbox', path: '/knowledge/inbox' } : null
+    }
+    case 'agentrun': {
+      const r = s.agentRuns.find((x) => x.id === p.id)
+      return r ? { label: r.title, sub: `Cue · ${r.status}`, path: '/cue/runs' } : null
+    }
+    case 'approval': {
+      const r = s.approvals.find((x) => x.id === p.id)
+      return r ? { label: r.title, sub: `Approval · ${r.status}`, path: '/cue/approvals' } : null
+    }
+    case 'contact': {
+      const c = s.contacts.find((x) => x.id === p.id)
+      return c ? { label: c.name, sub: `Contact · ${s.clients.find((x) => x.id === c.clientId)?.name ?? ''}`, path: `/tps/clients/${c.clientId}` } : null
+    }
+    case 'meeting': {
+      const m = s.meetings.find((x) => x.id === p.id)
+      return m ? { label: m.title, sub: `Meeting · ${m.date}`, path: m.clientId ? `/tps/clients/${m.clientId}` : '/knowledge/brain' } : null
+    }
+    case 'decision': {
+      const d = s.decisions.find((x) => x.id === p.id)
+      return d ? { label: d.title, sub: 'Decision', path: d.clientId ? `/tps/clients/${d.clientId}` : '/home/timeline' } : null
+    }
+    case 'portfolio': {
+      const x = s.portfolio.find((y) => y.id === p.id)
+      return x ? { label: x.title, sub: `Portfolio · ${x.kind}`, path: '/tps/portfolio' } : null
+    }
+    case 'appdraft': {
+      const d = s.appDrafts.find((x) => x.id === p.id)
+      return d ? { label: d.title, sub: `Application · ${d.status}`, path: '/tps/applications' } : null
+    }
+    case 'canvas': {
+      const c = s.canvases.find((x) => x.id === p.id)
+      return c ? { label: c.name, sub: 'Idea canvas', path: `/knowledge/canvas/${c.id}` } : null
+    }
+    case 'journal': {
+      const j = s.journal.find((x) => x.id === p.id)
+      return j ? { label: j.title || j.body.slice(0, 60) || j.date, sub: `Journal · ${j.date}`, path: '/me/journal' } : null
+    }
+    case 'affirmation': {
+      const a = s.affirmations.find((x) => x.id === p.id)
+      return a ? { label: a.text, sub: `Affirmation · ${a.category}`, path: '/me/affirmations' } : null
+    }
+    case 'achievement': {
+      const a = s.achievements.find((x) => x.id === p.id)
+      return a ? { label: a.title, sub: 'Achievement', path: '/me/achievements' } : null
+    }
+    case 'place': {
+      const x = s.places.find((y) => y.id === p.id)
+      return x ? { label: x.name, sub: 'Travel', path: '/me/travel' } : null
+    }
+    case 'visionboard':
+      return { label: s.visionBoards.find((x) => x.id === p.id)?.name ?? 'Vision board', sub: 'Vision board', path: '/me/vision' }
+    case 'letter':
+      return { label: s.futureLetters.find((x) => x.id === p.id)?.title ?? 'Letter', sub: 'Future me', path: '/me/letters' }
     case 'task': {
       const t = s.tasks.find((x) => x.id === p.id)
       return t ? { label: t.title, sub: 'Task', open: () => useUI.getState().editTask(t) } : null

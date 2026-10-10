@@ -43,6 +43,7 @@ import type {
   Stage,
   WeekScore,
 } from './entities'
+import type { Achievement, Affirmation, AffirmationPlaylist, AgentRun, ApplicationDraft, ApprovalRequest, CaptureItem, ClientContact, ClientOnboarding, DailySnapshot, DayRoutine, Decision, FocusSession, FutureLetter, IdeaCanvas, JournalEntry, KnowledgeDoc, MeetingNote, Place, PortfolioPiece, RoutineRun, VisionBoard } from './entities2'
 
 export interface GoogleState {
   connected: boolean
@@ -101,6 +102,29 @@ export interface Data {
   moves: AllocationMove[]
   goals: Goal[]
   boards: Board[]
+  /* Command Center 2.0 */
+  visionBoards: VisionBoard[]
+  journal: JournalEntry[]
+  achievements: Achievement[]
+  snapshots: DailySnapshot[]
+  futureLetters: FutureLetter[]
+  places: Place[]
+  affirmations: Affirmation[]
+  playlists: AffirmationPlaylist[]
+  focusSessions: FocusSession[]
+  dayRoutines: DayRoutine[]
+  routineRuns: RoutineRun[]
+  agentRuns: AgentRun[]
+  approvals: ApprovalRequest[]
+  knowledgeDocs: KnowledgeDoc[]
+  captures: CaptureItem[]
+  contacts: ClientContact[]
+  meetings: MeetingNote[]
+  decisions: Decision[]
+  onboardings: ClientOnboarding[]
+  portfolio: PortfolioPiece[]
+  appDrafts: ApplicationDraft[]
+  canvases: IdeaCanvas[]
   /* Shared */
   metrics: Metric[]
   scorecards: Record<string, WeekScore>

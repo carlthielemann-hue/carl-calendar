@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Toaster } from 'sonner'
-import { MobileNav, MobileTopBar, Sidebar } from '@/components/layout/Sidebar'
-import { PAGES, SPACE_DEFS, spaceDef } from '@/components/layout/nav'
+import { MobileNav, MobileTopBar, SectionTabs, Sidebar } from '@/components/layout/Sidebar'
+import { SPACE_DEFS, sectionFor } from '@/components/layout/nav'
+import { useAppearanceEffect } from '@/features/appearance/wallpaper'
+import { RoutineRunner } from '@/features/routines/runner'
 import { Empty, Button } from '@/components/ui'
 import Home from '@/pages/Home'
 import { EventDetail } from '@/features/events/EventDetail'
@@ -14,7 +16,7 @@ import Overview from '@/pages/personal/Overview'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
 import { ConfirmHost } from '@/components/ConfirmHost'
-import { FocusMode } from '@/features/mission/FocusMode'
+import { FocusMode, FocusWatcher } from '@/features/mission/FocusMode'
 import { boot } from '@/lib/boot'
 import { setAppBadge } from '@/lib/push'
 import { useWorkItems } from '@/lib/work'
@@ -57,6 +59,19 @@ const ROUTES: Record<string, ReturnType<typeof lazy>> = {
   'money/subscriptions': page(() => import('@/pages/money/Subscriptions')),
   'money/savings': page(() => import('@/pages/money/Savings')),
   'home/goals': page(() => import('@/pages/home/Goals')),
+  'knowledge/brain': page(() => import('@/pages/knowledge/Brain')),
+  'knowledge/inbox': page(() => import('@/pages/knowledge/Inbox')),
+  'cue/team': page(() => import('@/pages/cue/Team')),
+  'cue/runs': page(() => import('@/pages/cue/Runs')),
+  'cue/approvals': page(() => import('@/pages/cue/Approvals')),
+  'me/overview': page(() => import('@/pages/me/Overview')),
+  'me/vision': page(() => import('@/pages/me/Vision')),
+  'me/journal': page(() => import('@/pages/me/Journal')),
+  'me/achievements': page(() => import('@/pages/me/Achievements')),
+  'me/letters': page(() => import('@/pages/me/Letters')),
+  'me/travel': page(() => import('@/pages/me/Travel')),
+  'me/affirmations': page(() => import('@/pages/me/Affirmations')),
+  'me/focus': page(() => import('@/pages/me/Focus')),
   settings: page(() => import('@/pages/Settings')),
 }
 /** Routes whose ":id" segment opens a dedicated detail page */
@@ -64,6 +79,7 @@ const DETAIL: Record<string, ReturnType<typeof lazy>> = {
   'tps/clients': page(() => import('@/pages/tps/ClientDetail')),
   'lab/analyses': page(() => import('@/pages/lab/AnalysisDetail')),
   'lab/library': page(() => import('@/pages/lab/AdDetail')),
+  'knowledge/brain': page(() => import('@/pages/knowledge/DocDetail')),
 }
 
 function useTheme() {
@@ -110,10 +126,10 @@ function useGlobalShortcuts() {
         pendingG = Date.now()
         return
       }
-      // Number keys open the current workspace's pages.
-      const pages = PAGES[ui.loc.space]
+      // Number keys open the tabs of the current area.
+      const tabs = sectionFor(ui.loc.space, ui.loc.page).tabs
       const n = Number(e.key)
-      if (pages && n >= 1 && n <= pages.length) return ui.go(`/${ui.loc.space}/${pages[n - 1].page}`)
+      if (n >= 1 && n <= tabs.length) return ui.go(tabs[n - 1].path)
       switch (e.key) {
         case 'n':
         case 'N':
@@ -169,14 +185,15 @@ export default function App() {
   useGlobalShortcuts()
   useEffect(boot, [])
   useBadge()
+  useAppearanceEffect()
   const loc = useUI((s) => s.loc)
   const theme = useApp((s) => s.settings.theme)
   const key = loc.space === 'settings' || (loc.space === 'home' && !loc.page) ? loc.space : `${loc.space}/${loc.page}`
   const Page = loc.id && DETAIL[key] ? DETAIL[key] : ROUTES[key]
   useEffect(() => {
-    const d = spaceDef(loc.space === 'settings' ? 'home' : loc.space)
-    document.title = loc.space === 'home' ? 'Mission · Command Center' : `${d.short} · Command Center`
-  }, [loc.space])
+    const sec = sectionFor(loc.space, loc.page)
+    document.title = loc.space === 'home' && !loc.page ? 'Command Center' : `${sec.label} · Command Center`
+  }, [loc.space, loc.page])
 
   return (
     <div className="flex h-full">
@@ -184,6 +201,7 @@ export default function App() {
       <main className="min-w-0 flex-1 overflow-y-auto" id="main">
         <MobileTopBar />
         <div key={key + (loc.id ?? '')} className="animate-in px-4 pt-4 pb-24 sm:px-6 md:px-8 md:pt-7 md:pb-10">
+          <SectionTabs />
           <Suspense fallback={<PageFallback />}>
             {loc.space === 'home' && !loc.page ? <Home /> : Page ? <Page /> : <NotFound />}
           </Suspense>
@@ -197,6 +215,8 @@ export default function App() {
       <Shortcuts />
       <ConfirmHost />
       <FocusMode />
+      <FocusWatcher />
+      <RoutineRunner />
       <Toaster
         theme={theme === 'system' ? 'system' : theme}
         position="bottom-right"

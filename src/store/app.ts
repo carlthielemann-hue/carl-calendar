@@ -13,6 +13,7 @@ import { BUILTIN_WORKFLOWS } from '@/domain/aiWorkflows'
 import { DEFAULT_MONEY_SETTINGS, DEFAULT_STUDY_PREFS } from '@/domain/entities'
 import { BUILTIN_EXERCISES } from '@/domain/fitness'
 import { isAccountMode, storeKey } from './mode'
+import { DEFAULT_APPEARANCE, DEFAULT_FOCUS_PREFS, DEFAULT_VOICE_PREFS, type Achievement, type Affirmation, type AffirmationPlaylist, type AgentRun, type ApplicationDraft, type ApprovalRequest, type CaptureItem, type ClientContact, type ClientOnboarding, type DailySnapshot, type DayRoutine, type Decision, type FocusSession, type FutureLetter, type IdeaCanvas, type JournalEntry, type KnowledgeDoc, type MeetingNote, type Place, type PortfolioPiece, type RoutineRun, type VisionBoard } from '@/domain/entities2'
 import type {
   AdRef,
   AiOutput,
@@ -85,6 +86,10 @@ export const DEFAULT_SETTINGS: Settings = {
   study: DEFAULT_STUDY_PREFS,
   money: DEFAULT_MONEY_SETTINGS,
   hideAmounts: false,
+  appearance: DEFAULT_APPEARANCE,
+  focus: DEFAULT_FOCUS_PREFS,
+  voice: DEFAULT_VOICE_PREFS,
+  homeMode: 'command',
 }
 
 
@@ -116,6 +121,28 @@ export interface Collections {
   moves: AllocationMove
   goals: Goal
   boards: Board
+  visionBoards: VisionBoard
+  journal: JournalEntry
+  achievements: Achievement
+  snapshots: DailySnapshot
+  futureLetters: FutureLetter
+  places: Place
+  affirmations: Affirmation
+  playlists: AffirmationPlaylist
+  focusSessions: FocusSession
+  dayRoutines: DayRoutine
+  routineRuns: RoutineRun
+  agentRuns: AgentRun
+  approvals: ApprovalRequest
+  knowledgeDocs: KnowledgeDoc
+  captures: CaptureItem
+  contacts: ClientContact
+  meetings: MeetingNote
+  decisions: Decision
+  onboardings: ClientOnboarding
+  portfolio: PortfolioPiece
+  appDrafts: ApplicationDraft
+  canvases: IdeaCanvas
 }
 export type CollKey = keyof Collections
 export const COLL_REF: Record<CollKey, EntityType> = {
@@ -144,6 +171,28 @@ export const COLL_REF: Record<CollKey, EntityType> = {
   moves: 'transaction',
   goals: 'goal',
   boards: 'board',
+  visionBoards: 'visionboard',
+  journal: 'journal',
+  achievements: 'achievement',
+  snapshots: 'snapshot',
+  futureLetters: 'letter',
+  places: 'place',
+  affirmations: 'affirmation',
+  playlists: 'playlist',
+  focusSessions: 'focus',
+  dayRoutines: 'dayroutine',
+  routineRuns: 'dayroutine',
+  agentRuns: 'agentrun',
+  approvals: 'approval',
+  knowledgeDocs: 'doc',
+  captures: 'capture',
+  contacts: 'contact',
+  meetings: 'meeting',
+  decisions: 'decision',
+  onboardings: 'onboarding',
+  portfolio: 'portfolio',
+  appDrafts: 'appdraft',
+  canvases: 'canvas',
 }
 
 interface Actions {
@@ -275,6 +324,28 @@ function initialData(): Data {
     moves: [],
     goals: [],
     boards: [],
+    visionBoards: [],
+    journal: [],
+    achievements: [],
+    snapshots: [],
+    futureLetters: [],
+    places: [],
+    affirmations: [],
+    playlists: [],
+    focusSessions: [],
+    dayRoutines: [],
+    routineRuns: [],
+    agentRuns: [],
+    approvals: [],
+    knowledgeDocs: [],
+    captures: [],
+    contacts: [],
+    meetings: [],
+    decisions: [],
+    onboardings: [],
+    portfolio: [],
+    appDrafts: [],
+    canvases: [],
     settings: DEFAULT_SETTINGS,
     google: { connected: false, calendarId: 'primary', events: [] },
     hasDemoData: true,
@@ -744,7 +815,7 @@ export const useApp = create<AppState>()(
           set({
             events: [], tasks: [], topThree: {}, weekly: {}, dayPlans: {}, clients: [], projects: [], deliverables: [], opportunities: [],
             ads: [], analyses: [], plans: [], insights: [], scorecards: {}, focusLogs: [], activity: [], hasDemoData: false,
-            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [], transactions: [], accounts: [], subscriptions: [], savingsGoals: [], moves: [], goals: [], boards: [],
+            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [], transactions: [], accounts: [], subscriptions: [], savingsGoals: [], moves: [], goals: [], boards: [], visionBoards: [], journal: [], achievements: [], snapshots: [], futureLetters: [], places: [], affirmations: [], playlists: [], focusSessions: [], dayRoutines: [], routineRuns: [], agentRuns: [], approvals: [], knowledgeDocs: [], captures: [], contacts: [], meetings: [], decisions: [], onboardings: [], portfolio: [], appDrafts: [], canvases: [],
           }),
       }
     },
@@ -764,6 +835,9 @@ export const useApp = create<AppState>()(
             categoryColors: { ...DEFAULT_CATEGORY_COLORS, ...p.settings?.categoryColors },
             study: { ...DEFAULT_STUDY_PREFS, ...p.settings?.study },
             money: { ...DEFAULT_MONEY_SETTINGS, ...p.settings?.money },
+            appearance: { ...DEFAULT_APPEARANCE, ...p.settings?.appearance },
+            focus: { ...DEFAULT_FOCUS_PREFS, ...p.settings?.focus },
+            voice: { ...DEFAULT_VOICE_PREFS, ...p.settings?.voice },
           },
           google: { ...current.google, ...p.google },
         }
@@ -839,6 +913,28 @@ function migrateV2(p: Record<string, unknown>): Record<string, unknown> {
     moves: [],
     goals: [],
     boards: [],
+    visionBoards: [],
+    journal: [],
+    achievements: [],
+    snapshots: [],
+    futureLetters: [],
+    places: [],
+    affirmations: [],
+    playlists: [],
+    focusSessions: [],
+    dayRoutines: [],
+    routineRuns: [],
+    agentRuns: [],
+    approvals: [],
+    knowledgeDocs: [],
+    captures: [],
+    contacts: [],
+    meetings: [],
+    decisions: [],
+    onboardings: [],
+    portfolio: [],
+    appDrafts: [],
+    canvases: [],
   }
 }
 

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { create } from 'zustand'
 import type { WorkspaceId } from '@/domain/entities'
 import type { CalendarView, CategoryId, Occurrence, Task } from '@/lib/types'
@@ -6,8 +7,8 @@ import type { CalendarView, CategoryId, Occurrence, Task } from '@/lib/types'
  * Hash routing: "#/<workspace>/<page>[/<id>]".
  * Workspaces: home, personal, tps, lab, settings.
  */
-export type Space = 'home' | WorkspaceId | 'school' | 'fitness' | 'money' | 'settings'
-export const SPACES: Space[] = ['home', 'personal', 'tps', 'lab', 'school', 'fitness', 'money', 'settings']
+export type Space = 'home' | WorkspaceId | 'school' | 'fitness' | 'money' | 'cue' | 'knowledge' | 'me' | 'settings'
+export const SPACES: Space[] = ['home', 'personal', 'tps', 'lab', 'school', 'fitness', 'money', 'cue', 'knowledge', 'me', 'settings']
 
 export interface Location {
   space: Space
@@ -17,7 +18,7 @@ export interface Location {
   sub?: string
 }
 
-export const DEFAULT_PAGE: Record<Space, string> = { home: '', personal: 'overview', tps: 'overview', lab: 'overview', school: 'overview', fitness: 'today', money: 'overview', settings: '' }
+export const DEFAULT_PAGE: Record<Space, string> = { home: '', personal: 'overview', tps: 'overview', lab: 'overview', school: 'overview', fitness: 'today', money: 'overview', cue: 'team', knowledge: 'brain', me: 'overview', settings: '' }
 
 /** Old v1 routes → new locations */
 const LEGACY: Record<string, string> = {
@@ -63,7 +64,9 @@ interface UIState {
   taskDefaults: Partial<Task> | null
   paletteOpen: boolean
   shortcutsOpen: boolean
-  go: (path: string) => void
+  /** One-shot request for the next page, e.g. 'new' to open its create form */
+  intent: string | null
+  go: (path: string, intent?: string) => void
   goSpace: (s: Space) => void
   openDay: (d: Date) => void
   setCal: (p: { date?: Date; view?: CalendarView }) => void
@@ -87,7 +90,8 @@ export const useUI = create<UIState>()((set, get) => ({
   taskDefaults: null,
   paletteOpen: false,
   shortcutsOpen: false,
-  go: (path) => {
+  intent: null,
+  go: (path, intent) => {
     const loc = parsePath(path)
     const p = toPath(loc)
     if (window.location.hash !== `#${p}`) {
@@ -97,7 +101,7 @@ export const useUI = create<UIState>()((set, get) => ({
         /* sandboxed frames may refuse history changes — in-memory routing still works */
       }
     }
-    set((s) => ({ loc, lastBySpace: { ...s.lastBySpace, [loc.space]: loc } }))
+    set((s) => ({ loc, intent: intent ?? null, lastBySpace: { ...s.lastBySpace, [loc.space]: loc } }))
     document.getElementById('main')?.scrollTo({ top: 0 })
   },
   goSpace: (space) => {
@@ -123,4 +127,16 @@ if (typeof window !== 'undefined') {
   }
   window.addEventListener('popstate', sync)
   window.addEventListener('hashchange', sync)
+}
+
+/** Run `fn` once if the page was opened with `name` as its intent (then clear it). */
+export function useIntent(name: string, fn: () => void) {
+  const intent = useUI((s) => s.intent)
+  useEffect(() => {
+    if (intent === name) {
+      useUI.setState({ intent: null })
+      fn()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intent, name])
 }
