@@ -1,5 +1,7 @@
 import {
   Bot,
+  Radar,
+  Eye,
   Inbox,
   Brain,
   Network,
@@ -104,6 +106,8 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'inbox', label: 'Capture inbox', icon: Inbox },
     { page: 'canvas', label: 'Idea canvas', icon: Shapes },
     { page: 'universe', label: 'Knowledge universe', icon: Network },
+    { page: 'intel', label: 'Industry intelligence', icon: Radar },
+    { page: 'watchlist', label: 'Watchlist', icon: Eye },
   ],
   me: [
     { page: 'overview', label: 'My Space', icon: Sparkle },
@@ -142,6 +146,7 @@ export const PAGES: Partial<Record<Space, PageDef[]>> = {
     { page: 'library', label: 'Swipe vault', icon: Library },
     { page: 'insights', label: 'Insights', icon: Lightbulb },
     { page: 'history', label: 'Practice history', icon: History },
+    { page: 'improve', label: 'Improvement', icon: TrendingUp },
   ],
   school: [
     { page: 'overview', label: 'Overview', icon: LayoutDashboard },
