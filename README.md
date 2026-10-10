@@ -7,7 +7,22 @@ Desktop-first, dark by default, built for phones too. Works fully in the browser
 deploy the included Cloudflare Worker (free plan) to sync your real data between Mac and iPhone,
 connect Google Calendar, get a 07:00 push brief, and let Claude/ChatGPT work with your data over MCP.
 
-## Workspaces
+## Command Center 2.0
+
+A cinematic dark shell (Home · Cue · Today · Clients · Acquisition · Projects · Creative Lab · Content ·
+Knowledge · Calendar, plus a **Life** group for My Space, School, Fitness and Money):
+
+| Area | What's there |
+| --- | --- |
+| **Home** | Customizable dashboard (show/hide, reorder), Command / Focus modes, Focus Hub, affirmation quick-play, routines, vision strip, calendar + inbox + goals rail · Analytics (real records only) · Business Time Machine |
+| **Cue** | Your five Manus agents (Main, Acquisition, Creative, Operations, Content): hand off work, see runs, and an **Approval Inbox** — approving records a decision, it never sends anything |
+| **Knowledge** | Business Brain (documents + everything you know, one search, client isolation, private docs never shared with AI) · Capture inbox · Idea canvas · Knowledge Universe graph |
+| **TPS** | Clients (+ onboarding, people) · Projects with milestones · Acquisition pipeline + application studio · Portfolio · Content OS for X and LinkedIn |
+| **My Space** (private) | Vision boards · Journal + daily snapshots · Achievements · Future-Me letters · Travel · Affirmations Studio · Focus history |
+
+What's done, what's unverified and what isn't built: [docs/COMMAND_CENTER_BUILD_STATUS.md](docs/COMMAND_CENTER_BUILD_STATUS.md).
+
+## Life areas and earlier modules
 
 | Workspace | Pages |
 | --- | --- |

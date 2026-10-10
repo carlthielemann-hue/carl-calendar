@@ -192,6 +192,14 @@ Money and Goals tools plus `search_swipes` / `save_swipe`. Money and grades stay
 you turn them on in Settings → AI connections → “What AI can see”. To save ads from your iPhone, follow Swipe vault →
 *Save from phone* (a one-time Shortcut).
 
+### After updating to Command Center 2.0
+
+No database migration and no new secrets. `git pull` and `npm run deploy`, then reload the app on
+each device (on iPhone: close and reopen the home-screen app). New data (My Space, Cue, knowledge…)
+syncs like everything else. To let Manus use Cue, reconnect the Command Center MCP connector in Manus
+so it sees the new `cue_*` and knowledge tools; Settings → Integrations shows when each connected app
+last called in. See [COMMAND_CENTER_BUILD_STATUS.md](COMMAND_CENTER_BUILD_STATUS.md) for what is verified.
+
 ### Notifications and widgets
 
 * **Pop-ups**: Settings → Notifications → *Enable on this device* — on iPhone only from the Home

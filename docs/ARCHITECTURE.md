@@ -14,6 +14,10 @@ App shell (Sidebar + workspace switcher + ⌘K + editors/drawers)
 ├── Personal   /personal/*   today · calendar · tasks · plan tomorrow · weekly planning
 ├── TPS        /tps/*        overview · clients(/:id/:tab) · deliverables(/:id) · studio(/:client/:tab) · pipeline · content · scorecard · integrations
 ├── Lab        /lab/*        overview · planner · analyses(/:id) · library(/:id) · insights(/:id) · history
+├── Cue        /cue/*        team · runs · approvals                                  (CC2)
+├── Knowledge  /knowledge/*  brain(/:id) · inbox · canvas(/:id) · universe            (CC2)
+├── My Space   /me/*         overview · vision · journal · achievements · letters · travel · affirmations · focus (CC2)
+├── Home extra /home/*       analytics · timeline                                     (CC2)
 └── Settings   /settings
 ```
 
@@ -121,6 +125,27 @@ Users can rename/add/reorder stages; the app only reasons about the stage *kind*
   `boot.ts` then stripped from the URL; duplicates by normalised URL; media in R2 when enabled
   (`cloud:<key>` ids cached in IndexedDB), else device-local.
 
+## 3c. Command Center 2.0
+
+* **Navigation** — `SECTIONS` in `src/components/layout/nav.ts` maps the flat sidebar
+  (Home, Cue, Today, Clients, Acquisition, Projects, Creative Lab, Content, Knowledge, Calendar, Life group)
+  onto the existing `space/page` routes; `sectionFor()` picks the active section and its page tabs.
+* **New collections** (`src/domain/entities2.ts`, synced like every other array collection, no
+  migration): visionBoards, journal, achievements, snapshots, futureLetters, places, affirmations,
+  playlists, focusSessions, dayRoutines, routineRuns, agentRuns, approvals, knowledgeDocs, captures,
+  contacts, meetings, decisions, onboardings, portfolio, appDrafts, canvases.
+* **Pure domain modules** shared by app and Worker: `knowledge2.ts` (Business Brain items + ranked
+  search with client isolation and private exclusion), `analytics.ts`, `timeline.ts`, `graph.ts`
+  (graph + deterministic force layout).
+* **Cue boundary** — agents run in Manus. Command Center stores requests (`agentRuns`) and approvals;
+  the MCP tools let an agent pick up work, report output, ask for approval and report execution.
+  Approval is a recorded decision, never an execution; `cue_report_execution` is refused unless the
+  request was approved, and only once.
+* **Privacy** — the MCP `visible()` filter empties all My Space collections and captures, drops private
+  knowledge documents and applies the hidden-client filter to the new collections.
+* **Zustand rule** — never return a new array (filter/map/sort) from a `useApp` selector; select the raw
+  array and derive with `useMemo`, otherwise React re-renders forever.
+
 ## 4. Persistence and sync
 
 Two data sets, chosen per device (`src/store/mode.ts`):
@@ -180,8 +205,12 @@ are Worker secrets. The browser only holds the session cookie.
 * `npm run test:v4` / `test:school` / `test:fitness` / `test:money` / `test:goals` / `test:vault` —
   V4 areas end to end (mission modules, planner proposals + undo, focus mode, exam pacing, logger
   progression, CSV import + split, goal tracking, phone capture + boards).
+* `npm run test:cc2` — CC2 end to end: dashboard, affirmations (simulated speech), journal, sealed
+  letters, Cue hand-off, approve-with-edit, Business Brain add + search, capture filing, projects,
+  canvas → task, universe/analytics/timeline, phone overflow.
 * `npm run test:server` — API + MCP against `wrangler dev`: auth, sync + conflicts, files, OAuth
-  (DCR + PKCE + consent), tools, permissions, revocation, push queue, unconfigured providers.
+  (DCR + PKCE + consent), tools, permissions, revocation, push queue, unconfigured providers,
+  Cue run + approval flow, Business Brain isolation/privacy/versioning, opportunity dedupe, content drafts.
 * `npm run test:sync` — two browsers (Mac + iPhone viewport): import wizard, cross-device sync,
   offline conflict + restore, demo blocked in the account.
 

@@ -123,10 +123,12 @@ export function Sidebar() {
           <span className="font-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--accent)_22%,var(--panel-2))] text-[14px] font-bold text-accent">{name.slice(0, 1).toUpperCase()}</span>
           <button onClick={() => go('/settings')} className="min-w-0 flex-1 text-left" title="Account & sync">
             <span className="block truncate text-[13px] font-medium">{name}</span>
-            <span className="flex items-center gap-1.5 text-[11px] text-faint">
-              <span className={cn('h-1.5 w-1.5 rounded-full', account ? (sync === 'idle' || sync === 'syncing' ? 'bg-ok' : 'bg-[#e5a54b]') : hasDemo ? 'bg-[#ec8a45]' : 'bg-faint')} />
-              {account ? `Operator · ${SYNC_LABEL[sync]}` : hasDemo ? 'Demo data' : 'Local mode'}
-              {google.connected && ' · Google'}
+            <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-faint">
+              <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', account ? (sync === 'idle' || sync === 'syncing' ? 'bg-ok' : 'bg-[#e5a54b]') : hasDemo ? 'bg-[#ec8a45]' : 'bg-faint')} />
+              <span className="truncate">
+                {account ? `Account · ${SYNC_LABEL[sync]}` : hasDemo ? 'Demo mode · sample data' : 'Local mode · this browser'}
+                {google.connected && ' · Google'}
+              </span>
             </span>
           </button>
           <button onClick={() => go('/settings')} aria-label="Settings" className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-hover hover:text-fg">
