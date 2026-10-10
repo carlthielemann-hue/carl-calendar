@@ -10,6 +10,9 @@ import { useApp } from '@/store/app'
 import { useIntent } from '@/store/ui'
 import { createRequest } from '@/features/cue/shared'
 
+/** Stable fallback: a new [] inside a store selector re-renders forever. */
+const NO_PILLARS: string[] = []
+
 const LIMIT = { x: 280, linkedin: 3000 } as const
 export const CONTENT_STAGES: { id: ContentStatus; label: string; color: string }[] = [
   { id: 'idea', label: 'Idea', color: '#8f8c88' },
@@ -31,7 +34,7 @@ const engagement = (m?: ContentMetrics) => (m ? (m.likes ?? 0) + (m.replies ?? 0
 
 function PostDialog({ p, onClose }: { p: ContentPost; onClose: () => void }) {
   const st = useApp.getState()
-  const pillars = useApp((s) => s.settings.contentPillars ?? [])
+  const pillars = useApp((s) => s.settings.contentPillars ?? NO_PILLARS)
   const [text, setText] = useState(p.text)
   const [hook, setHook] = useState(p.hook ?? '')
   const [m, setM] = useState<ContentMetrics>(p.metrics ?? { recordedAt: new Date().toISOString() })

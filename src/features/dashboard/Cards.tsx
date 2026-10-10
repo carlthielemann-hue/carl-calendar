@@ -17,6 +17,9 @@ import { CUE_AGENTS } from '@/domain/entities2'
 import { finishFocus, leftMs, resetFocus, startTimer, togglePause, updateFocus, useFocus, type FocusFlavor } from '@/features/mission/focus'
 import { fmtLeft, openBrainFm, useTick } from '@/features/mission/FocusMode'
 
+/** Stable fallback: a new [] inside a store selector re-renders forever. */
+const NONE: string[] = []
+
 /** Section header in the dashboard style: title, optional count, "View all →". */
 export function DashHeader({ title, count, to, toLabel = 'View all', extra }: { title: string; count?: number; to?: string; toLabel?: string; extra?: ReactNode }) {
   const go = useUI((s) => s.go)
@@ -44,7 +47,7 @@ export function PrioritiesCard({ now }: { now: Date }) {
   const dk = dateKey(now)
   const top = useTop(dk)
   const setTop = useApp((s) => s.setTop)
-  const refs = useApp((s) => s.topThree[dk] ?? [])
+  const refs = useApp((s) => s.topThree[dk] ?? NONE)
   const move = (i: number, d: -1 | 1) => {
     const list = [...refs]
     const j = i + d

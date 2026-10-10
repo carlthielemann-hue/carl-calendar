@@ -86,6 +86,15 @@ await step('add affirmations and play them with the device voice', async () => {
   assert.ok(spoken.includes('I finish what I start.'))
 })
 
+await step('a fresh account with no top three picked for today does not crash Home', async () => {
+  await seed(`s.topThree = {}`)
+  await page.reload()
+  await go('/home')
+  await page.waitForTimeout(800)
+  assert.equal(await page.getByText('Something went wrong').count(), 0)
+  await main.getByRole('heading', { name: 'Focus Hub' }).waitFor()
+})
+
 console.log('My Space')
 await step('journal entry is saved for today', async () => {
   await go('/me/journal')
