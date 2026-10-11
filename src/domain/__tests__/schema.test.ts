@@ -19,7 +19,7 @@ describe('record schema coverage', () => {
   })
   it('every generic collection has a ref type for links and activity', () => {
     for (const k of Object.keys(COLL_REF)) expect((ARRAY_COLLS as readonly string[]).includes(k), k).toBe(true)
-    for (const k of ['agentTasks', 'schedules', 'notifications', 'companies', 'publications', 'contentOpps', 'watchlist', 'findings', 'observations', 'improvements', 'agentRuns', 'approvals', 'appDrafts', 'contacts']) expect(COLL_REF[k as keyof typeof COLL_REF], k).toBeTruthy()
+    for (const k of ['agentTasks', 'cueProfiles', 'schedules', 'notifications', 'companies', 'publications', 'contentOpps', 'watchlist', 'findings', 'observations', 'improvements', 'agentRuns', 'approvals', 'appDrafts', 'contacts']) expect(COLL_REF[k as keyof typeof COLL_REF], k).toBeTruthy()
   })
   it('2.1 records survive the sync round trip unchanged', () => {
     const d = emptyData() as unknown as SyncableState

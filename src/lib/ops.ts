@@ -9,7 +9,8 @@
 import { candidateToOpportunity, contentHash, isMaterialChange, postChecks, type OppCandidate } from '@/domain/content2'
 import type { ContentPost, Opportunity } from '@/domain/entities'
 import type { ApprovalRequest, ApprovalStatus, CueAgentId } from '@/domain/entities2'
-import type { AgentTask, ContentOpportunity, FeedbackObservation, ImprovementRec, PublicationJob } from '@/domain/entities3'
+import { profileFor } from '@/domain/cueProfiles'
+import type { AgentTask, CueProfile, CuePlaybook, ContentOpportunity, FeedbackObservation, ImprovementRec, PublicationJob } from '@/domain/entities3'
 import { detectPatterns, evidencePool, recommendFor } from '@/domain/improve'
 import { useApp } from '@/store/app'
 import { uid } from './utils'
@@ -257,13 +258,31 @@ export function saveConversationExcerpt(f: { title: string; text: string; source
 
 /* ---------------- agents ---------------- */
 
-export function handOff(f: { assignee: CueAgentId; title: string; instructions?: string; refs?: string[]; priority?: AgentTask['priority']; due?: string }) {
+export function handOff(f: { assignee: CueAgentId; title: string; instructions?: string; refs?: string[]; priority?: AgentTask['priority']; due?: string; doneWhen?: string; playbookId?: string }) {
   const now = nowIso()
-  const t: AgentTask = { id: uid('at-'), title: f.title.trim(), instructions: f.instructions?.trim() || undefined, assignee: f.assignee, from: 'carl', kind: 'task', status: 'open', priority: f.priority ?? 'normal', dueAt: f.due, refs: f.refs ?? [], outputRefs: [], runIds: [], createdAt: now, updatedAt: now }
+  const t: AgentTask = { id: uid('at-'), title: f.title.trim(), instructions: f.instructions?.trim() || undefined, doneWhen: f.doneWhen?.trim() || undefined, playbookId: f.playbookId || undefined, assignee: f.assignee, from: 'carl', kind: 'task', status: 'open', priority: f.priority ?? 'normal', dueAt: f.due, refs: f.refs ?? [], outputRefs: [], runIds: [], createdAt: now, updatedAt: now }
   st().put('agentTasks', t)
   st().log('tps', `Handed “${t.title}” to Cue`, `agenttask:${t.id}`)
   return t
 }
+
+/* ---------------- Cue profiles (Agents screen) ---------------- */
+
+/** Save part of a Cue's setup; creates the profile on first save. */
+export function saveCueProfile(agent: CueAgentId, patch: Partial<Omit<CueProfile, 'id' | 'agent'>>) {
+  const cur = profileFor(st().cueProfiles, agent)
+  const next: CueProfile = { ...cur, ...patch, id: agent, agent, updatedAt: nowIso() }
+  if (st().cueProfiles.some((p) => p.id === agent)) st().patch('cueProfiles', agent, next)
+  else st().put('cueProfiles', next)
+  return next
+}
+export function savePlaybook(agent: CueAgentId, pb: Omit<CuePlaybook, 'id'> & { id?: string }) {
+  const cur = profileFor(st().cueProfiles, agent)
+  const rec: CuePlaybook = { ...pb, id: pb.id ?? uid('pb-'), name: pb.name.trim(), instructions: pb.instructions.trim() }
+  saveCueProfile(agent, { playbooks: pb.id ? cur.playbooks.map((x) => (x.id === pb.id ? rec : x)) : [...cur.playbooks, rec] })
+  return rec
+}
+export const deletePlaybook = (agent: CueAgentId, id: string) => saveCueProfile(agent, { playbooks: profileFor(st().cueProfiles, agent).playbooks.filter((x) => x.id !== id) })
 
 /* ---------------- notifications ---------------- */
 

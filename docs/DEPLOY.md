@@ -135,7 +135,10 @@ What the AI can do is controlled in **Settings → AI connections**:
 
 **Manus**: the app can delegate a workflow to Manus through its API (`MANUS_API_KEY`, uses your
 Manus credits). Results are fetched back into AI Studio as drafts. The endpoint shapes follow
-Manus' public v1 docs and haven't been verified against a live account yet.
+Manus' public v1 docs and haven't been verified against a live account yet. The same key enables
+**instant Cue dispatch** (start a Cue in Manus the moment you assign it a task). For the optional
+`MANUS_CUE_PROJECTS` / `MANUS_CUE_CONNECTORS` vars and the one-time smoke test, see
+[MANUS_INTEGRATION.md §6](MANUS_INTEGRATION.md#6-instant-cue-dispatch-and-agent-setup).
 
 ## 6. Optional paid API keys
 
@@ -207,6 +210,13 @@ each device. Then follow [MANUS_INTEGRATION.md](MANUS_INTEGRATION.md): reconnect
 connector (new tools), give each Cue its instructions, and register recurring workflows. Push for
 the new notification categories uses the same device subscription as before. Choose which
 categories push in Settings → Notification centre.
+
+### After updating to instant dispatch + Agents
+
+`npm run deploy` applies migration `0002_cue_dispatch.sql` (two new tables; existing data is
+untouched). Reconnect the Manus connector so it sees `cue_claim_task` and `cue_get_profile`. Set up
+each Cue in Cue → Agents. To start Cues instantly, set `MANUS_API_KEY` and run the smoke test in
+MANUS_INTEGRATION.md §6 before turning auto-start on.
 
 ### Notifications and widgets
 

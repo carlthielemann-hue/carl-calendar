@@ -111,6 +111,8 @@ export interface Settings {
   socialAccounts?: { x?: string; linkedin?: string }
   /** Opt-in: allow pasted ChatGPT/Claude conversation excerpts to become content opportunities */
   allowConversationExcerpts?: boolean
+  /** Start direct Carl → Cue tasks in Manus right away (needs a configured Worker; off by default) */
+  cueAutoDispatch?: boolean
   /** This device only: full dashboard or minimal focus layout */
   homeMode: 'command' | 'focus'
 }

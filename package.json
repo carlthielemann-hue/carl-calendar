@@ -28,7 +28,8 @@
     "test:widgets": "node tests/widgets.mjs",
     "test:cc2": "node tests/cc2.mjs",
     "test:ops21": "node tests/ops21.mjs",
-    "test:ops21-server": "node tests/ops21-server.mjs"
+    "test:ops21-server": "node tests/ops21-server.mjs",
+    "test:dispatch-server": "node tests/dispatch-server.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

@@ -134,6 +134,10 @@ export function describeRef(s: AppState, r: string): { label: string; sub?: stri
       const t = s.agentTasks.find((x) => x.id === p.id)
       return t ? { label: t.title, sub: `Cue task · ${t.status}`, path: '/cue/tasks' } : null
     }
+    case 'cueprofile': {
+      const x = s.cueProfiles.find((y) => y.id === p.id)
+      return x ? { label: `${x.agent} setup`, sub: 'Cue profile', path: '/cue/agents' } : null
+    }
     case 'schedule': {
       const x = s.schedules.find((y) => y.id === p.id)
       return x ? { label: x.name, sub: `Schedule · ${x.recurrence}`, path: '/cue/schedules' } : null

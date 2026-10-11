@@ -150,8 +150,8 @@ export default function CueTeam() {
                   <Button variant="secondary" onClick={() => setCompose(a.id)}>
                     <Bot className="h-3.5 w-3.5" /> Hand off
                   </Button>
-                  <Button variant="ghost" onClick={() => go('/cue/tasks')}>
-                    Tasks <ArrowRight className="h-3.5 w-3.5" />
+                  <Button variant="ghost" onClick={() => go('/cue/agents', `agent:${a.id}`)}>
+                    Setup <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </Card>

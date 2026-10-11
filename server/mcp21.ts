@@ -19,6 +19,8 @@ import type { AgentSchedule, AgentTask, Company, ContentOpportunity, FeedbackObs
 import { detectPatterns, evidencePool, polarityOf, tagThemes, themeOf, THEMES } from '@/domain/improve'
 import { clusterFindings, STRENGTH_LABEL } from '@/domain/intel'
 import { ToolError, str, type Ctx, type Json, type Tool } from './mcpCore'
+import { checkClaim, claimTask } from './cueDispatch'
+import { profileFor, profileSections } from '@/domain/cueProfiles'
 import { createNotice } from './notices'
 import { writeRecord } from './records'
 import type { AppStateLike } from './state'
@@ -99,6 +101,7 @@ export const TOOLS_21: Tool[] = [
         from: { type: 'string', enum: AGENTS, description: 'Your Cue role' },
         title: { type: 'string' },
         instructions: { type: 'string' },
+        done_when: { type: 'string', description: 'What finished looks like' },
         kind: { type: 'string', enum: ['task', 'handoff', 'research', 'review'] },
         priority: { type: 'string', enum: ['high', 'normal', 'low'] },
         due: { type: 'string', description: 'yyyy-MM-dd' },
@@ -126,6 +129,7 @@ export const TOOLS_21: Tool[] = [
         id: `at-${randomId(8)}`,
         title: str(a, 'title', true)!.slice(0, 200),
         instructions: str(a, 'instructions'),
+        doneWhen: str(a, 'done_when')?.slice(0, 1500),
         assignee,
         from,
         kind: oneOf(a, 'kind', ['task', 'handoff', 'research', 'review'] as const, assignee !== from ? 'handoff' : 'task')!,
@@ -149,7 +153,7 @@ export const TOOLS_21: Tool[] = [
   {
     name: 'cue_list_tasks',
     title: 'Cue: list tasks and hand-offs',
-    description: 'Tasks assigned to a Cue (including hand-offs from other Cues and work Carl requested). Default status "open" = open + in progress. Pick one up by setting it in_progress with cue_update_task.',
+    description: 'Tasks assigned to a Cue (including hand-offs from other Cues and work Carl requested). Default status "open" = open + in progress. Pick one up with cue_claim_task (atomic — only one run gets it), then finish it with cue_update_task.',
     inputSchema: {
       type: 'object',
       properties: { agent: { type: 'string', enum: AGENTS }, status: { type: 'string', enum: ['open', 'blocked', 'done', 'all'] }, ref: { type: 'string', description: 'Only tasks about this record' }, limit: { type: 'integer' }, cursor: { type: 'string' } },
@@ -165,16 +169,69 @@ export const TOOLS_21: Tool[] = [
         .filter((t) => (!agent || t.assignee === agent) && (!ref || t.refs.includes(ref)) && (status === 'all' || (status === 'open' ? t.status === 'open' || t.status === 'in_progress' : t.status === status)))
         .sort((x, y) => (x.priority === 'high' ? -1 : 0) - (y.priority === 'high' ? -1 : 0) || x.createdAt.localeCompare(y.createdAt))
       const p = page(list, a)
-      return { ...p, items: p.items.map((t) => ({ id: t.id, title: t.title, instructions: t.instructions ?? null, assignee: t.assignee, from: t.from, kind: t.kind, status: t.status, priority: t.priority, due: t.dueAt ?? null, refs: t.refs, parent_task_id: t.parentId ?? null, output: t.output ?? null, blocker: t.blocker ?? null, created_at: t.createdAt })) }
+      return { ...p, items: p.items.map((t) => ({ id: t.id, title: t.title, instructions: t.instructions ?? null, done_when: t.doneWhen ?? null, assignee: t.assignee, from: t.from, kind: t.kind, status: t.status, priority: t.priority, due: t.dueAt ?? null, refs: t.refs, parent_task_id: t.parentId ?? null, output: t.output ?? null, blocker: t.blocker ?? null, created_at: t.createdAt })) }
+    },
+  },
+  {
+    name: 'cue_get_profile',
+    title: 'Cue: read your setup from Carl',
+    description: 'Your standing instructions from Carl: how to work, focus, extra limits, default output format, task playbooks, and whether you are paused. Read it at the start of scheduled runs. If paused is true, do no task work.',
+    inputSchema: { type: 'object', properties: { agent: { type: 'string', enum: AGENTS, description: 'Your Cue role' } }, required: ['agent'], additionalProperties: false },
+    level: 'read',
+    run: async (a, ctx) => {
+      const agent = agentArg(a)!
+      const p = profileFor((await ctx.state()).cueProfiles, agent)
+      return {
+        agent,
+        paused: p.paused,
+        instructions: p.instructions || null,
+        focus: p.focus ?? null,
+        boundaries: p.boundaries ?? null,
+        output_format: p.outputFormat ?? null,
+        playbooks: p.playbooks.map((x) => ({ id: x.id, name: x.name, instructions: x.instructions, done_when: x.doneWhen ?? null })),
+        configured: !!p.updatedAt,
+        note: 'Written by Carl. The hard rules (approval before anything external, nothing invented) always win.',
+      }
+    },
+  },
+  {
+    name: 'cue_claim_task',
+    title: 'Cue: claim a task (atomic)',
+    description:
+      'Take ownership of one open task before working on it. Atomic: if two runs try, only one gets claimed: true. Refused (claimed: false) when the task is assigned to another Cue, already claimed, cancelled or done — then do no work on it. Returns the current task and a claim_token to pass to cue_update_task when you finish.',
+    inputSchema: {
+      type: 'object',
+      properties: { task_id: { type: 'string' }, agent: { type: 'string', enum: AGENTS, description: 'Your Cue role' }, run_id: { type: 'string', description: 'The run id Command Center gave you, or your cue_record_run id' } },
+      required: ['task_id', 'agent'],
+      additionalProperties: false,
+    },
+    level: 'write',
+    run: async (a, ctx) => {
+      const agent = agentArg(a)!
+      const r = await claimTask(ctx.env, str(a, 'task_id', true)!, agent, str(a, 'run_id')?.slice(0, 200))
+      if (!r.claimed) {
+        const why = { not_found: 'No such task.', not_assigned: `Assigned to ${agentName(r.assignee)}, not you.`, not_open: `The task is ${r.status} — nothing to do.`, already_claimed: 'Another run already has it.', paused: 'Carl paused you in your setup.' }[r.reason]
+        return { ok: true, claimed: false, reason: r.reason, message: `${why} Do no work on this task.` }
+      }
+      const t = r.task
+      if (!r.repeat) await audit(ctx, `${agentName(agent)} started “${t.title}”`, `agenttask:${t.id}`)
+      return {
+        ok: true,
+        claimed: true,
+        claim_token: r.token,
+        task: { id: t.id, title: t.title, instructions: t.instructions ?? null, done_when: t.doneWhen ?? null, assignee: t.assignee, from: t.from, kind: t.kind, priority: t.priority, due: t.dueAt ?? null, refs: t.refs, parent_task_id: t.parentId ?? null },
+        carls_setup: profileSections(r.profile, t),
+        setup_note: 'carls_setup is written by Carl: follow it. The hard rules (approval before anything external, nothing invented) still win.',
+      }
     },
   },
   {
     name: 'cue_update_task',
     title: 'Cue: update a task',
-    description: 'Mark a task in_progress, done (with output and output_refs — the records or links you produced), blocked (with blocker — Carl and Main Cue are notified) or cancelled. Completing the last open hand-off on an opportunity that has an outreach draft in review notifies Carl that the package is ready.',
+    description: 'Mark a task in_progress (prefer cue_claim_task), done (with output and output_refs — the records or links you produced), blocked (with blocker — Carl and Main Cue are notified) or cancelled. Completing the last open hand-off on an opportunity that has an outreach draft in review notifies Carl that the package is ready.',
     inputSchema: {
       type: 'object',
-      properties: { task_id: { type: 'string' }, status: { type: 'string', enum: ['in_progress', 'blocked', 'done', 'cancelled'] }, output: { type: 'string' }, output_refs: { type: 'array', items: { type: 'string' } }, blocker: { type: 'string' }, run_id: { type: 'string' } },
+      properties: { task_id: { type: 'string' }, status: { type: 'string', enum: ['in_progress', 'blocked', 'done', 'cancelled'] }, output: { type: 'string' }, output_refs: { type: 'array', items: { type: 'string' } }, blocker: { type: 'string' }, run_id: { type: 'string' }, claim_token: { type: 'string', description: 'From cue_claim_task — required to finish a task you claimed' } },
       required: ['task_id', 'status'],
       additionalProperties: false,
     },
@@ -186,6 +243,8 @@ export const TOOLS_21: Tool[] = [
       const status = oneOf(a, 'status', ['in_progress', 'blocked', 'done', 'cancelled'] as const)!
       if (status === 'blocked' && !str(a, 'blocker')) throw new ToolError('Say what blocks it in "blocker".')
       if (t.status === status && status === 'done') return { ok: true, task_id: t.id, duplicate: true }
+      if ((t.status === 'cancelled' || t.status === 'done') && status !== t.status) throw new ToolError(`This task is ${t.status} — stop working on it.`)
+      if (!(await checkClaim(ctx.env, t.id, str(a, 'claim_token')))) throw new ToolError('Another run claimed this task (claim_token does not match) — stop working on it.')
       const now = nowIso()
       const next: AgentTask = {
         ...t,

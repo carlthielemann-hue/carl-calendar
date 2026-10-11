@@ -45,7 +45,7 @@ import type {
   WeekScore,
 } from './entities'
 import type { Achievement, Affirmation, AffirmationPlaylist, AgentRun, ApplicationDraft, ApprovalRequest, CaptureItem, ClientContact, ClientOnboarding, DailySnapshot, DayRoutine, Decision, FocusSession, FutureLetter, IdeaCanvas, JournalEntry, KnowledgeDoc, MeetingNote, Place, PortfolioPiece, RoutineRun, VisionBoard } from './entities2'
-import type { AgentTask, AgentSchedule, AppNotification, Company, PublicationJob, ContentOpportunity, WatchSource, IntelFinding, FeedbackObservation, ImprovementRec } from './entities3'
+import type { AgentTask, CueProfile, AgentSchedule, AppNotification, Company, PublicationJob, ContentOpportunity, WatchSource, IntelFinding, FeedbackObservation, ImprovementRec } from './entities3'
 
 export interface GoogleState {
   connected: boolean
@@ -129,6 +129,7 @@ export interface Data {
   canvases: IdeaCanvas[]
   /* Command Center 2.1 */
   agentTasks: AgentTask[]
+  cueProfiles: CueProfile[]
   schedules: AgentSchedule[]
   notifications: AppNotification[]
   companies: Company[]

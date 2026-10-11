@@ -14,7 +14,7 @@ import { DEFAULT_MONEY_SETTINGS, DEFAULT_STUDY_PREFS } from '@/domain/entities'
 import { BUILTIN_EXERCISES } from '@/domain/fitness'
 import { isAccountMode, storeKey } from './mode'
 import { DEFAULT_APPEARANCE, DEFAULT_FOCUS_PREFS, DEFAULT_VOICE_PREFS, type Achievement, type Affirmation, type AffirmationPlaylist, type AgentRun, type ApplicationDraft, type ApprovalRequest, type CaptureItem, type ClientContact, type ClientOnboarding, type DailySnapshot, type DayRoutine, type Decision, type FocusSession, type FutureLetter, type IdeaCanvas, type JournalEntry, type KnowledgeDoc, type MeetingNote, type Place, type PortfolioPiece, type RoutineRun, type VisionBoard } from '@/domain/entities2'
-import { DEFAULT_NOTIFICATION_PREFS, type AgentTask, type AgentSchedule, type AppNotification, type Company, type PublicationJob, type ContentOpportunity, type WatchSource, type IntelFinding, type FeedbackObservation, type ImprovementRec } from '@/domain/entities3'
+import { DEFAULT_NOTIFICATION_PREFS, type AgentTask, type CueProfile, type AgentSchedule, type AppNotification, type Company, type PublicationJob, type ContentOpportunity, type WatchSource, type IntelFinding, type FeedbackObservation, type ImprovementRec } from '@/domain/entities3'
 import type {
   AdRef,
   AiOutput,
@@ -145,6 +145,7 @@ export interface Collections {
   appDrafts: ApplicationDraft
   canvases: IdeaCanvas
   agentTasks: AgentTask
+  cueProfiles: CueProfile
   schedules: AgentSchedule
   notifications: AppNotification
   companies: Company
@@ -205,6 +206,7 @@ export const COLL_REF: Record<CollKey, EntityType> = {
   appDrafts: 'appdraft',
   canvases: 'canvas',
   agentTasks: 'agenttask',
+  cueProfiles: 'cueprofile',
   schedules: 'schedule',
   notifications: 'notification',
   companies: 'company',
@@ -368,6 +370,7 @@ function initialData(): Data {
     appDrafts: [],
     canvases: [],
     agentTasks: [],
+    cueProfiles: [],
     schedules: [],
     notifications: [],
     companies: [],
@@ -846,7 +849,7 @@ export const useApp = create<AppState>()(
           set({
             events: [], tasks: [], topThree: {}, weekly: {}, dayPlans: {}, clients: [], projects: [], deliverables: [], opportunities: [],
             ads: [], analyses: [], plans: [], insights: [], scorecards: {}, focusLogs: [], activity: [], hasDemoData: false,
-            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [], transactions: [], accounts: [], subscriptions: [], savingsGoals: [], moves: [], goals: [], boards: [], visionBoards: [], journal: [], achievements: [], snapshots: [], futureLetters: [], places: [], affirmations: [], playlists: [], focusSessions: [], dayRoutines: [], routineRuns: [], agentRuns: [], approvals: [], knowledgeDocs: [], captures: [], contacts: [], meetings: [], decisions: [], onboardings: [], portfolio: [], appDrafts: [], canvases: [], agentTasks: [], schedules: [], notifications: [], companies: [], publications: [], contentOpps: [], watchlist: [], findings: [], observations: [], improvements: [],
+            research: [], assets: [], feedback: [], performance: [], concepts: [], aiOutputs: [], posts: [], countdowns: [], proposals: [], subjects: [], exams: [], assignments: [], grades: [], routines: [], workouts: [], bodyweight: [], transactions: [], accounts: [], subscriptions: [], savingsGoals: [], moves: [], goals: [], boards: [], visionBoards: [], journal: [], achievements: [], snapshots: [], futureLetters: [], places: [], affirmations: [], playlists: [], focusSessions: [], dayRoutines: [], routineRuns: [], agentRuns: [], approvals: [], knowledgeDocs: [], captures: [], contacts: [], meetings: [], decisions: [], onboardings: [], portfolio: [], appDrafts: [], canvases: [], agentTasks: [], cueProfiles: [], schedules: [], notifications: [], companies: [], publications: [], contentOpps: [], watchlist: [], findings: [], observations: [], improvements: [],
           }),
       }
     },
@@ -968,6 +971,7 @@ function migrateV2(p: Record<string, unknown>): Record<string, unknown> {
     appDrafts: [],
     canvases: [],
     agentTasks: [],
+    cueProfiles: [],
     schedules: [],
     notifications: [],
     companies: [],

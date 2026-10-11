@@ -7,7 +7,8 @@ import { api, useCloud } from '@/lib/cloud'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { useConnectedApps } from '@/features/cue/shared'
+import { agentOf, useConnectedApps } from '@/features/cue/shared'
+import { useDispatch, useDispatchConfig } from '@/lib/cueDispatch'
 
 interface ProviderInfo {
   configured: boolean
@@ -120,6 +121,7 @@ export default function IntegrationsPage() {
       <div className="flex flex-col gap-4">
         <LiveStatus />
         <ConnectedApps />
+        <CueDispatch />
         <Card className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -220,6 +222,62 @@ function ConnectedApps() {
             ))}
           </tbody>
         </table>
+      )}
+    </Card>
+  )
+}
+
+/** Instant Cue dispatch: what the Worker can do, which Cues proved the full path, and the opt-in. */
+export function CueDispatch() {
+  const cfg = useDispatchConfig()
+  const cfgError = useDispatch((s) => s.configError)
+  const auto = useApp((s) => !!s.settings.cueAutoDispatch)
+  const updateSettings = useApp((s) => s.updateSettings)
+  const ready = !!cfg?.configured
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[14.5px] font-semibold">Instant Cue dispatch (Manus API)</h2>
+          <p className="mt-0.5 text-[12.5px] text-muted">Start a Cue in Manus the moment you assign it a task, instead of waiting for its next scheduled run. Each start uses Manus credits.</p>
+        </div>
+        <span className={cn('shrink-0 rounded-full border px-2.5 py-1 text-[11.5px] font-medium', ready ? 'border-[color-mix(in_srgb,var(--ok)_40%,transparent)] text-ok' : 'border-line text-muted')}>{ready ? 'Configured' : 'Not configured'}</span>
+      </div>
+      {!cfg ? (
+        <p className="mt-3 text-[12.5px] text-muted">{cfgError ?? 'Checking…'}</p>
+      ) : (
+        <>
+          <table className="mt-3 w-full text-left text-[12.5px]">
+            <thead className="text-[11px] text-faint uppercase">
+              <tr>
+                <th className="py-1 font-medium">Cue</th>
+                <th className="py-1 font-medium">Can dispatch</th>
+                <th className="py-1 font-medium">Manus project</th>
+                <th className="py-1 font-medium">Verified</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cfg.agents.map((a) => (
+                <tr key={a.agent} className="border-t border-line">
+                  <td className="py-1.5">{agentOf(a.agent).name}</td>
+                  <td className="py-1.5 text-muted">{a.available ? 'yes' : (a.reason ?? 'no')}</td>
+                  <td className="py-1.5 text-muted">{a.project ? 'mapped' : 'default'}</td>
+                  <td className={cn('py-1.5', a.verifiedAt ? 'text-ok' : 'text-muted')}>{a.verifiedAt ? `yes — first claim ${new Date(a.verifiedAt).toLocaleDateString()}` : 'not yet — run the smoke test'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-2 text-[11.5px] text-faint">
+            “Verified” means a dispatched Manus run actually claimed its task through the Command Center connector. Until then a dispatch can be accepted by Manus without the Cue being able to reach Command Center. {cfg.connectors ? `${cfg.connectors} connector id(s) attached to each dispatch.` : 'No connector id set — Manus uses your project/default connectors.'}
+          </p>
+          <label className={cn('mt-3 flex items-start gap-2 text-[13px]', !ready && 'opacity-50')}>
+            <input type="checkbox" className="mt-0.5" disabled={!ready} checked={ready && auto} onChange={(e) => updateSettings({ cueAutoDispatch: e.target.checked })} />
+            <span>
+              Auto-start direct Cue tasks
+              <span className="block text-[11.5px] text-muted">Tasks you hand a Cue start in Manus right away. Hand-offs between Cues stay queued for their next run. Sending, posting and proposals still need your approval.</span>
+            </span>
+          </label>
+        </>
       )}
     </Card>
   )

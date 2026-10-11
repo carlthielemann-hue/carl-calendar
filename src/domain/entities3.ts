@@ -41,9 +41,71 @@ export interface AgentTask {
   /** Set by the caller so retries never create duplicates */
   idempotencyKey?: string
   via?: string
+  /** What finished looks like — overrides the Cue's default output format */
+  doneWhen?: string
+  /** The playbook (task template) it was created from */
+  playbookId?: string
+  /** Which Cue claimed it (cue_claim_task) and when — "in progress" is only shown after a claim */
+  claimedBy?: CueAgentId
+  claimedAt?: string
+  claimRunId?: string
+  /** Instant dispatch to Manus — mirrored from the server's dispatch record, display only */
+  dispatch?: TaskDispatch
   createdAt: string
   updatedAt: string
   completedAt?: string
+}
+
+/**
+ * Carl's setup for one Cue: how it should work, what "done" looks like, its task templates, and
+ * whether it may start instantly. Sent to the Cue with every task it claims (cue_claim_task) and
+ * readable any time with cue_get_profile. The hard safety rules always win over these.
+ */
+export interface CueProfile {
+  /** = agent id — one profile per Cue */
+  id: CueAgentId
+  agent: CueAgentId
+  /** Standing instructions: how this Cue should approach its work */
+  instructions: string
+  /** Default definition of done / output format for its tasks */
+  outputFormat?: string
+  /** Extra limits on top of the hard rules (e.g. "never contact agencies") */
+  boundaries?: string
+  /** Sources, tools and priorities to prefer */
+  focus?: string
+  /** Start direct tasks for this Cue in Manus right away (needs dispatch configured + the global switch) */
+  autoStart: boolean
+  /** Paused: no instant starts and claims are refused — the Cue does no task work */
+  paused: boolean
+  playbooks: CuePlaybook[]
+  updatedAt: string
+}
+/** A reusable task template: what to do and how, with its own definition of done. */
+export interface CuePlaybook {
+  id: string
+  name: string
+  /** Pre-filled task title (optional) */
+  title?: string
+  instructions: string
+  doneWhen?: string
+  priority?: 'high' | 'normal' | 'low'
+}
+
+/**
+ * submitting = request to Manus in flight · submitted = Manus accepted it (task id returned) ·
+ * unknown = the request may or may not have reached Manus (network error) — never auto-retried ·
+ * failed = Manus rejected it or dispatch is not configured · claimed = the Cue claimed the task.
+ */
+export type DispatchState = 'submitting' | 'submitted' | 'unknown' | 'failed' | 'claimed'
+export interface TaskDispatch {
+  state: DispatchState
+  manusTaskId?: string
+  manusUrl?: string
+  requestedAt: string
+  submittedAt?: string
+  claimedAt?: string
+  error?: string
+  attempts: number
 }
 
 export type ScheduleStatus = 'configured' | 'active' | 'paused' | 'error'

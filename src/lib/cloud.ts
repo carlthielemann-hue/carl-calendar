@@ -30,6 +30,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    /** Parsed JSON error body, when the server sent one */
+    public body?: { error?: string; code?: string; [k: string]: unknown } | null,
   ) {
     super(message)
   }
@@ -55,7 +57,7 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
   const ct = res.headers.get('content-type') ?? ''
   if (!res.ok) {
     const body = ct.includes('json') ? await res.json().catch(() => null) : null
-    throw new ApiError(body?.error ?? `${res.status} ${res.statusText}`, res.status)
+    throw new ApiError(body?.error ?? `${res.status} ${res.statusText}`, res.status, body)
   }
   if (ct.includes('json')) return (await res.json()) as T
   return (await res.blob()) as unknown as T

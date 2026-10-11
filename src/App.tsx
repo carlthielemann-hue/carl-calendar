@@ -76,6 +76,7 @@ const ROUTES: Record<string, ReturnType<typeof lazy>> = {
   'home/analytics': page(() => import('@/pages/home/Analytics')),
   'home/timeline': page(() => import('@/pages/home/Timeline')),
   'cue/team': page(() => import('@/pages/cue/Team')),
+  'cue/agents': page(() => import('@/pages/cue/Agents')),
   'cue/runs': page(() => import('@/pages/cue/Runs')),
   'cue/approvals': page(() => import('@/pages/cue/Approvals')),
   'cue/tasks': page(() => import('@/pages/cue/Tasks')),

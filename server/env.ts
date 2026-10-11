@@ -11,6 +11,12 @@ export interface Env {
   APP_TIMEZONE: string
   ANTHROPIC_MODEL: string
   OPENAI_MODEL: string
+  /** Optional: override the Manus API origin (tests point this at a local mock). Default https://api.manus.ai */
+  MANUS_API_BASE?: string
+  /** Optional: Manus project per Cue, "main=<projectId>,acquisition=<projectId>,…" (project instructions apply to dispatched tasks) */
+  MANUS_CUE_PROJECTS?: string
+  /** Optional: Manus connector ids to attach to dispatched Cue tasks (comma-separated), e.g. the Command Center connector */
+  MANUS_CUE_CONNECTORS?: string
   // secrets (wrangler secret put …) — all optional except OWNER_PASSWORD + ENCRYPTION_KEY
   OWNER_PASSWORD?: string
   ENCRYPTION_KEY?: string

@@ -19,15 +19,17 @@ before relying on it.
    has called a tool. Agents show **not connected yet** until they report real activity. Nothing is
    marked active by assumption.
 
-No new secrets or environment variables are needed for 2.1. `MANUS_API_KEY` stays optional and
-is only used by AI Studio's "Send to Manus" button.
+No new secrets are needed for 2.1. `MANUS_API_KEY` is optional: AI Studio's "Send to Manus"
+button and **instant Cue dispatch** (section 6) use it.
 
 ## 2. Rules every Cue follows (paste into each agent's instructions)
 
 ```
 You work for Carl through the Command Center connector.
-- Pick up work: cue_list_tasks (agent = your role). Set in_progress, then done with output +
-  output_refs. Blocked? cue_update_task status blocked with the reason.
+- Start of every run: cue_get_profile (agent = your role) — Carl's setup for you. If paused, stop.
+- Pick up work: cue_list_tasks (agent = your role), then cue_claim_task (task_id, agent, run_id).
+  Only work on it if claimed is true. Finish with cue_update_task (done with output + output_refs,
+  or blocked with the reason) and pass the claim_token.
 - Hand work to another Cue with cue_create_task (from = you, refs = the records it is about).
 - Log what you did with cue_record_run (task_id, refs, source_refs, manus_url).
 - Always pass idempotency_key on creates so retries never duplicate.
@@ -114,3 +116,100 @@ Center's 15-minute check flags scheduled posts that nobody picked up 30 minutes 
 Every list tool takes `limit` and `cursor` and returns `next_cursor`. Private data (My Space,
 captures, private documents, hidden clients, money/grades unless allowed, the notification centre)
 is never visible to agents.
+
+## 6. Instant Cue dispatch and agent setup
+
+### What it does
+
+When you assign a task to a Cue in Command Center, the Worker can start that Cue in Manus right
+away instead of leaving it for the next scheduled run.
+
+1. The task is saved and synced, then `POST /api/cue/tasks/:id/dispatch` runs on the Worker.
+2. A row in D1 (`cue_dispatches`, primary key = task id) locks the attempt. Double clicks,
+   retries, refreshes and concurrent requests return the same dispatch and never start a second
+   Manus task.
+3. The Worker calls Manus `POST /v2/task.create` with a claim-first prompt. The prompt contains
+   the task (quoted as data), Carl's setup for that Cue, and the hard rules.
+4. The task shows **Queued in Manus**, with a link, only after Manus returns a task id. It shows
+   **In progress** only after the Cue calls `cue_claim_task`. It is **done** only when the Cue calls
+   `cue_update_task`. A finished Manus task never completes anything.
+5. If Manus answers with a 4xx, the dispatch is **failed** and can be retried. With no answer, a
+   timeout or a 5xx, it is **unknown** and is never retried automatically, because Manus may
+   already have created the task. Retry asks you to check Manus first.
+6. If the Cue has not claimed the task 30 minutes after Manus accepted it, the task says so. That
+   usually means the Manus run can't reach the Command Center connector.
+
+### Claims (`cue_claim_task`)
+
+- A claim is atomic: if two runs try, only one gets `claimed: true` (D1 `cue_claims`).
+- It is refused when the task is assigned to another Cue, cancelled, done, already claimed, or the
+  Cue is paused. A run that starts late on a cancelled or reassigned task therefore does nothing.
+- It returns `claim_token`. `cue_update_task` refuses a different token. Tasks picked up the old
+  way, without a claim, keep working.
+
+### Agent setup (Cue → Agents)
+
+For each Cue, Carl can set:
+
+- standing instructions;
+- focus and sources;
+- extra limits;
+- a default "done when" / output format;
+- playbooks (task templates with their own instructions and "done when");
+- auto-start;
+- pause.
+
+The Cue receives this setup:
+
+- in the dispatched prompt;
+- in `carls_setup` from `cue_claim_task`;
+- at any time via `cue_get_profile`.
+
+Precedence for "done when": the task's own value, then the playbook's, then the Cue's default.
+The hard rules always win over the setup: approval before anything external, nothing invented.
+
+### Configure (Worker)
+
+| Setting | Kind | Needed | What |
+| --- | --- | --- | --- |
+| `MANUS_API_KEY` | secret | yes | Manus API key (`npx wrangler secret put MANUS_API_KEY`). Each start uses credits. |
+| `MANUS_CUE_PROJECTS` | var | optional | `main=<projectId>,acquisition=<projectId>,…`. Each Cue's tasks run in that Manus project, so its project instructions apply. |
+| `MANUS_CUE_CONNECTORS` | var | optional | Comma-separated Manus connector ids to attach to every dispatch (e.g. your Command Center connector). If unset, Manus uses project/default connectors. |
+
+Then, in **Integrations → Instant Cue dispatch**, turn on "Auto-start direct Cue tasks". Each
+Cue's own auto-start switch is on the Agents screen. Hand-offs between Cues are never started
+instantly; they wait for the next run. **Run now** on a task always works when dispatch is
+configured.
+
+### What is and isn't verified
+
+- **Tested** with a fake Manus API (`tests/dispatch-server.mjs`): the lock, the claim, cancel and
+  reassign refusals, rejected and unknown outcomes, the paused Cue, the setup in the prompt, and
+  the AI Studio route still working.
+- **Not verified against a live account:** the v2 field names (from Manus' public API docs, which
+  couldn't be fetched from the build environment).
+- **Not available through the API:** selecting a saved Manus *Agent profile*. That's why Cues map to
+  Manus **projects** instead.
+- **Not known:** whether an API-created task gets your browser logins (My Browser) or app
+  connectors. Treat them as unavailable. The prompt tells the Cue to set the task to blocked and
+  name what's missing rather than guess.
+- **Per Cue:** the Integrations card shows "Verified" only after a dispatched run has actually
+  claimed its task.
+
+### Smoke test (once per Cue, before relying on it)
+
+1. Set `MANUS_API_KEY` (and optionally `MANUS_CUE_PROJECTS` / `MANUS_CUE_CONNECTORS`), then
+   `npm run deploy`.
+2. In Command Center → Cue → Tasks & hand-offs, click **Hand off work**. Pick the Cue and give it
+   "Smoke test: call cue_get_coordination_state and report the number of open tasks in your
+   output".
+3. Save, then press **Run now** on the card. Expect **Queued in Manus** with a *Manus task* link.
+   If you see **Dispatch failed**, read the error: a 401/403 means the key, and a 400 usually means
+   a field or project id.
+4. Within a few minutes the card should move to **In progress — claimed by the Cue**, then to
+   **Done** with the output.
+5. If it stays "Queued in Manus" for 30 minutes, open the Manus task. The run most likely has no
+   Command Center connector. Set `MANUS_CUE_CONNECTORS` or enable the connector on that project
+   or as a default.
+6. Integrations → Instant Cue dispatch now shows the Cue as **Verified**. Only then turn on
+   auto-start.

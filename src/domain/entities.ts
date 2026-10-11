@@ -67,6 +67,7 @@ export type EntityType =
   | 'appdraft'
   | 'canvas'
   | 'agenttask'
+  | 'cueprofile'
   | 'schedule'
   | 'notification'
   | 'company'

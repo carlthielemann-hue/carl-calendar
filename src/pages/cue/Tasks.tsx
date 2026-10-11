@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import { describeRef } from '@/lib/work'
 import { useApp } from '@/store/app'
 import { useUI } from '@/store/ui'
-import { AgentMark, Composer, agentOf, handoffPrompt } from '@/features/cue/shared'
+import { AgentMark, Composer, DispatchLine, agentOf, handoffPrompt } from '@/features/cue/shared'
 
 const COLS: { id: AgentTaskStatus | 'waiting'; label: string; color: string }[] = [
   { id: 'open', label: 'Waiting for pickup', color: '#e5a54b' },
@@ -71,6 +71,7 @@ function TaskCard({ t }: { t: AgentTask }) {
       </div>
       {t.instructions && <p className="mt-1.5 line-clamp-3 text-[12px] text-muted">{t.instructions}</p>}
       {t.blocker && <p className="mt-1.5 text-[12px] text-danger">Blocked: {t.blocker}</p>}
+      <DispatchLine t={t} compact />
       {t.output && <p className="mt-1.5 line-clamp-4 rounded-lg bg-panel-2 px-2 py-1.5 text-[12px] whitespace-pre-wrap text-fg-2">{t.output}</p>}
       <Refs refs={[...t.refs, ...t.outputRefs]} />
       {(t.status === 'open' || t.status === 'blocked') && (
@@ -88,7 +89,7 @@ function TaskCard({ t }: { t: AgentTask }) {
             </Button>
           )}
           {t.status === 'blocked' && (
-            <Button size="sm" variant="ghost" onClick={() => st.patch('agentTasks', t.id, { status: 'open', blocker: undefined, updatedAt: new Date().toISOString() })}>
+            <Button size="sm" variant="ghost" onClick={() => st.patch('agentTasks', t.id, { status: 'open', blocker: undefined, claimedBy: undefined, claimedAt: undefined, claimRunId: undefined, updatedAt: new Date().toISOString() })}>
               Unblocked
             </Button>
           )}

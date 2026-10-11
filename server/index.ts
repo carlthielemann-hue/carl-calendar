@@ -13,6 +13,7 @@ import { badgeCount, clockIn, DEFAULT_PREFS, morningBrief, occurrencesBetween, p
 import { buildWidget } from '@/domain/widget'
 import type { Env } from './env'
 import * as google from './google'
+import { dispatchConfig, dispatchTask, getDispatch, toDispatch } from './cueDispatch'
 import { createManusTask, getManusTask } from './manus'
 import { DEFAULT_MCP_AREAS, DEFAULT_MCP_PERMISSIONS, mcpFetch, toolList, type McpAreas, type McpPermissions } from './mcp'
 import { consentPage, HTML_HEADERS, loginPage, messagePage } from './pages'
@@ -191,6 +192,22 @@ app.post('/api/manus/task', async (c) => {
     return json({ error: (e as Error).message }, 502)
   }
 })
+
+/* ---------------- instant Cue dispatch (Manus) ---------------- */
+
+app.get('/api/cue/dispatch/config', async (c) => json(await dispatchConfig(c.env)))
+const dispatchRoute = async (c: C) => {
+  const b = (await c.req.json().catch(() => ({}))) as { force?: boolean }
+  const r = await dispatchTask(c.env, c.req.param('id')!, { force: b.force === true })
+  return r.ok ? json(r) : json(r, r.status)
+}
+app.post('/api/cue/tasks/:id/dispatch', dispatchRoute)
+app.post('/api/cue/tasks/:id/retry-dispatch', dispatchRoute)
+app.get('/api/cue/tasks/:id/dispatch', async (c) => {
+  const row = await getDispatch(c.env, c.req.param('id'))
+  return json({ dispatch: row ? toDispatch(row) : null })
+})
+
 app.get('/api/manus/task/:id', async (c) => {
   try {
     return json(await getManusTask(c.env, c.req.param('id')))
@@ -421,7 +438,7 @@ app.get('/api/integrations', async (c) => {
       google: { ...(await google.googleStatus(c.env)), last: last('google'), lastOk: lastOk('google') },
       anthropic: { configured: !!c.env.ANTHROPIC_API_KEY, model: c.env.ANTHROPIC_MODEL, last: last('anthropic'), lastOk: lastOk('anthropic') },
       openai: { configured: !!(c.env.OPENAI_API_KEY && c.env.OPENAI_MODEL), model: c.env.OPENAI_MODEL || null, last: last('openai'), lastOk: lastOk('openai') },
-      manus: { configured: !!c.env.MANUS_API_KEY, last: last('manus'), lastOk: lastOk('manus') },
+      manus: { configured: !!c.env.MANUS_API_KEY, last: last('manus'), lastOk: lastOk('manus'), cueDispatch: await dispatchConfig(c.env) },
       mcp: { configured: true, last: last('mcp'), lastOk: lastOk('mcp') },
       push: { configured: pushConfigured(c.env), last: last('push'), lastOk: lastOk('push') },
     },
