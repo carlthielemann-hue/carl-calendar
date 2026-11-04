@@ -30,11 +30,13 @@
     // Replace with the id printed by `wrangler kv namespace create OAUTH_KV`
     { "binding": "OAUTH_KV", "id": "4c3a0cff7fd242a5b85657330d6071da" }
   ],
-  "triggers": { "crons": ["*/15 * * * *"] },
+  "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "APP_TIMEZONE": "Europe/Berlin",
     "ANTHROPIC_MODEL": "claude-opus-5-5",
-    "OPENAI_MODEL": ""
+    "OPENAI_MODEL": "",
+    // Scriptroom sender: ships OFF. Flip to "true" only after CARL_TODO.md is done.
+    "SENDING_ENABLED": "false"
   },
   "observability": { "enabled": true }
 }

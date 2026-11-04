@@ -28,4 +28,16 @@ export interface Env {
   VAPID_PUBLIC_KEY?: string
   VAPID_PRIVATE_JWK?: string
   VAPID_SUBJECT?: string
+  // Scriptroom Engine
+  /** "true" to allow the sender to send approved emails. Ships "false". */
+  SENDING_ENABLED?: string
+  /** Postal address for the CAN-SPAM footer (can also be set in Engine settings). */
+  SENDER_ADDRESS?: string
+  /** Optional Google OAuth client just for the sending inbox (falls back to GOOGLE_CLIENT_ID/SECRET) */
+  GMAIL_CLIENT_ID?: string
+  GMAIL_CLIENT_SECRET?: string
+  /** Optional public origin allowed to post the teardown form (e.g. https://theprofitscript.com) */
+  PUBLIC_FORM_ORIGIN?: string
+  /** dev only: "log" records sends instead of using Gmail (all gates still apply) */
+  SEND_TRANSPORT?: string
 }

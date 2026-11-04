@@ -1,0 +1,100 @@
+{
+  "_comment": "Fictional brand for demo purposes. Northfield Botanics does not exist. All claims, prices and the review are placeholder copy.",
+  "brand": {
+    "name": "Northfield Botanics",
+    "slug": "northfield",
+    "wordmark": "Northfield",
+    "colors": {
+      "primary": "#23402F",
+      "secondary": "#EDE6D6",
+      "accent": "#E0A447",
+      "bg": "#F7F3EB",
+      "ink": "#16201A",
+      "muted": "#5F665F",
+      "surface": "#FFFFFF",
+      "on_primary": "#FFFFFF"
+    },
+    "fonts": { "heading": "Inter", "body": "Inter" },
+    "logo": null
+  },
+  "slug": "one-tin-routine",
+  "angle": "Routine simplification: one balm replaces a shelf of hand and body products",
+  "spec": true,
+  "labels": [],
+  "product": { "name": "Barrier Balm", "variant": "Unscented · 60 g" },
+  "product_image": null,
+  "background": { "type": "gradient" },
+  "eyebrow": "Hand & body balm",
+  "subhead": "Plant butters and oils, no water filler. One tin from knuckles to elbows.",
+  "headlines": {
+    "a": "Your 6-lotion shelf, in **one tin**.",
+    "b": "Dry hands at 9pm? **One balm.** Done."
+  },
+  "cta": "Shop Barrier Balm",
+  "disclaimer": "Cosmetic product. Not intended to diagnose, treat, cure or prevent any disease.",
+  "claims": [
+    { "text": "Fragrance-free", "substantiation": "Formula sheet (placeholder)" },
+    { "text": "No added water", "substantiation": "Formula sheet (placeholder)" },
+    { "text": "Refillable tin", "substantiation": "Packaging spec (placeholder)" }
+  ],
+  "comparison": {
+    "us_label": "Barrier Balm",
+    "them_label": "Typical lotion",
+    "rows": [
+      { "label": "Fragrance-free", "us": true, "them": false },
+      { "label": "No added water", "us": true, "them": false },
+      { "label": "Hands, elbows, heels", "us": true, "them": false },
+      { "label": "Refillable tin", "us": true, "them": false }
+    ],
+    "stat": "**One tin** replaces the hand cream, cuticle oil and elbow stick."
+  },
+  "review": {
+    "text": "I keep one at my desk and one by the sink. Garden season used to wreck my knuckles. This is the only thing I reach for now.",
+    "name": "Maya R.",
+    "location": "Portland, OR",
+    "rating": 5,
+    "verified": true,
+    "placeholder": true
+  },
+  "us_vs_them": {
+    "us_label": "Northfield",
+    "them_label": "The usual",
+    "them": ["Mostly water", "Added fragrance", "Separate cream for every spot"],
+    "us": ["Plant butters & oils", "Fragrance-free", "One balm, head to heel"]
+  },
+  "callouts": [
+    { "title": "Shea butter", "text": "Rich, slow-melting base" },
+    { "title": "Oat oil", "text": "Light, non-greasy finish" },
+    { "title": "Beeswax", "text": "Locks in moisture" },
+    { "title": "Zero fragrance", "text": "Nothing you don't need" }
+  ],
+  "native": {
+    "style": "note",
+    "timestamp": "November 4, 2026 at 9:12 PM",
+    "body": "1. hand cream (desk)\n2. cuticle oil\n3. elbow stick\n4. \"repair\" lotion\n5. foot cream\n\n→ replaced all of it with **one tin of balm**. bathroom shelf finally has room."
+  },
+  "offer": {
+    "badge": "Save 20%",
+    "price": "$28",
+    "compare_at": "$35",
+    "price_note": "Duo bundle · $14 per tin",
+    "bullets": ["Free shipping over $40", "30-day money-back guarantee", "Refills ship in paper"],
+    "terms": "Bundle price. Guarantee terms apply."
+  },
+  "before_after": {
+    "before_label": "Before",
+    "after_label": "After",
+    "before_items": 6,
+    "before_points": ["6 products", "Crowded shelf"],
+    "after_points": ["1 tin", "Fits in a pocket"]
+  },
+  "layouts": [
+    { "type": "comparison" },
+    { "type": "testimonial", "headlines": { "a": "Only thing I reach for now.", "b": "My knuckles finally survived garden season." } },
+    { "type": "us_vs_them" },
+    { "type": "callouts", "headlines": { "a": "4 ingredients. **Zero filler.**", "b": "What's in the tin (and what isn't)." } },
+    { "type": "native", "headlines": { "a": "things I stopped buying this year", "b": "bathroom shelf cleanup, finally" } },
+    { "type": "offer", "headlines": { "a": "Stock the desk **and** the sink.", "b": "Two tins. **20% off.**" } },
+    { "type": "before_after", "headlines": { "a": "Six products out. **One tin in.**", "b": "Clear the shelf." } }
+  ]
+}

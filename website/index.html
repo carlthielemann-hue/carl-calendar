@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Profit Script | Research-led ad creative for DTC brands</title>
+  <meta name="description" content="Ad concepts built from what your customers actually say. Customer research to ready-to-test statics and video scripts for DTC brands on Meta. Get a free 5-minute teardown of your Meta ads.">
+  <link rel="canonical" href="https://theprofitscript.com/">
+  <meta name="theme-color" content="#0d0f12">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="The Profit Script">
+  <meta property="og:url" content="https://theprofitscript.com/">
+  <meta property="og:title" content="The Profit Script | Ad concepts built from what your customers say">
+  <meta property="og:description" content="Research to ready-to-test statics and scripts for DTC brands. Get a free 5-minute teardown of your Meta ads.">
+  <meta property="og:image" content="https://theprofitscript.com/{{OG_IMAGE_PATH}}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Profit Script | Ad concepts built from what your customers say">
+  <meta name="twitter:description" content="Research to ready-to-test statics and scripts for DTC brands. Free 5-minute Meta ad teardown.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --bg-2: #13161b;
+      --card: #171b21;
+      --line: #262b33;
+      --text: #eef0f3;
+      --muted: #9aa3ae;
+      --accent: #c8f169;
+      --accent-ink: #11140b;
+      --radius: 14px;
+      --max: 1120px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    img { max-width: 100%; display: block; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+    section { padding: 72px 0; border-top: 1px solid var(--line); }
+    .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+    h1, h2, h3 { line-height: 1.12; letter-spacing: -0.02em; margin: 0; }
+    h1 { font-size: clamp(34px, 6.4vw, 60px); font-weight: 800; }
+    h2 { font-size: clamp(28px, 4.4vw, 40px); font-weight: 750; margin-bottom: 16px; }
+    h3 { font-size: 19px; font-weight: 650; }
+    p { margin: 0 0 16px; }
+    .lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--muted); max-width: 640px; }
+    .muted { color: var(--muted); }
+    .ph { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+
+    /* nav */
+    header.nav { position: sticky; top: 0; z-index: 10; background: rgba(13,15,18,.86); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+    .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; gap: 16px; }
+    .logo { font-weight: 800; letter-spacing: -0.02em; text-decoration: none; font-size: 17px; white-space: nowrap; }
+    .logo span { color: var(--accent); }
+    .nav-links { display: none; gap: 26px; font-size: 14px; color: var(--muted); }
+    .nav-links a { text-decoration: none; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 22px; border-radius: 10px; font: inherit; font-weight: 650; font-size: 15px; text-decoration: none; cursor: pointer; border: 1px solid transparent; transition: transform .12s ease, background .12s ease; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-primary:hover { background: #d6f789; }
+    .btn-ghost { border-color: var(--line); color: var(--text); background: transparent; }
+    .btn-ghost:hover { background: var(--bg-2); }
+    .btn-sm { min-height: 38px; padding: 8px 14px; font-size: 14px; }
+
+    /* hero */
+    .hero { padding: 64px 0 72px; border-top: 0; }
+    .hero-grid { display: grid; gap: 40px; }
+    .hero h1 em { font-style: normal; color: var(--accent); }
+    .hero .lead { margin-top: 20px; }
+    .hero-points { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 10px; }
+    .hero-points li { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); font-size: 15px; }
+    .hero-points li::before { content: ""; flex: 0 0 8px; height: 8px; margin-top: 8px; border-radius: 50%; background: var(--accent); }
+    .secondary-cta { margin-top: 18px; font-size: 14px; color: var(--muted); }
+    .secondary-cta a { color: var(--text); font-weight: 600; }
+
+    /* form card */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+    .form-card h2 { font-size: 22px; margin-bottom: 6px; }
+    .form-card p.sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+    .field { display: grid; gap: 6px; margin-bottom: 14px; }
+    .field label { font-size: 13px; font-weight: 600; color: #c7cdd5; }
+    .field input { width: 100%; min-height: 48px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 16px; }
+    .field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+    .hp { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; overflow: hidden; }
+    .form-card .btn { width: 100%; margin-top: 4px; }
+    .fineprint { font-size: 12px; color: var(--muted); margin: 12px 0 0; }
+    .form-msg { font-size: 14px; margin-top: 12px; }
+    .form-msg.err { color: #ffb4a8; }
+    .success { display: none; text-align: left; }
+    .success .tick { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; font-size: 22px; margin-bottom: 14px; }
+    .form-card.done form { display: none; }
+    .form-card.done .success { display: block; }
+
+    /* process */
+    .steps { display: grid; gap: 16px; margin-top: 32px; counter-reset: s; }
+    .step { counter-increment: s; }
+    .step::before { content: "0" counter(s); display: block; font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 10px; letter-spacing: .06em; }
+    .step p { color: var(--muted); font-size: 15px; margin: 8px 0 0; }
+
+    /* proof */
+    .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 32px; }
+    .shot { aspect-ratio: 4 / 5; border-radius: 12px; border: 1px dashed #3a414c; background: repeating-linear-gradient(135deg, #14181d, #14181d 10px, #12151a 10px, #12151a 20px); display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; font-size: 12px; color: var(--muted); }
+    .shot strong { color: var(--text); font-size: 13px; display: block; }
+
+    /* case studies */
+    .cases { display: grid; gap: 16px; margin-top: 32px; }
+    .case { text-decoration: none; display: flex; flex-direction: column; gap: 10px; transition: border-color .15s ease; }
+    .case:hover { border-color: #3d4552; }
+    .case .tag { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .case .result { overflow-wrap: anywhere; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: var(--accent); }
+    .case .more { font-size: 14px; font-weight: 600; margin-top: auto; }
+
+    /* offer */
+    .offers { display: grid; gap: 16px; margin-top: 32px; }
+    .offer { display: flex; flex-direction: column; min-width: 0; }
+    .offers > *, .cases > *, .steps > *, .hero-grid > * { min-width: 0; }
+    .offer.featured { border-color: var(--accent); }
+    .offer .badge { align-self: flex-start; font-size: 12px; font-weight: 700; background: rgba(200,241,105,.12); color: var(--accent); padding: 4px 10px; border-radius: 999px; margin-bottom: 14px; }
+    .price { overflow-wrap: anywhere; font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 12px 0 2px; }
+    .price small { white-space: nowrap; font-size: 15px; font-weight: 500; color: var(--muted); }
+    .offer ul { list-style: none; padding: 0; margin: 16px 0 24px; display: grid; gap: 10px; font-size: 15px; color: #cfd4db; }
+    .offer li { display: flex; gap: 10px; }
+    .offer li::before { content: "\2713"; color: var(--accent); font-weight: 700; }
+    .offer .btn { margin-top: auto; }
+
+    /* about */
+    .about-grid { display: grid; gap: 32px; align-items: start; }
+    .portrait { aspect-ratio: 1 / 1; max-width: 320px; border-radius: var(--radius); border: 1px dashed #3a414c; background: var(--bg-2); display: grid; place-items: center; color: var(--muted); font-size: 13px; text-align: center; padding: 16px; }
+    .facts { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 8px; font-size: 15px; color: var(--muted); }
+    .facts b { color: var(--text); font-weight: 600; }
+
+    /* final cta */
+    .final { text-align: left; }
+    .final .btns { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    footer { border-top: 1px solid var(--line); padding: 28px 0 40px; font-size: 13px; color: var(--muted); }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+
+    @media (min-width: 720px) {
+      .wrap { padding: 0 32px; }
+      section { padding: 96px 0; }
+      .nav-links { display: flex; }
+      .steps { grid-template-columns: repeat(3, 1fr); }
+      .gallery { grid-template-columns: repeat(4, 1fr); }
+      .cases { grid-template-columns: repeat(3, 1fr); }
+      .offers { grid-template-columns: 1fr 1fr; }
+      .about-grid { grid-template-columns: 320px 1fr; gap: 56px; }
+    }
+    @media (min-width: 980px) {
+      .hero { padding: 88px 0 104px; }
+      .hero-grid { grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+  </style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top">The Profit<span>.</span>Script</a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#work">Work</a>
+      <a href="#offer">Offer</a>
+      <a href="#about">About</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="#teardown">Free teardown</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">Creative strategy for DTC brands on Meta</p>
+        <h1>Ad concepts built from what your customers <em>actually say</em>.</h1>
+        <p class="lead">I mine reviews, Reddit threads and comment sections for the exact words your buyers use, then turn them into ready-to-test statics and video scripts. Research to first batch in 7 days.</p>
+        <ul class="hero-points">
+          <li>Every angle traced back to a real customer quote, not a brainstorm.</li>
+          <li>Briefs your designer or editors can produce without a call.</li>
+          <li>Built for testing: clear hypothesis per concept, so you learn from every launch.</li>
+        </ul>
+        <p class="secondary-cta">Rather talk first? <a href="{{BOOKING_URL}}" data-booking>Book a call &rarr;</a></p>
+      </div>
+
+      <div class="card form-card" id="teardown">
+        <form id="teardown-form" novalidate>
+          <h2>Get a free 5-minute teardown of your Meta ads</h2>
+          <p class="sub">I review your live ads in the Meta Ad Library and send you a short video: what's working, what's missing, and 2 angles you're not testing yet.</p>
+          <div class="field">
+            <label for="f-name">Your name</label>
+            <input id="f-name" name="name" type="text" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="f-url">Brand website</label>
+            <input id="f-url" name="brand_url" type="text" inputmode="url" autocomplete="url" placeholder="yourbrand.com" required>
+          </div>
+          <div class="field">
+            <label for="f-email">Email</label>
+            <input id="f-email" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="hp" aria-hidden="true">
+            <label for="f-website">Leave this empty</label>
+            <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+          <button class="btn btn-primary" type="submit">Send me my teardown</button>
+          <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
+          <p class="fineprint">Free, no call required. Your email is only used to send the teardown and one follow-up.</p>
+        </form>
+        <div class="success" id="form-success" tabindex="-1">
+          <div class="tick" aria-hidden="true">&#10003;</div>
+          <h2>Got it. Your teardown is on its way.</h2>
+          <p class="sub">You'll get it by email within {{TEARDOWN_TURNAROUND}}. If you'd like to talk it through live, grab a slot below.</p>
+          <a class="btn btn-ghost" href="{{BOOKING_URL}}" data-booking>Book a call</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="wrap">
+      <p class="eyebrow">How it works</p>
+      <h2>Research first. Then concepts. Then tests.</h2>
+      <p class="lead">Most ad fatigue is an angle problem, not a design problem. The fix starts with listening to the people who already buy.</p>
+      <div class="steps">
+        <div class="card step">
+          <h3>Customer research</h3>
+          <p>Reviews, competitor reviews, Reddit, forums and comment sections. I pull the pains, objections, desired outcomes and exact phrases your buyers use.</p>
+        </div>
+        <div class="card step">
+          <h3>Angles and concepts</h3>
+          <p>Each insight becomes an angle, each angle a concept: hook, message and format, with the customer quote it came from attached.</p>
+        </div>
+        <div class="card step">
+          <h3>Ready-to-test creative</h3>
+          <p>Static ad copy and layout briefs plus UGC and video scripts, organised as a test plan so every launch tells you something.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROOF GALLERY -->
+  <section id="work">
+    <div class="wrap">
+      <p class="eyebrow">Selected work</p>
+      <h2>Statics and scripts from recent projects.</h2>
+      <p class="lead">Real ads from client projects, shared with permission. Swipe through, then read how each one was built.</p>
+      <div class="gallery">
+        <div class="shot"><strong>{{AD_IMAGE_1}}</strong>Static &middot; {{CATEGORY_1}}</div>
+        <div class="shot"><strong>{{AD_IMAGE_2}}</strong>Static &middot; {{CATEGORY_2}}</div>
+        <div class="shot"><strong>{{AD_IMAGE_3}}</strong>Script frame &middot; {{CATEGORY_3}}</div>
+        <div class="shot"><strong>{{AD_IMAGE_4}}</strong>Static &middot; {{CATEGORY_4}}</div>
+      </div>
+
+      <div class="cases">
+        <a class="card case" href="case-study-1.html">
+          <span class="tag">{{CASE_1_CATEGORY}}</span>
+          <span class="result">{{CASE_1_RESULT}}</span>
+          <h3>{{CASE_1_HEADLINE}}</h3>
+          <span class="more">Read the case study &rarr;</span>
+        </a>
+        <a class="card case" href="case-study-2.html">
+          <span class="tag">{{CASE_2_CATEGORY}}</span>
+          <span class="result">{{CASE_2_RESULT}}</span>
+          <h3>{{CASE_2_HEADLINE}}</h3>
+          <span class="more">Read the case study &rarr;</span>
+        </a>
+        <a class="card case" href="case-study-3.html">
+          <span class="tag">{{CASE_3_CATEGORY}}</span>
+          <span class="result">{{CASE_3_RESULT}}</span>
+          <h3>{{CASE_3_HEADLINE}}</h3>
+          <span class="more">Read the case study &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- OFFER -->
+  <section id="offer">
+    <div class="wrap">
+      <p class="eyebrow">Ways to work together</p>
+      <h2>Start small. Keep going if it works.</h2>
+      <div class="offers">
+        <div class="card offer">
+          <span class="badge">Start here</span>
+          <h3>Ad Teardown</h3>
+          <p class="price">from &euro;{{TEARDOWN_PRICE}} <small>one-off</small></p>
+          <p class="muted">A deep review of your current Meta creative against what your customers actually say.</p>
+          <ul>
+            <li>Audit of your live ads and top competitors' ads</li>
+            <li>Customer-language research summary</li>
+            <li>{{TEARDOWN_ANGLE_COUNT}} new angles with example hooks</li>
+            <li>Recorded walkthrough plus written doc</li>
+          </ul>
+          <a class="btn btn-ghost" href="{{BOOKING_URL}}" data-booking>Book a teardown</a>
+        </div>
+        <div class="card offer featured">
+          <span class="badge">Monthly</span>
+          <h3>Creative Sprint</h3>
+          <p class="price">from &euro;{{SPRINT_PRICE}} <small>/ month</small></p>
+          <p class="muted">Ongoing research and new concepts every month, so you never run out of things worth testing.</p>
+          <ul>
+            <li>Ongoing customer and competitor research</li>
+            <li>{{SPRINT_STATIC_COUNT}} static concepts per month with copy and briefs</li>
+            <li>{{SPRINT_SCRIPT_COUNT}} video / UGC scripts per month</li>
+            <li>Monthly test plan and results review</li>
+            <li>Async updates, one call per month</li>
+          </ul>
+          <a class="btn btn-primary" href="{{BOOKING_URL}}" data-booking>Book a call</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="wrap about-grid">
+      <div class="portrait">{{PORTRAIT_PHOTO}}</div>
+      <div>
+        <p class="eyebrow">About</p>
+        <h2>Hi, I'm Carl.</h2>
+        <p>I'm a research-led creative strategist and direct-response copywriter for DTC brands. My work starts where most creative skips: reading what customers write about the problem, the product and the alternatives, then building concepts from their words.</p>
+        <p class="muted">I came to creative strategy from consulting, where I learned to structure messy information into a clear recommendation. I bring the same rigour to ad research: every concept has a reason, and every reason has a source.</p>
+        <ul class="facts">
+          <li><b>Focus:</b> DTC brands advertising on Meta, especially health, wellness and personal care</li>
+          <li><b>Background:</b> Strategy consulting internship at Roland Berger, Paris</li>
+          <li><b>Languages:</b> English and German</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="final">
+    <div class="wrap">
+      <h2>See what your ads are missing.</h2>
+      <p class="lead">Five minutes, free, and you keep the angles whether we work together or not.</p>
+      <div class="btns">
+        <a class="btn btn-primary" href="#teardown">Get my free teardown</a>
+        <a class="btn btn-ghost" href="{{BOOKING_URL}}" data-booking>Book a call</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>&copy; <span id="yr">2026</span> The Profit Script &middot; Carl Thielemann</span>
+    <span><a href="mailto:{{CONTACT_EMAIL}}" data-contact>{{CONTACT_EMAIL}}</a> &middot; <a href="{{IMPRINT_URL}}">Impressum</a> &middot; <a href="{{PRIVACY_URL}}">Privacy</a></span>
+  </div>
+</footer>
+
+<script>
+  /* ===== Config: edit these two lines ===== */
+  const SCRIPTROOM_URL = "{{SCRIPTROOM_URL}}"; // e.g. https://scriptroom.example.com (no trailing slash)
+  const CONTACT_EMAIL = "{{CONTACT_EMAIL}}";    // used for the mailto fallback
+  /* ======================================== */
+
+  const TEARDOWN_ENDPOINT = SCRIPTROOM_URL.replace(/\/$/, "") + "/api/public/teardown";
+
+  (function () {
+    var yr = document.getElementById("yr");
+    if (yr) yr.textContent = new Date().getFullYear();
+
+    var form = document.getElementById("teardown-form");
+    var card = form.closest(".form-card");
+    var msg = document.getElementById("form-msg");
+    var btn = form.querySelector("button[type=submit]");
+
+    function mailtoFallback(data) {
+      var subject = "Free Meta ad teardown request: " + data.brand_url;
+      var body = "Name: " + data.name + "\nBrand: " + data.brand_url + "\nEmail: " + data.email + "\n";
+      return "mailto:" + CONTACT_EMAIL + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+    }
+
+    function showSuccess() {
+      card.classList.add("done");
+      document.getElementById("form-success").focus();
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      msg.textContent = ""; msg.className = "form-msg";
+      var data = {
+        name: form.name.value.trim(),
+        brand_url: form.brand_url.value.trim(),
+        email: form.email.value.trim(),
+        website: form.website.value // honeypot, should stay ""
+      };
+      if (!data.name || !data.brand_url || !/^\S+@\S+\.\S+$/.test(data.email)) {
+        msg.textContent = "Please fill in your name, brand website and a valid email.";
+        msg.className = "form-msg err";
+        return;
+      }
+      if (data.website) { showSuccess(); return; } // bot: pretend success
+
+      btn.disabled = true; btn.textContent = "Sending...";
+      var configured = SCRIPTROOM_URL.indexOf("{{") === -1;
+      var request = configured
+        ? fetch(TEARDOWN_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
+            .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); })
+        : Promise.reject(new Error("endpoint not configured"));
+
+      request.then(showSuccess).catch(function () {
+        // Fallback: open the visitor's email client with the request pre-filled.
+        btn.disabled = false; btn.textContent = "Send me my teardown";
+        var href = mailtoFallback(data);
+        msg.innerHTML = 'Something went wrong on our side. <a href="' + href + '">Send it by email instead</a> and I\'ll reply personally.';
+        msg.className = "form-msg err";
+      });
+    });
+  })();
+</script>
+</body>
+</html>

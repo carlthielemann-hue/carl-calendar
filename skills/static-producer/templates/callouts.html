@@ -1,0 +1,40 @@
+<!-- Layout: ingredient / feature callouts. Slots: logo_html eyebrow headline_html subhead callouts_html product_html cta_html footnote_html labels_html -->
+<style>
+.layout-callouts .safe{gap:20px;align-items:stretch}
+.co-top{display:flex;justify-content:space-between;align-items:center}
+.layout-callouts .headline{text-align:center}
+.layout-callouts .subhead{text-align:center}
+.co-stage{position:relative;flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 330px 1fr;grid-template-rows:1fr 1fr;column-gap:26px;row-gap:22px;align-items:center}
+.size-square .co-stage{grid-template-columns:1fr 300px 1fr}
+.co-ring{grid-column:2;grid-row:1 / span 2;position:relative;align-self:stretch;display:flex;align-items:center;justify-content:center}
+.co-ring::before{content:"";position:absolute;width:330px;height:330px;border-radius:50%;background:radial-gradient(circle, color-mix(in srgb, var(--accent) 35%, var(--surface)) 0%, color-mix(in srgb, var(--accent) 10%, transparent) 62%, transparent 72%)}
+.size-square .co-ring::before{width:300px;height:300px}
+.co-ring .product{position:relative;z-index:1}
+.co-ring .product-mock{font-size:10px}
+.size-square .co-ring .product-mock{font-size:9px}
+.co-ring .product-img{max-height:420px;max-width:320px}
+.callout{position:relative;background:var(--surface);border-radius:22px;padding:24px 24px 26px;box-shadow:0 12px 30px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:8px}
+.callout::after{content:"";position:absolute;top:50%;width:26px;height:3px;background:var(--accent)}
+.callout::before{content:"";position:absolute;top:calc(50% - 6px);width:14px;height:14px;border-radius:50%;background:var(--accent);z-index:1}
+.c-tl,.c-bl{grid-column:1}
+.c-tr,.c-br{grid-column:3}
+.c-tl,.c-tr{grid-row:1} .c-bl,.c-br{grid-row:2}
+.c-tl::after,.c-bl::after{right:-26px} .c-tl::before,.c-bl::before{right:-40px}
+.c-tr::after,.c-br::after{left:-26px} .c-tr::before,.c-br::before{left:-40px}
+.co-title{font-family:var(--font-head);font-size:30px;font-weight:850;letter-spacing:-.02em;color:var(--primary);line-height:1.08}
+.co-text{font-size:23px;line-height:1.3;font-weight:500;color:var(--muted)}
+.co-foot{display:flex;flex-direction:column;align-items:center;gap:12px}
+.co-foot .cta{align-self:center}
+.co-foot .footnote{text-align:center}
+</style>
+<div class="safe" data-fit-box>
+  <div class="co-top">{{logo_html}}<span class="eyebrow">{{eyebrow}}</span></div>
+  <h1 class="headline" data-fit>{{headline_html}}</h1>
+  <p class="subhead" data-fit>{{subhead}}</p>
+  <div class="co-stage" data-fit-box>
+    <div class="co-ring">{{product_html}}</div>
+    {{callouts_html}}
+  </div>
+  <div class="co-foot">{{cta_html}}{{footnote_html}}</div>
+</div>
+{{labels_html}}

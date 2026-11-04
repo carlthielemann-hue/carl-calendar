@@ -1,0 +1,74 @@
+/* Shared styles for every Static Producer layout.
+   Brand variables (--primary, --accent, --bg, --ink, --muted, --surface,
+   --secondary, --on-primary, --font-head, --font-body) and frame variables
+   (--W, --H, --safe-t, --safe-b) are injected by render.py. */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:var(--W);height:var(--H);overflow:hidden;background:var(--bg)}
+body{font-family:var(--font-body);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.frame{position:relative;width:var(--W);height:var(--H);overflow:hidden;
+  background:
+    radial-gradient(900px 700px at 85% 10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+    radial-gradient(800px 700px at 0% 100%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 70%),
+    var(--bg);}
+
+/* Safe area: key text lives inside. 4:5 keeps ~14% top/bottom clear. */
+.safe{position:absolute;left:72px;right:72px;top:var(--safe-t);bottom:var(--safe-b);display:flex;flex-direction:column}
+.size-square .safe{left:64px;right:64px}
+
+.wordmark{font-family:var(--font-head);font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:22px;color:var(--primary)}
+.logo-img{height:40px;width:auto;display:block}
+.eyebrow{font-weight:700;font-size:22px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.headline{font-family:var(--font-head);font-weight:850;font-size:84px;line-height:1.0;letter-spacing:-.035em;color:var(--ink);text-wrap:balance}
+.subhead{font-size:32px;line-height:1.28;color:var(--muted);font-weight:500;text-wrap:pretty}
+.hl{background:none;color:var(--accent)}
+.headline .hl{color:var(--primary);background:linear-gradient(transparent 66%, color-mix(in srgb, var(--accent) 45%, transparent) 66%, color-mix(in srgb, var(--accent) 45%, transparent) 86%, transparent 86%)}
+
+.cta{display:inline-flex;align-items:center;gap:14px;align-self:flex-start;background:var(--primary);color:var(--on-primary);
+  font-weight:800;font-size:30px;padding:22px 38px;border-radius:999px;letter-spacing:-.01em;box-shadow:0 10px 24px rgba(0,0,0,.16)}
+.cta-arrow{font-weight:700}
+.footnote{font-size:17px;line-height:1.35;color:var(--muted);font-weight:500}
+
+/* Compliance labels: small but legible, never inside the headline area. */
+.labels{position:absolute;left:0;right:0;bottom:calc(var(--safe-b) * .5 - 16px);display:flex;justify-content:center;gap:12px;flex-wrap:wrap;padding:0 40px;z-index:20}
+.size-square .labels{bottom:16px}
+.label-chip,.spec-label{font-size:16px;font-weight:600;letter-spacing:.02em;padding:6px 12px;border-radius:6px;
+  background:color-mix(in srgb, var(--surface) 82%, transparent);color:var(--muted);border:1px solid color-mix(in srgb, var(--ink) 12%, transparent)}
+.spec-label{font-weight:500}
+
+/* Icons */
+.ic{width:1em;height:1em;flex:none;display:inline-block}
+.ic-check circle{fill:var(--primary)} .ic-check path{stroke:var(--on-primary)}
+.ic-cross circle{fill:color-mix(in srgb, var(--ink) 14%, transparent)} .ic-cross path{stroke:color-mix(in srgb, var(--ink) 55%, transparent)}
+.star{width:1em;height:1em;fill:var(--accent);display:inline-block}
+
+ul.ticks{list-style:none;display:flex;flex-direction:column;gap:18px}
+ul.ticks li{display:flex;gap:16px;align-items:flex-start;font-size:32px;line-height:1.22;font-weight:600}
+ul.ticks li .ic{font-size:36px;margin-top:-1px}
+
+/* Product: real image or CSS jar mock (when no product shot is supplied). */
+.product{position:relative;display:flex;align-items:flex-end;justify-content:center}
+.product-img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 24px 30px rgba(0,0,0,.18))}
+.product-mock{font-size:10px}
+.jar{position:relative;width:26em;display:flex;flex-direction:column;align-items:center;z-index:1}
+.jar-lid{width:27em;height:7em;border-radius:2.2em 2.2em 1em 1em;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--primary) 70%, black) 0%, var(--primary) 30%, color-mix(in srgb, var(--primary) 70%, white) 48%, var(--primary) 66%, color-mix(in srgb, var(--primary) 75%, black) 100%);
+  box-shadow:inset 0 -.6em 0 rgba(0,0,0,.18)}
+.jar-body{width:26em;height:20em;margin-top:-.4em;border-radius:1.2em 1.2em 3.4em 3.4em;
+  background:linear-gradient(90deg, #d8d2c4 0%, #fbf8f1 26%, #ffffff 44%, #f1ece2 70%, #cfc8b8 100%);
+  display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -1em 1.4em rgba(0,0,0,.06)}
+.jar-label{width:20em;height:13.5em;border-radius:.8em;background:var(--secondary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5em;
+  border:.25em solid color-mix(in srgb, var(--primary) 85%, transparent);text-align:center;padding:0 1em}
+.jl-brand{font-size:1.5em;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--primary)}
+.jl-name{font-family:var(--font-head);font-size:2.9em;font-weight:850;letter-spacing:-.03em;color:var(--ink);line-height:1}
+.jl-sub{font-size:1.3em;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.jar-shadow{position:absolute;bottom:-1.6em;left:50%;transform:translateX(-50%);width:30em;height:3.4em;border-radius:50%;background:radial-gradient(closest-side, rgba(0,0,0,.25), transparent)}
+
+.safe-debug{position:absolute;left:0;right:0;top:var(--safe-t);bottom:var(--safe-b);outline:3px dashed rgba(255,0,80,.8);pointer-events:none;z-index:99;
+  box-shadow:0 0 0 2000px rgba(255,0,80,.10)}
+
+/* Generic 'clutter' bottles used by before_after and us_vs_them (neutral, unbranded) */
+.clutter{display:flex;flex-wrap:wrap-reverse;align-items:flex-end;justify-content:center;gap:30px 10px;width:100%}
+.bottle{width:58px;border-radius:12px 12px 10px 10px;position:relative;opacity:.9}
+.bottle::before{content:"";position:absolute;left:50%;transform:translateX(-50%);top:-16px;width:26px;height:18px;border-radius:5px 5px 0 0;background:inherit;filter:brightness(.85)}
+.bottle.b0{height:150px;background:#C9CCD1}.bottle.b1{height:118px;background:#D9C9B6}.bottle.b2{height:172px;background:#B9C4C9}
+.bottle.b3{height:104px;background:#D6D0C4}.bottle.b4{height:138px;background:#C4BFCC}.bottle.b5{height:126px;background:#CFD6CB}

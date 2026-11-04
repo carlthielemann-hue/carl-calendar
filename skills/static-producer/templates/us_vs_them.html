@@ -1,0 +1,44 @@
+<!-- Layout: us vs them. Slots: logo_html eyebrow headline_html us_label them_label us_list_html them_list_html product_html cta_html footnote_html labels_html -->
+<style>
+.layout-us_vs_them .safe{gap:26px}
+.uv-top{display:flex;justify-content:space-between;align-items:center}
+.uv-split{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 1.12fr;gap:0;border-radius:30px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.10)}
+.uv-col{display:flex;flex-direction:column;padding:34px 32px 30px;gap:22px;min-height:0}
+.uv-them{background:color-mix(in srgb, var(--ink) 6%, var(--surface))}
+.uv-us{background:var(--primary);color:var(--on-primary);position:relative}
+.uv-tag{font-size:24px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.uv-them .uv-tag{color:var(--muted)}
+.uv-us .uv-tag{color:color-mix(in srgb, var(--on-primary) 80%, var(--accent))}
+.uv-col ul.ticks{gap:20px}
+.uv-col ul.ticks{gap:24px}
+.uv-col ul.ticks li{font-size:33px;line-height:1.2}
+.uv-art{flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:12px;opacity:.75}
+.uv-art .clutter{transform:scale(.8);transform-origin:bottom center}
+.uv-them ul.ticks li{color:color-mix(in srgb, var(--ink) 62%, transparent);font-weight:550}
+.uv-us ul.ticks li{font-weight:700}
+.uv-us .ic-check circle{fill:var(--accent)}
+.uv-us .ic-check path{stroke:var(--ink)}
+.uv-prod{flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:12px}
+.uv-prod .product-mock{font-size:8.4px}
+.uv-prod .jar-label{border-color:var(--on-primary)}
+.uv-prod .product-img{max-height:260px}
+.size-square .uv-prod .product-mock{font-size:5.6px}
+.uv-vs{position:absolute;left:calc(47.2% - 40px);top:50%;width:80px;height:80px;margin-top:-40px;border-radius:50%;background:var(--accent);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;z-index:3;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.uv-wrap{position:relative;flex:1 1 auto;min-height:0;display:flex}
+.uv-wrap .uv-split{width:100%}
+.uv-foot{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.uv-foot .footnote{max-width:470px;text-align:right}
+</style>
+<div class="safe" data-fit-box>
+  <div class="uv-top">{{logo_html}}<span class="eyebrow">{{eyebrow}}</span></div>
+  <h1 class="headline" data-fit>{{headline_html}}</h1>
+  <div class="uv-wrap">
+    <div class="uv-split">
+      <div class="uv-col uv-them"><div class="uv-tag">{{them_label}}</div><ul class="ticks" data-fit>{{them_list_html}}</ul><div class="uv-art"><div class="clutter">{{clutter_html}}</div></div></div>
+      <div class="uv-col uv-us"><div class="uv-tag">{{us_label}}</div><ul class="ticks" data-fit>{{us_list_html}}</ul><div class="uv-prod">{{product_html}}</div></div>
+    </div>
+    <div class="uv-vs">VS</div>
+  </div>
+  <div class="uv-foot">{{cta_html}}{{footnote_html}}</div>
+</div>
+{{labels_html}}

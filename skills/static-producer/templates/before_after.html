@@ -1,0 +1,36 @@
+<!-- Layout: before/after (SAFE version). Shows a routine/situation change as an ILLUSTRATION, never a body/skin/health result.
+     The "Illustration" tag is hard-coded and must not be removed (see COMPLIANCE.md).
+     Slots: logo_html eyebrow headline_html before_label after_label before_list_html after_list_html clutter_html product_html cta_html footnote_html labels_html -->
+<style>
+.layout-before_after .safe{gap:24px}
+.ba-top{display:flex;justify-content:space-between;align-items:center}
+.ba-split{position:relative;flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.ba-panel{position:relative;border-radius:28px;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.ba-before{background:color-mix(in srgb, var(--ink) 7%, var(--surface))}
+.ba-after{background:color-mix(in srgb, var(--primary) 12%, var(--surface))}
+.ba-tag{position:absolute;top:22px;left:22px;font-size:22px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:9px 16px;border-radius:999px;z-index:2}
+.ba-before .ba-tag{background:var(--surface);color:var(--muted)}
+.ba-after .ba-tag{background:var(--primary);color:var(--on-primary)}
+.ba-art{flex:1 1 auto;min-height:220px;display:flex;align-items:flex-end;justify-content:center;padding:80px 22px 18px}
+.ba-after .ba-art .product-mock{font-size:8.6px}
+.size-square .ba-after .ba-art .product-mock{font-size:6.6px}
+.ba-after .product-img{max-height:300px}
+.ba-panel ul.ticks{padding:8px 26px 28px;gap:14px}
+.ba-panel ul.ticks li{font-size:27px;line-height:1.18}
+.ba-before ul.ticks li{color:color-mix(in srgb, var(--ink) 65%, transparent);font-weight:550}
+.ba-arrow{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:74px;height:74px;border-radius:50%;background:var(--accent);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:900;z-index:3;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.ba-illus{position:absolute;right:16px;top:16px;z-index:4;font-size:17px;font-weight:700;letter-spacing:.04em;color:var(--muted);background:var(--surface);padding:6px 12px;border-radius:6px;border:1px solid color-mix(in srgb, var(--ink) 12%, transparent)}
+.ba-foot{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.ba-foot .footnote{max-width:470px;text-align:right}
+</style>
+<div class="safe" data-fit-box>
+  <div class="ba-top">{{logo_html}}<span class="eyebrow">{{eyebrow}}</span></div>
+  <h1 class="headline" data-fit>{{headline_html}}</h1>
+  <div class="ba-split">
+    <div class="ba-panel ba-before"><span class="ba-tag">{{before_label}}</span><div class="ba-art"><div class="clutter">{{clutter_html}}</div></div><ul class="ticks" data-fit>{{before_list_html}}</ul></div>
+    <div class="ba-panel ba-after"><span class="ba-tag">{{after_label}}</span><span class="ba-illus">Illustration</span><div class="ba-art">{{product_html}}</div><ul class="ticks" data-fit>{{after_list_html}}</ul></div>
+    <div class="ba-arrow">&rarr;</div>
+  </div>
+  <div class="ba-foot">{{cta_html}}{{footnote_html}}</div>
+</div>
+{{labels_html}}

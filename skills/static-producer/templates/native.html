@@ -1,0 +1,58 @@
+<!-- Layout: native / UGC-style (phone note, tweet-style post, or text post card). Deliberately un-ad-like: no CTA button.
+     Slots: native_style author handle avatar_initial timestamp headline_html native_body_html product_html footnote_html labels_html -->
+<style>
+.layout-native .frame{background:#FFFFFF}
+.nv{position:absolute;inset:0;display:flex;flex-direction:column}
+.nv .safe{gap:28px}
+.nv .footnote{margin-top:auto}
+/* --- note (phone notes app) --- */
+.nv-note .frame-bar{position:absolute;left:0;right:0;top:0;height:var(--safe-t);background:#FBFAF7}
+.nv-note{background:#FBFAF7}
+.nv-note .n-bar{display:flex;justify-content:space-between;align-items:center;color:#D9A21B;font-size:30px;font-weight:600}
+.nv-note .n-bar b{font-weight:600}
+.nv-note .n-date{text-align:center;color:#9A978F;font-size:22px;font-weight:500}
+.nv-note .n-title{font-family:-apple-system,'InterLocal',system-ui,sans-serif;font-weight:800;font-size:66px;line-height:1.06;letter-spacing:-.025em;color:#1C1C1E}
+.nv-note .n-body{font-size:42px;line-height:1.42;color:#1C1C1E;font-weight:450}
+.nv-note .n-body .hl{color:#1C1C1E;background:#FFE58A;padding:0 4px;border-radius:4px}
+.nv-note .n-attach,.nv-note .t-head,.nv-note .t-meta{display:none}
+/* --- tweet-style --- */
+.nv-tweet{background:#FFFFFF}
+.nv-tweet .n-bar,.nv-tweet .n-date{display:none}
+.t-head{display:flex;align-items:center;gap:20px}
+.t-av{width:96px;height:96px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:42px;flex:none}
+.t-names{display:flex;flex-direction:column;gap:2px}
+.t-author{font-weight:800;font-size:34px;color:#0F1419}
+.t-handle{font-size:28px;color:#536471;font-weight:500}
+.nv-tweet .n-title{font-weight:800;font-size:58px;line-height:1.12;letter-spacing:-.02em;color:#0F1419}
+.nv-tweet .n-body{font-size:38px;line-height:1.38;color:#0F1419;font-weight:450}
+.nv-tweet .n-body .hl{color:var(--primary);font-weight:700}
+.t-meta{font-size:24px;color:#536471;border-top:1px solid #EFF3F4;padding-top:20px}
+.n-attach{flex:1 1 auto;min-height:180px;border-radius:28px;border:1px solid #E5E8EA;background:linear-gradient(160deg, var(--secondary), color-mix(in srgb, var(--accent) 25%, var(--secondary)));display:flex;align-items:center;justify-content:center;overflow:hidden}
+.n-attach .product-mock{font-size:7.5px}
+.n-attach .product{height:100%;width:100%;align-items:center;padding:20px 0}
+.n-attach .product-img{height:100%;width:auto}
+/* --- text post card on brand color --- */
+.nv-post{background:var(--primary)}
+.nv-post .n-bar,.nv-post .n-date,.nv-post .n-attach,.nv-post .t-meta{display:none}
+.nv-post .safe{justify-content:center}
+.nv-post .card{background:var(--surface);border-radius:34px;padding:52px;display:flex;flex-direction:column;gap:30px;box-shadow:0 30px 60px rgba(0,0,0,.25)}
+.nv-post .n-title{font-weight:850;font-size:62px;line-height:1.06;letter-spacing:-.03em}
+.nv-post .n-body{font-size:36px;line-height:1.38}
+.card{display:contents}
+.nv-post .card{display:flex}
+</style>
+<div class="nv nv-{{native_style}}">
+  <div class="safe" data-fit-box>
+    <div class="n-bar"><b>&lsaquo; Notes</b><span>&#8943;</span></div>
+    <div class="n-date">{{timestamp}}</div>
+    <div class="card">
+      <div class="t-head"><div class="t-av">{{avatar_initial}}</div><div class="t-names"><span class="t-author">{{author}}</span><span class="t-handle">{{handle}}</span></div></div>
+      <h1 class="n-title" data-fit>{{headline_html}}</h1>
+      <div class="n-body" data-fit>{{native_body_html}}</div>
+    </div>
+    <div class="n-attach">{{product_html}}</div>
+    <div class="t-meta">{{timestamp}}</div>
+    {{footnote_html}}
+  </div>
+</div>
+{{labels_html}}

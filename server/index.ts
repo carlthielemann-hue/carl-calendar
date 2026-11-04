@@ -19,6 +19,8 @@ import { DEFAULT_MCP_AREAS, DEFAULT_MCP_PERMISSIONS, mcpFetch, toolList, type Mc
 import { consentPage, HTML_HEADERS, loginPage, messagePage } from './pages'
 import { notify, pendingNotifications, pushConfigured } from './push'
 import { applyChange, currentRev, type PushChange, loadState } from './records'
+import { registerPrivate, registerPublic } from './engine/routes'
+import { engineTick } from './engine/cron'
 import { b64url, getMeta, json, nowIso, randomId, setMeta, sha256, wallClock } from './util'
 
 type C = Context<{ Bindings: Env }>
@@ -93,6 +95,8 @@ app.get('/api/widget', async (c) => {
   const payload = buildWidget({ s, now, wall: wallClock(now, tz), clock: clockIn(tz), occs, money: !!prefs.money })
   return json(payload, 200, { 'Cache-Control': 'no-store' })
 })
+
+registerPublic(app)
 
 // Everything below requires a session.
 app.use('/api/*', async (c, next) => {
@@ -446,6 +450,8 @@ app.get('/api/integrations', async (c) => {
   })
 })
 
+registerPrivate(app)
+
 app.all('/api/*', () => json({ error: 'Not found' }, 404))
 
 /* ---------------- OAuth consent for MCP clients ---------------- */
@@ -460,6 +466,9 @@ async function authorize(req: Request, env: Env): Promise<Response> {
     if (req.method === 'GET') {
       const request = await oauth.parseAuthRequest(req)
       const details = await oauth.describeConsent(request)
+      // Clients (e.g. claude.ai) often request only the required scope, which left connections
+      // read-only. Always offer write access; the owner can untick it.
+      details.scope = [...new Set([...(details.scope ?? []), 'mcp:read', 'mcp:write'])]
       const consent = await oauth.beginConsent(request)
       for (const [k, v] of Object.entries(HTML_HEADERS)) consent.headers.set(k, v)
       return new Response(consentPage(details, consent.handle), { headers: consent.headers })
@@ -472,7 +481,7 @@ async function authorize(req: Request, env: Env): Promise<Response> {
     }
     const scopes = [...new Set(['mcp:read', ...form.getAll('scope').map(String)])]
     const approved = await oauth.approveConsent(req, handle, { scope: scopes })
-    const { redirectTo } = await oauth.completeAuthorization({ request: approved.request, userId: OWNER_ID, metadata: { connectedAt: nowIso() }, scope: approved.request.scope, props: { userId: OWNER_ID } })
+    const { redirectTo } = await oauth.completeAuthorization({ request: approved.request, userId: OWNER_ID, metadata: { connectedAt: nowIso() }, scope: scopes, props: { userId: OWNER_ID } })
     approved.headers.set('Location', redirectTo)
     return new Response(null, { status: 302, headers: approved.headers })
   } catch (e) {
@@ -527,6 +536,8 @@ export default {
     return providerFor(origin).fetch(req, env, ctx)
   },
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(scheduled(env))
+    // Legacy notifications keep their 15-minute rhythm; the Engine ticks every 5 minutes.
+    if (new Date().getUTCMinutes() % 15 < 5) ctx.waitUntil(scheduled(env))
+    ctx.waitUntil(engineTick(env).catch((e) => console.error('engine tick failed', e)))
   },
 }
