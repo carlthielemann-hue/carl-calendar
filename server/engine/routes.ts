@@ -151,6 +151,12 @@ export function registerPrivate(app: App) {
     const at = c.env.SEND_TRANSPORT === 'log' ? (await body<{ now?: string }>(c)).now : undefined
     return json(await senderTick(c.env, { now: at ? new Date(at) : undefined }))
   })
+  app.post('/api/engine/test/tick', async (c) => {
+    if (c.env.SEND_TRANSPORT !== 'log') return json({ error: 'dev only' }, 404)
+    const { engineTick } = await import('./cron')
+    const at = (await body<{ now?: string }>(c)).now
+    return json(await engineTick(c.env, at ? new Date(at) : new Date()))
+  })
   app.post('/api/engine/test/reply', async (c) => {
     if (c.env.SEND_TRANSPORT !== 'log') return json({ error: 'dev only' }, 404)
     const b = await body<{ email: string; text: string }>(c)
@@ -234,6 +240,26 @@ export function registerPrivate(app: App) {
     return new Response(null, { status: 302, headers: { Location: gmailAuthUrl(c.env, new URL(c.req.url).origin, state), 'Set-Cookie': `cc_mstate=${state}; Path=/api/engine; HttpOnly; Secure; SameSite=Lax; Max-Age=600` } })
   })
   app.post('/api/engine/gmail/disconnect', async (c) => (await gmailDisconnect(c.env), json({ ok: true })))
+
+  // Deliverability check for the sending domain (SPF / DKIM google._domainkey / DMARC) via DNS-over-HTTPS
+  app.get('/api/engine/dns-check', async (c) => {
+    const domain = String(c.req.query('domain') ?? '').toLowerCase().replace(/[^a-z0-9.-]/g, '')
+    if (!domain.includes('.')) return json({ error: 'domain required' }, 400)
+    const txt = async (name: string) => {
+      const r = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=TXT`, { headers: { accept: 'application/dns-json' } })
+      const j = (await r.json()) as { Answer?: { data: string }[] }
+      return (j.Answer ?? []).map((a) => a.data.replace(/^"|"$/g, '').replace(/" "/g, ''))
+    }
+    const [root, dkim, dmarc] = await Promise.all([txt(domain), txt(`google._domainkey.${domain}`), txt(`_dmarc.${domain}`)])
+    const spf = root.find((t) => t.startsWith('v=spf1')) ?? null
+    const fixes: string[] = []
+    if (!spf) fixes.push(`Add TXT on ${domain}: v=spf1 include:_spf.google.com ~all`)
+    else if (!spf.includes('_spf.google.com')) fixes.push(`SPF exists but doesn't include Google: add include:_spf.google.com to "${spf}"`)
+    if (!dkim.some((t) => t.includes('v=DKIM1'))) fixes.push('Google Admin → Apps → Gmail → Authenticate email → generate DKIM key, add the TXT at google._domainkey, then "Start authentication"')
+    const dm = dmarc.find((t) => t.startsWith('v=DMARC1')) ?? null
+    if (!dm) fixes.push(`Add TXT on _dmarc.${domain}: v=DMARC1; p=none; rua=mailto:dmarc@${domain}`)
+    return json({ domain, spf, dkim: dkim.find((t) => t.includes('v=DKIM1')) ? 'present' : null, dmarc: dm, ok: fixes.length === 0, fixes })
+  })
 
   // Engine keys for routines
   app.get('/api/engine/keys', async (c) => json({ keys: ((await getMeta<EngineKey[]>(c.env, 'engine_keys')) ?? []).map(({ hash: _h, ...k }) => (void _h, k)) }))

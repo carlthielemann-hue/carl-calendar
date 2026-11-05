@@ -212,4 +212,16 @@ await step('sender with everything enabled sends exactly the approved email (log
   assert.equal(t.body.replies.length, 1)
 })
 
+await step('cron tick runs every job without errors (Sunday 19:00 + 1st of month)', async () => {
+  await tool('upsert_client', { name: 'Retainer Test', data: { retainer_eur: 1000, status: 'active' } })
+  const r = await api('/engine/test/tick', { json: { now: '2026-11-01T18:00:00Z' } })
+  assert.equal(r.status, 200, JSON.stringify(r.body))
+  for (const [k, v] of Object.entries(r.body)) assert.ok(!(v && v.error), `${k}: ${v && v.error}`)
+  const inv = await tool('find', { entity: 'invoice' })
+  assert.equal(inv.invoice.length, 2) // Zoyava + Retainer Test
+  const t = await api('/engine/today')
+  assert.equal(t.body.jobs.find((j) => j.job === 'engine_tick').state, 'ok')
+  assert.equal(t.body.jobs.find((j) => j.job === 'weekly_review').state, 'ok')
+})
+
 console.log(`\n${passed} checks passed`)

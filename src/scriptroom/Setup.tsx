@@ -92,6 +92,19 @@ export default function Setup({ go }: { go: (h: string) => void }) {
         {t.sender.paused && (
           <button className="sr-btn sm" onClick={async () => (await call('/engine/sender/resume', { json: {} }), load())}>Resume sending (paused: {t.sender.paused})</button>
         )}
+        <form style={{ display: 'flex', gap: 8 }} onSubmit={async (e) => {
+          e.preventDefault()
+          const d = new FormData(e.currentTarget).get('domain')
+          try {
+            const r = await call<{ ok: boolean; fixes: string[] }>(`/engine/dns-check?domain=${encodeURIComponent(String(d))}`)
+            setMsg(r.ok ? 'SPF, DKIM and DMARC look good.' : `Fix: ${r.fixes.join(' · ')}`)
+          } catch (x) {
+            setMsg((x as Error).message)
+          }
+        }}>
+          <input name="domain" className="sr-input" placeholder="sending domain, e.g. getprofitscript.com" />
+          <button className="sr-btn sm">Check DNS</button>
+        </form>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="sr-btn sm" onClick={async () => setMsg(JSON.stringify(await call('/engine/assemble', { json: {} })))}>Assemble batch now</button>
           {s.gmail.connected && <button className="sr-btn sm" onClick={async () => setMsg(JSON.stringify(await call('/engine/inbox/poll', { json: {} })))}>Check replies now</button>}

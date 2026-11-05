@@ -95,6 +95,31 @@ export async function engineTick(env: Env, now = new Date()) {
     }),
   )
 
+  // 1st of the month: invoice drafts from retainers; daily: overdue reminders (drafts, Carl sends)
+  await guard('invoices', () =>
+    once(env, `inv@${today}`, async () => {
+      let drafted = 0
+      if (today.endsWith('-01')) {
+        for (const c of (await listEntity(env, 'client')).filter((c) => (c.status ?? 'active') === 'active' && Number(c.retainer_eur) > 0)) {
+          const number = `${today.slice(0, 7)}-${String(c.name).replace(/\W+/g, '').slice(0, 12).toUpperCase()}`
+          const due = new Date(now.getTime() + 14 * 86400000).toISOString().slice(0, 10)
+          await upsertEntity(env, 'invoice', { number, client: c.name, amount: Number(c.retainer_eur), issued: today, due, status: 'draft', note: 'Draft from retainer — check scope/extras, then send from your invoicing tool.' }, 'system')
+          drafted++
+        }
+        if (drafted) await upsertEntity(env, 'priority', { title: `Send ${drafted} retainer invoice(s) for ${today.slice(0, 7)}`, due: today, kind: 'invoices' }, 'system')
+      }
+      let overdue = 0
+      for (const inv of await listEntity(env, 'invoice')) {
+        if (inv.status === 'sent' && !inv.paid_at && inv.due && String(inv.due) < today && !inv.reminder_drafted) {
+          await upsertEntity(env, 'invoice', { reminder_drafted: today, reminder_text: `Hi ${inv.client}, quick nudge on invoice ${inv.number} (€${inv.amount}, due ${inv.due}). Could you let me know when it's scheduled? Thanks, Carl` }, 'system', inv.id)
+          await upsertEntity(env, 'priority', { title: `Invoice ${inv.number} overdue — reminder drafted (Engine → invoice)`, due: today, kind: 'overdue' }, 'system')
+          overdue++
+        }
+      }
+      await jobRun(env, 'invoices', true, `${drafted} drafted · ${overdue} overdue reminders`)
+    }),
+  )
+
   await jobRun(env, 'engine_tick', true, 'tick', { at: wall })
   return results
 }
