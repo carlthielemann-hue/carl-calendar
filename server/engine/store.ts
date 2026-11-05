@@ -84,7 +84,10 @@ export async function listEntity(env: Env, entity: string, opts: { archived?: bo
 
 const strip = (d: Record<string, unknown>) => {
   const { id: _i, archived: _a, created_at: _c, updated_at: _u, ...rest } = d
-  void _i, void _a, void _c, void _u
+  void _i
+  void _a
+  void _c
+  void _u
   return rest
 }
 
@@ -207,7 +210,7 @@ export const JOBS: { job: string; label: string; everyHours: number; weekdaysOnl
   { job: 'sender', label: 'Sender', everyHours: 0.5, needs: 'sending' },
   { job: 'inbox_poll', label: 'Reply/bounce check', everyHours: 1, needs: 'gmail' },
   { job: 'acquisition_routine', label: 'Acquisition routine (Claude)', everyHours: 24, weekdaysOnly: true },
-  { job: 'weekly_review', label: 'Weekly review (Sun)', everyHours: 24 * 7 },
+  { job: 'weekly_review', label: 'Weekly review (Sun)', everyHours: 24 * 7, needs: 'first_run' },
 ]
 
 export async function jobHealth(env: Env, ctx: { gmail: boolean; sending: boolean; legacyCuesLastRun?: string | null }) {
@@ -216,7 +219,7 @@ export async function jobHealth(env: Env, ctx: { gmail: boolean; sending: boolea
   for (const j of JOBS) {
     const last = await env.DB.prepare('SELECT ok, message, at FROM job_runs WHERE job = ? ORDER BY seq DESC LIMIT 1').bind(j.job).first<{ ok: number; message: string; at: string }>()
     const lastOk = await env.DB.prepare('SELECT at FROM job_runs WHERE job = ? AND ok = 1 ORDER BY seq DESC LIMIT 1').bind(j.job).first<{ at: string }>()
-    const inactive = (j.needs === 'gmail' && !ctx.gmail) || (j.needs === 'sending' && !ctx.sending)
+    const inactive = (j.needs === 'gmail' && !ctx.gmail) || (j.needs === 'sending' && !ctx.sending) || (j.needs === 'first_run' && !last)
     const slack = (j.weekdaysOnly ? 3 * 24 : j.everyHours * 1.5) * 3600_000
     const late = !inactive && (!last || now - Date.parse(last.at) > slack)
     out.push({ job: j.job, label: j.label, last_at: last?.at ?? null, last_ok_at: lastOk?.at ?? null, ok: last ? !!last.ok : null, message: last?.message ?? null, state: inactive ? 'inactive' : !last ? 'never' : late ? 'late' : last.ok ? 'ok' : 'failed' })

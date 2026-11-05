@@ -29,7 +29,7 @@ const LEGACY: Record<string, string> = {
 }
 
 export function parsePath(path: string): Location {
-  let p = path.replace(/^#?\/?/, '').replace(/\/$/, '')
+  let p = path.replace(/^#?\/?/, '').replace(/\/$/, '').replace(/^engine\/?/, '')
   if (LEGACY[p]) p = LEGACY[p]
   const [space, page, id, sub] = p.split('/') as [Space, string?, string?, string?]
   if (!SPACES.includes(space)) return { space: 'home', page: '' }
@@ -37,7 +37,7 @@ export function parsePath(path: string): Location {
 }
 
 export function toPath(l: Location) {
-  return '/' + [l.space, l.page, l.id && encodeURIComponent(l.id), l.id && l.sub].filter(Boolean).join('/')
+  return '/engine/' + [l.space, l.page, l.id && encodeURIComponent(l.id), l.id && l.sub].filter(Boolean).join('/')
 }
 
 export interface EventDraft {

@@ -247,7 +247,11 @@ export const TOOLS_ENGINE: Tool[] = [
     run: async (a, ctx) => {
       const where: string[] = []
       const b: unknown[] = []
-      for (const k of ['status', 'channel', 'kind']) if (str(a, k)) (where.push(`${k} = ?`), b.push(str(a, k)))
+      for (const k of ['status', 'channel', 'kind'])
+        if (str(a, k)) {
+          where.push(`${k} = ?`)
+          b.push(str(a, k))
+        }
       const { results } = await ctx.env.DB.prepare(`SELECT id, channel, kind, status, batch_date, due_date, company, to_email, subject, substr(body,1,400) AS body, source_url, score, step, error, created_at FROM outreach_items ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY created_at DESC LIMIT ?`).bind(...b, Math.min(200, Number(a.limit ?? 50))).all()
       return { items: results }
     },

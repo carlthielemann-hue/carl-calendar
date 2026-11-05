@@ -118,7 +118,9 @@ export async function queueOutreach(env: Env, items: Record<string, unknown>[], 
     const id = `out_${randomId(8)}`
     const now = nowIso()
     const { channel: _c, kind: _k, body: _b, ...rest } = it
-    void _c, void _k, void _b
+    void _c
+    void _k
+    void _b
     await env.DB.prepare(
       `INSERT INTO outreach_items (id, channel, kind, status, due_date, to_email, email_source, to_name, company, domain, country, timezone, subject, body, variant, evidence, personalization, source_url, score, score_reason, audit_id, niche, price_quoted, sequence_id, step, meta, created_by, created_at, updated_at)
        VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
