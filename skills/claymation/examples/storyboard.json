@@ -1,0 +1,22 @@
+{
+  "title": "Northfield hand balm - winter knuckles",
+  "brand": "Northfield Botanics (fictional)",
+  "spec": true,
+  "master": "9x16",
+  "sizes": ["9x16", "4x5", "1x1"],
+  "stop_motion": true,
+  "character": {
+    "name": "Pip",
+    "description": "a small round clay gardener with a mustard knitted beanie, rosy cheeks, big expressive oval eyes, chunky clay hands with cracked dry knuckles shown as tiny fissures, olive overalls"
+  },
+  "voice_id": "21m00Tcm4TlvDq8ikWAM",
+  "music": null,
+  "shots": [
+    { "id": "shot1", "seconds": 3, "scene": "Pip in a tiny frosty clay garden at dawn, holding a watering can, wincing as he flexes his cracked knuckles", "camera": "close-up on hands, then face", "action": "Pip flexes his fingers and winces, breath fogs", "vo": "Winter knuckles. You know the ones.", "caption": "Winter knuckles. You know the ones." },
+    { "id": "shot2", "seconds": 4, "scene": "Pip at a cluttered clay potting bench trying three different lotion tubes that slide off his hands like slime", "camera": "medium shot", "action": "a lotion blob slides off Pip's hand, he shrugs at the camera", "vo": "Most lotions sit on top and slide off by lunch.", "caption": "Most lotions slide off by lunch." },
+    { "id": "shot3", "seconds": 4, "scene": "a small tin of balm with a plain sage-green label (no text) on the potting bench, morning light hitting it", "camera": "macro product shot, slow push in", "camera_move": "slow push in", "action": "the tin lid twists open by itself, revealing thick creamy balm", "vo": "This one's a thick balm. A pea-sized bit, worked in.", "caption": "A pea-sized bit, worked in." },
+    { "id": "shot4", "seconds": 4, "scene": "Pip rubbing balm into his knuckles, the clay fissures smoothing out as he rubs", "camera": "close-up on hands", "action": "Pip rubs his hands together, cracks smooth over, he wiggles his fingers happily", "vo": "Gardeners say it's the first thing that actually stays put.", "caption": "\"The first thing that actually stays put.\"" },
+    { "id": "shot5", "seconds": 3, "scene": "Pip back in the frosty garden, now digging happily with bare hands", "camera": "wide shot, low angle", "action": "Pip digs and gives a thumbs up to camera", "vo": "Your hands, back on the job.", "caption": "Back on the job." }
+  ],
+  "end_card": { "headline": "Northfield Hand Balm", "cta": "Try it this winter", "color": "0xF4E9DC", "ink": "0x2B2B2B", "seconds": 2.5 }
+}
