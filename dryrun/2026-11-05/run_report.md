@@ -1,0 +1,8 @@
+# Dry run 2026-11-05 — acquisition routine (manual)
+- **Found:** Upwork ~30 jobs scanned (smart_search + 3 searches) → 3 proposals; X/LinkedIn ~40 results → 1 reply; cold email 3 US brands (Arrae, Native Pet, Topicals) → 3 audits, 3 spec statics, 3 teardown PDFs.
+- **Drafted:** `items` = 3 Upwork proposals + 1 X reply. `needs_contact` = 3 cold emails (to_email null, "find contact"); none queued.
+- **Skipped (Upwork):** PulseAU creative strategist ($8–15/h < floor); NL "Creative Strategist" (adult industry); Nuts US (UGC filming, not strategy); AI-video $10 jobs; UK media buyer (payment unverified, media buying); CRO/translation/fintech UGC (not service fit).
+- **Skipped (X/LinkedIn):** Impact Media (full-time only, no freelancers); job-board reposts. Used X post is ~15 days old (no fresher one found).
+- **Blocked:** Adlicio Free plan: find_competitor_ads/inspect_landing_page/research_topic need a paid plan → no live ads captured; audits use reviews/Reddit/web search only, and emails make no ad claims. Apollo free plan: People Search + People Enrichment blocked via MCP → no emails. Sandbox network blocks facebook.com, trustpilot.com, linkedin.com, x.com and brand sites.
+- **Credits used:** Adlicio 2 (search_reddit ×2; balance 0/6). Apollo 0 (125 lead credits left; cycle ends 2026-11-11). Upwork connects 0.
+- **Decisions for Carl:** (1) Upgrade Adlicio to Growth ($99/mo) or keep audits review-only? (2) Apollo: upgrade, or find the 3 founder emails by hand? (3) Upwork: attach 2–3 real briefs/scripts (all three posts ask) and set rates for SPG (hourly, unstated) and the $500 month. (4) Haircare job needs video cuts + Google Display: apply only if you'll deliver those. (5) Topicals founder name unconfirmed: confirm before drafting a named email.

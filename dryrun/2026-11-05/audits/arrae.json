@@ -1,0 +1,171 @@
+{
+  "date": "2026-11-05",
+  "mode": "cheap (fallback: web search only)",
+  "country": "US",
+  "brand": "Arrae",
+  "domain": "arrae.com",
+  "niche": "supplements (digestion / bloating)",
+  "ads_snapshot": {
+    "status": "not_captured",
+    "note": "Adlicio account is on the Free plan (find_competitor_ads/inspect_landing_page need Growth) and the Meta Ad Library is not reachable from this sandbox. Carl: open facebook.com/ads/library before approving any email that mentions ads."
+  },
+  "landing_page": {
+    "url": "https://arrae.com/pages/try-deep-digestion-duo",
+    "headline": "not captured (page not reachable from sandbox)",
+    "offer": "Deep Digestion Duo bundle; subscription that can be 'paused or cancelled at any time' (per web-search snippet of the page)",
+    "proof": "On-page rating shown as 4.8/5 from 1,164 reviews (brand's own figure)",
+    "message_match": "not assessable without the ads",
+    "notes": [
+      "Third-party price reference: Bloat capsules $38.25/bottle on a 3-month subscription (mysubscriptionaddiction.com)",
+      "Bloat sits in a crowded comparison set (Unbloat, Lemme) per review roundups"
+    ]
+  },
+  "voc": {
+    "pains": [
+      "Post-meal bloating / discomfort (the use case reviewers credit Bloat for)",
+      "Subscription cancellation and shipments after cancelling (Trustpilot)"
+    ],
+    "desires": [
+      "Feel normal after a big meal",
+      "A fix that works within the evening, not weeks"
+    ],
+    "objections": [
+      "Cheaper alternatives (papaya / digestive enzymes)",
+      "Distrust of subscription billing",
+      "Other SKUs (Sleep, Calm) described as less effective"
+    ],
+    "quotes": [
+      {
+        "text": "I've had great results with papaya enzymes after meals. They're much cheaper than something like Arrae, and taste kinda good too.",
+        "source": "https://www.reddit.com/r/NYCinfluencersnark/comments/140aw2d/",
+        "type": "Reddit (verbatim snippet)"
+      },
+      {
+        "text": "A shipment kept arriving after they had cancelled (reviewer summary, not verbatim).",
+        "source": "https://uk.trustpilot.com/review/arrae.com?page=6",
+        "type": "Trustpilot, paraphrase via search; TrustScore ~1.5-2/5 on ~150 reviews; brand does not invite reviews"
+      },
+      {
+        "text": "Bloat capsules help with post-meal discomfort; Sleep and Calm less effective (summary, not verbatim).",
+        "source": "https://thingtesting.com/brands/arrae/reviews",
+        "type": "Thingtesting, paraphrase via search (3.5-3.6/5)"
+      }
+    ]
+  },
+  "gaps": [
+    {
+      "title": "Subscription trust gap",
+      "evidence": "Own page promises pause/cancel anytime; independent Trustpilot reviews centre on cancellation and post-cancel shipments. Test creative that shows the pause/cancel mechanic (only if true) or a one-time option."
+    },
+    {
+      "title": "Cheap-alternative objection unanswered",
+      "evidence": "Reddit: papaya enzymes 'much cheaper than something like Arrae'. A comparison/mechanism angle can answer 'why not a $10 enzyme' (needs brand-substantiated differences)."
+    },
+    {
+      "title": "Lead with the moment, not the category",
+      "evidence": "Reviewers credit Bloat for one moment (after a big meal). Occasion-led creative (dinner out, Thanksgiving week, holidays) is timely for late November."
+    }
+  ],
+  "concepts": [
+    {
+      "name": "Dinner-out checklist",
+      "angle": "Moment-of-use",
+      "hook": "my dinner-out checklist, revised",
+      "format": "Native notes-app static",
+      "voc_basis": "post-meal discomfort is the praised use case"
+    },
+    {
+      "name": "Thanksgiving plate",
+      "angle": "Seasonal occasion",
+      "hook": "Second helpings without the waistband math.",
+      "format": "UGC 20s, plate-to-couch POV",
+      "voc_basis": "desire: feel normal after a big meal"
+    },
+    {
+      "name": "Not another enzyme",
+      "angle": "Objection / comparison vs. generic category",
+      "hook": "I tried the $10 enzymes first. Here's why I switched.",
+      "format": "Us-vs-them static (generic category only)",
+      "voc_basis": "Reddit 'much cheaper' objection"
+    }
+  ],
+  "spec_statics": [
+    "../statics/arrae_dinner-out_native_a_1080x1350.png"
+  ],
+  "spec_concept_json": {
+    "_comment": "SPEC concept for outreach. Not affiliated with Arrae. Copy is a draft; claims need the brand's sign-off.",
+    "brand": {
+      "name": "Arrae",
+      "slug": "arrae",
+      "wordmark": "arrae",
+      "colors": {
+        "primary": "#3B2F5C",
+        "secondary": "#EFE8F5",
+        "accent": "#E8A87C",
+        "bg": "#F8F5FA",
+        "ink": "#1E1A28",
+        "muted": "#6B6577",
+        "surface": "#FFFFFF",
+        "on_primary": "#FFFFFF"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      },
+      "logo": null
+    },
+    "slug": "dinner-out",
+    "angle": "Moment-of-use: the dinner-out bloat ritual (VOC: post-meal discomfort is what reviewers credit Bloat for)",
+    "spec": true,
+    "labels": [],
+    "product": {
+      "name": "Bloat",
+      "variant": "Digestive capsules"
+    },
+    "eyebrow": "Bloat capsules",
+    "subhead": "For the night you don't want to think about your waistband.",
+    "cta": "Shop Bloat",
+    "disclaimer": "These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease.",
+    "claims": [
+      {
+        "text": "Bloat capsules (product name)",
+        "substantiation": "arrae.com product range per public listings"
+      }
+    ],
+    "native": {
+      "style": "note",
+      "timestamp": "Friday 7:48 PM",
+      "body": "- jeans with a little give\n- skip the bread basket (lol no)\n- unbutton under the table by 9pm\n\n→ new rule: **Bloat bottle goes in the bag** before I leave."
+    },
+    "layouts": [
+      {
+        "type": "native",
+        "headlines": {
+          "a": "my dinner-out checklist, revised"
+        }
+      }
+    ]
+  },
+  "decision_maker": {
+    "name": "Siffat (Siff) Haider",
+    "title": "Co-founder & CEO",
+    "source": "https://www.createcultivate.com/siffathaider",
+    "email": null,
+    "email_source": null,
+    "note": "Apollo people search/enrichment not on current Apollo plan; no public email found. find contact."
+  },
+  "next_step": "Happy to send 3 concepts for the dinner-out angle, incl. a Thanksgiving-week version.",
+  "sources": [
+    "https://www.reddit.com/r/NYCinfluencersnark/comments/140aw2d/",
+    "https://uk.trustpilot.com/review/arrae.com?page=6",
+    "https://thingtesting.com/brands/arrae/reviews",
+    "https://www.dtcetc.com/brand/arrae",
+    "https://arrae.com/pages/try-deep-digestion-duo",
+    "https://mysubscriptionaddiction.com/unbloat-vs-arrae-which-bloating-supplement-is-1"
+  ],
+  "credits": {
+    "adlicio": 1,
+    "apollo": 0
+  },
+  "pdf": "arrae-teardown.pdf"
+}

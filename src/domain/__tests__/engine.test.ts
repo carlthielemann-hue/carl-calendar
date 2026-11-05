@@ -96,6 +96,10 @@ describe('caps, windows, follow-ups', () => {
     const out = composeEmail('Hi Jane', S)
     expect(out).toContain("reply 'no'")
     expect(out).toContain('1 Test St')
+    const signed = composeEmail('Hi Jane\n\nCarl\nThe Profit Script', S)
+    expect(signed.match(/Carl/g)).toHaveLength(1)
+    expect(signed).toContain("reply 'no'")
+    expect(signed).toContain('1 Test St')
   })
   it('auto-pauses on bounce/complaint spikes', () => {
     const s = DEFAULT_ENGINE_SETTINGS.send

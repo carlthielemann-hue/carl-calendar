@@ -1,0 +1,171 @@
+{
+  "date": "2026-11-05",
+  "mode": "cheap (fallback: web search only)",
+  "country": "US",
+  "brand": "Topicals",
+  "domain": "mytopicals.com",
+  "niche": "skincare",
+  "ads_snapshot": {
+    "status": "not_captured",
+    "note": "Adlicio account is on the Free plan (find_competitor_ads/inspect_landing_page need Growth) and the Meta Ad Library is not reachable from this sandbox. Carl: open facebook.com/ads/library before approving any email that mentions ads."
+  },
+  "landing_page": {
+    "url": "https://mytopicals.com",
+    "headline": "not captured (site not reachable from sandbox)",
+    "offer": "not captured",
+    "proof": "Retail ~4.2/5 across several thousand reviews; Thingtesting 4.3 (84% recommend)",
+    "message_match": "not assessable without the ads",
+    "notes": [
+      "Faded also sold at Sephora (US/UK)",
+      "New 'Faded Dark Spot Patches' discussed on Reddit (Oct 2026)"
+    ]
+  },
+  "voc": {
+    "pains": [
+      "Dark spots / post-blemish marks",
+      "Breakouts or irritation in the first weeks"
+    ],
+    "desires": [
+      "Visible fading, steadily",
+      "Know how long it takes"
+    ],
+    "objections": [
+      "Smell (described as sulfuric)",
+      "Fear of purging/breakouts",
+      "Patches 'not worth the price'"
+    ],
+    "quotes": [
+      {
+        "text": "I started once a week and worked my way up. I had an increase in acne and it was obviously this serum.",
+        "source": "https://www.reddit.com/r/SkincareAddiction/comments/vt99v0/",
+        "type": "Reddit (verbatim snippet)"
+      },
+      {
+        "text": "I use it about once a week still and, in conjunction with Vit C, I've noticed a pretty good amount of fading in old dark spots",
+        "source": "https://www.reddit.com/r/Sephora/comments/11ieciz/",
+        "type": "Reddit (verbatim snippet)"
+      },
+      {
+        "text": "I'd stick to the faded cream rather than the patches because they're just not worth the price.",
+        "source": "https://www.reddit.com/r/Sephora/comments/1xi9cuc/",
+        "type": "Reddit, 2026-10-29 (verbatim snippet)"
+      }
+    ]
+  },
+  "gaps": [
+    {
+      "title": "First-weeks fear is the quit point",
+      "evidence": "Breakout/purge threads recur (r/SkincareAddiction, r/Sephora). Onboarding creative that sets the slow-start routine can protect repeat purchase."
+    },
+    {
+      "title": "Timeline expectation",
+      "evidence": "'How long until results' is the most asked question; NBC Select tester reports success after two months. A week-8 framing beats day-3 promises."
+    },
+    {
+      "title": "Smell objection",
+      "evidence": "Smell is the most common complaint in review summaries; pre-empting it in creative (with the brand's real explanation) removes a surprise."
+    }
+  ],
+  "concepts": [
+    {
+      "name": "Slow start",
+      "angle": "Onboarding / objection",
+      "hook": "how I'm starting Faded (slowly)",
+      "format": "Native notes-app static",
+      "voc_basis": "start once a week; breakout fears"
+    },
+    {
+      "name": "Week 8, not day 3",
+      "angle": "Expectation-setting",
+      "hook": "I took a photo every Sunday for 8 weeks.",
+      "format": "UGC progress diary 30s (real customer, with permission)",
+      "voc_basis": "'how long until results'"
+    },
+    {
+      "name": "Yes, it smells like that",
+      "angle": "Objection pre-empt",
+      "hook": "Nobody warned me about the smell. So I'm warning you.",
+      "format": "Founder/chemist talking-head 20s",
+      "voc_basis": "smell complaints"
+    }
+  ],
+  "spec_statics": [
+    "../statics/topicals_slow-start_native_a_1080x1350.png"
+  ],
+  "spec_concept_json": {
+    "_comment": "SPEC concept for outreach. Not affiliated with Topicals. 'Start once a week' per usage direction cited by Reddit users; brand to confirm.",
+    "brand": {
+      "name": "Topicals",
+      "slug": "topicals",
+      "wordmark": "topicals",
+      "colors": {
+        "primary": "#2A2A2A",
+        "secondary": "#FCE9E2",
+        "accent": "#F2A65A",
+        "bg": "#FFF7F2",
+        "ink": "#1C1C1C",
+        "muted": "#6E6762",
+        "surface": "#FFFFFF",
+        "on_primary": "#FFFFFF"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      },
+      "logo": null
+    },
+    "slug": "slow-start",
+    "angle": "Objection-handling: how to start Faded without irritating your skin (VOC: breakout/purge fears, 'how long until results')",
+    "spec": true,
+    "labels": [],
+    "product": {
+      "name": "Faded",
+      "variant": "Brightening & Clearing Serum"
+    },
+    "eyebrow": "Faded serum",
+    "subhead": "Ease in. Stay consistent. Give it weeks, not days.",
+    "cta": "Shop Faded",
+    "disclaimer": "Cosmetic product. Individual results vary.",
+    "claims": [
+      {
+        "text": "Start once a week, then build up",
+        "substantiation": "Usage direction quoted by users (reddit.com/r/Sephora/comments/11ieciz) — confirm against current packaging"
+      }
+    ],
+    "native": {
+      "style": "note",
+      "timestamp": "Sunday 10:02 PM",
+      "body": "week 1: **once.** that's it.\nweek 2: twice, if skin's calm\nafter: build up slowly\n\nphoto in the same window light every sunday. compare at week 8, not day 3."
+    },
+    "layouts": [
+      {
+        "type": "native",
+        "headlines": {
+          "a": "how I'm starting Faded (slowly)"
+        }
+      }
+    ]
+  },
+  "decision_maker": {
+    "name": null,
+    "title": "Founder/CEO",
+    "source": "web search did not confirm a name this run",
+    "email": null,
+    "email_source": null,
+    "note": "Apollo enrichment not on plan; find contact."
+  },
+  "next_step": "Happy to send 3 onboarding concepts for Faded.",
+  "sources": [
+    "https://www.reddit.com/r/SkincareAddiction/comments/vt99v0/",
+    "https://www.reddit.com/r/Sephora/comments/11ieciz/",
+    "https://www.reddit.com/r/Sephora/comments/1xi9cuc/",
+    "https://www.reddit.com/r/SkincareAddictionUK/comments/1eqdi9o/",
+    "https://www.nbcnews.com/select/shopping/topicals-faded-serum-review-rcna166256",
+    "https://thingtesting.com/brands/topicals/reviews"
+  ],
+  "credits": {
+    "adlicio": 1,
+    "apollo": 0
+  },
+  "pdf": "topicals-teardown.pdf"
+}

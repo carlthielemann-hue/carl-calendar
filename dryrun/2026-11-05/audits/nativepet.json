@@ -1,0 +1,188 @@
+{
+  "date": "2026-11-05",
+  "mode": "cheap (fallback: web search only)",
+  "country": "US",
+  "brand": "Native Pet",
+  "domain": "nativepet.com",
+  "niche": "pet (dog supplements)",
+  "ads_snapshot": {
+    "status": "not_captured",
+    "note": "Adlicio account is on the Free plan (find_competitor_ads/inspect_landing_page need Growth) and the Meta Ad Library is not reachable from this sandbox. Carl: open facebook.com/ads/library before approving any email that mentions ads."
+  },
+  "landing_page": {
+    "url": "https://nativepet.com",
+    "headline": "not captured (site not reachable from sandbox)",
+    "offer": "Retail: Chewy lists 50% off first Autoship (up to $20); Tractor Supply Calm Chews 60ct $24.99",
+    "proof": "Retail ratings: Calm Chews 4.7/5 (249, Tractor Supply); Omega oil ~4.8/5 (496, Walmart)",
+    "message_match": "not assessable without the ads",
+    "notes": [
+      "Sold across Chewy, Tractor Supply, Walmart: DTC creative has to give a reason to buy direct",
+      "Press angle: 'vet-formulated', 'taste-tested by real dogs' (Hepper, Mic)"
+    ]
+  },
+  "voc": {
+    "pains": [
+      "Dog refuses pills / is a picky eater",
+      "Itchy skin and coat issues"
+    ],
+    "desires": [
+      "A supplement the dog actually takes like a treat",
+      "Visible change without vet-visit hassle"
+    ],
+    "objections": [
+      "Price ('super expensive')",
+      "Chew size inconsistent / too big for small dogs",
+      "Chicken sensitivity in allergy chews"
+    ],
+    "quotes": [
+      {
+        "text": "I Can't Believe How Much My Notoriously-Picky Pup Loves This Vet-Formulated Supplement",
+        "source": "https://www.thequalityedit.com/articles/native-pet-dog-supplements-review",
+        "type": "Press headline (verbatim)"
+      },
+      {
+        "text": "...seem to have helped the itching but it's super expensive",
+        "source": "https://www.chewy.com/native-pet-skin-coat-chews-omega-3/dp/1083294",
+        "type": "Chewy 2-star review (snippet via search)"
+      },
+      {
+        "text": "some reviews suggest that the chews size could be inconsistent",
+        "source": "https://iheartdogs.com/?p=4100770",
+        "type": "iHeartDogs review (verbatim)"
+      }
+    ]
+  },
+  "gaps": [
+    {
+      "title": "Price objection needs a frame",
+      "evidence": "'super expensive' appears even in reviews that say it worked. Cost-per-day or vs-vet-visit framing is a cheap test."
+    },
+    {
+      "title": "Picky-dog angle is proven in press, worth owning in ads",
+      "evidence": "Press headline leads with a picky pup loving it; pill refusal is a universal owner pain."
+    },
+    {
+      "title": "Small-dog objection",
+      "evidence": "Reviews mention inconsistent chew size; a small-breed-specific creative can pre-empt it (only with a true answer, e.g. how to split)."
+    },
+    {
+      "title": "Reason to buy direct",
+      "evidence": "Same SKUs sit on Chewy/Tractor Supply/Walmart; direct-site creative needs its own offer or bundle story."
+    }
+  ],
+  "concepts": [
+    {
+      "name": "Spits out pills",
+      "angle": "Picky-eater / pill refusal",
+      "hook": "For the dog who spits out pills.",
+      "format": "Callouts static",
+      "voc_basis": "press 'notoriously-picky pup'"
+    },
+    {
+      "name": "Cost per day",
+      "angle": "Price reframe",
+      "hook": "Less per day than the cheese you wrap pills in.",
+      "format": "Offer static (needs real price per chew)",
+      "voc_basis": "'super expensive' objection"
+    },
+    {
+      "name": "Small dog, real size",
+      "angle": "Objection handling",
+      "hook": "Yes, my 9-lb dog takes it. Here's how.",
+      "format": "UGC 15s owner demo",
+      "voc_basis": "chew size inconsistent"
+    }
+  ],
+  "spec_statics": [
+    "../statics/nativepet_picky-dog_callouts_a_1080x1350.png"
+  ],
+  "spec_concept_json": {
+    "_comment": "SPEC concept for outreach. Not affiliated with Native Pet. Callouts sourced from public reviews/press; brand must confirm.",
+    "brand": {
+      "name": "Native Pet",
+      "slug": "nativepet",
+      "wordmark": "Native Pet",
+      "colors": {
+        "primary": "#1F3A2E",
+        "secondary": "#F1EBDD",
+        "accent": "#D98C3F",
+        "bg": "#F7F2E8",
+        "ink": "#1A221D",
+        "muted": "#5E655F",
+        "surface": "#FFFFFF",
+        "on_primary": "#FFFFFF"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      },
+      "logo": null
+    },
+    "slug": "picky-dog",
+    "angle": "Picky-eater objection: for the dog who spits out pills (VOC: 'notoriously-picky pup loves this')",
+    "spec": true,
+    "labels": [],
+    "product": {
+      "name": "Daily Chews",
+      "variant": "Soft chew supplement"
+    },
+    "eyebrow": "Soft chews",
+    "subhead": "No cheese-wrapping. No pill pockets. Just a chew.",
+    "cta": "Shop chews",
+    "disclaimer": "Supplement for dogs. Not intended to diagnose, treat, cure or prevent any disease.",
+    "claims": [
+      {
+        "text": "Vet-formulated",
+        "substantiation": "Hepper review: formulated by a Board-Certified Vet Nutritionist (articles.hepper.com/native-pet-all-natural-supplements-review) — brand to confirm"
+      },
+      {
+        "text": "Taste-tested by dogs",
+        "substantiation": "Hepper review: 'taste-tested by real dogs before being rolled out' — brand to confirm"
+      }
+    ],
+    "callouts": [
+      {
+        "title": "Soft chew",
+        "text": "Given like a treat, not a pill"
+      },
+      {
+        "title": "Vet-formulated",
+        "text": "Built with a vet nutritionist"
+      },
+      {
+        "title": "Dog-tested",
+        "text": "Taste-tested before launch"
+      }
+    ],
+    "layouts": [
+      {
+        "type": "callouts",
+        "headlines": {
+          "a": "For the dog who **spits out pills.**"
+        }
+      }
+    ]
+  },
+  "decision_maker": {
+    "name": "Dan Schaefer",
+    "title": "Co-founder & CEO",
+    "source": "https://justgogrind.libsyn.com/350-dan-schaefer-of-native-pet-on-product-brand-innovation-finding-the-right-manufacturing-partner-and-first-principles-thinking-to-forge-your-own-path",
+    "email": null,
+    "email_source": null,
+    "note": "Apollo enrichment not on plan; no public email found. find contact."
+  },
+  "next_step": "Happy to send the picky-dog static plus 2 more concepts.",
+  "sources": [
+    "https://www.thequalityedit.com/articles/native-pet-dog-supplements-review",
+    "https://www.chewy.com/native-pet-skin-coat-chews-omega-3/dp/1083294",
+    "https://iheartdogs.com/?p=4100770",
+    "https://thingtesting.com/brands/native-pet/reviews",
+    "https://articles.hepper.com/native-pet-all-natural-supplements-review/",
+    "https://tractorsupply.com/tsc/product/native-pet-calm-chews-for-dogs-60-ct"
+  ],
+  "credits": {
+    "adlicio": 0,
+    "apollo": 0
+  },
+  "pdf": "nativepet-teardown.pdf"
+}

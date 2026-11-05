@@ -158,7 +158,14 @@ export function footer(s: EngineSettings) {
 
 /** The exact text that goes out: body + footer (sign-off, opt-out, postal address). */
 export function composeEmail(body: string, s: EngineSettings) {
-  return body.trimEnd() + footer(s)
+  const b = body.trimEnd()
+  // Drafts often already sign off ("Carl\nThe Profit Script") — don't sign twice.
+  const tail = b.split('\n').slice(-3).map((l) => l.trim().toLowerCase())
+  if (tail.includes(s.sender.name.toLowerCase())) {
+    const site = s.sender.website && !b.toLowerCase().includes(s.sender.website.toLowerCase()) ? `\n${s.sender.website}` : ''
+    return `${b}${site}\n\n${s.sender.opt_out_line}\n${s.sender.address}`
+  }
+  return b + footer(s)
 }
 
 /* ---------------- the gate ---------------- */
