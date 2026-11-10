@@ -37,7 +37,7 @@ export function parsePath(path: string): Location {
 }
 
 export function toPath(l: Location) {
-  return '/engine/' + [l.space, l.page, l.id && encodeURIComponent(l.id), l.id && l.sub].filter(Boolean).join('/')
+  return '/' + [l.space, l.page, l.id && encodeURIComponent(l.id), l.id && l.sub].filter(Boolean).join('/')
 }
 
 export interface EventDraft {
@@ -92,6 +92,11 @@ export const useUI = create<UIState>()((set, get) => ({
   shortcutsOpen: false,
   intent: null,
   go: (path, intent) => {
+    // Outreach (full-screen approval batch) and the Engine admin live outside the dashboard shell.
+    if (path === '/today' || path.startsWith('/today/') || path === '/engine') {
+      window.location.hash = `#${path}`
+      return
+    }
     const loc = parsePath(path)
     const p = toPath(loc)
     if (window.location.hash !== `#${p}`) {

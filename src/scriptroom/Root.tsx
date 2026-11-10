@@ -1,22 +1,22 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
+import LegacyApp from '../App'
 import './scriptroom.css'
 
 const Today = lazy(() => import('./Today'))
 const Setup = lazy(() => import('./Setup'))
 const EngineHome = lazy(() => import('./EngineHome'))
-const LegacyApp = lazy(() => import('../App'))
+
 
 /**
  * Top-level router.
- *   #/  #/today          → Scriptroom Today (the only screen Carl opens daily)
- *   #/today/setup        → health, sending checklist, settings, Engine keys
- *   #/engine             → Engine data admin (AI-maintained)
- *   #/engine/<old path>  → the original Command Center screens, untouched
- *   any other old hash   → original screens too (old links keep working)
+ *   #/ and every original path → Command Center (the main app, as before)
+ *   #/today                    → outreach batch, full screen (phone approvals)
+ *   #/today/setup              → health, sending checklist, settings, Engine keys
+ *   #/engine                   → Engine data admin (AI-maintained)
  */
 export function route(hash: string) {
   const h = hash.replace(/^#/, '')
-  if (h === '' || h === '/' || h === '/today') return 'today'
+  if (h === '/today') return 'today'
   if (h.startsWith('/today/setup')) return 'setup'
   if (h === '/engine' || h === '/engine/') return 'engine'
   return 'legacy'
@@ -30,7 +30,7 @@ export default function Root() {
     return () => window.removeEventListener('hashchange', on)
   }, [])
   useEffect(() => {
-    document.title = r === 'legacy' ? 'Engine · Scriptroom' : 'Scriptroom'
+    if (r !== 'legacy') document.title = 'Outreach · Command Center'
     document.documentElement.style.background = r === 'legacy' ? '' : '#0e0e10'
   }, [r])
   const go = (h: string) => {
@@ -38,12 +38,7 @@ export default function Root() {
   }
   if (r === 'legacy')
     return (
-      <Suspense fallback={null}>
-        <div style={{ position: 'fixed', top: 0, right: 0, zIndex: 60, padding: '4px 10px', fontSize: 11, background: '#f5a524', color: '#1a1305', borderBottomLeftRadius: 8, fontWeight: 600 }}>
-          <a href="#/today" style={{ color: 'inherit', textDecoration: 'none' }}>Engine — AI-maintained · back to Today</a>
-        </div>
-        <LegacyApp />
-      </Suspense>
+      <LegacyApp />
     )
   return (
     <div className="sr">

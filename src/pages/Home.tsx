@@ -17,6 +17,7 @@ import { RoutinesCard } from '@/features/routines/RoutinesCard'
 import { Wallpaper } from '@/features/appearance/wallpaper'
 import { useTop } from '@/features/overview/TopThree'
 import { ReadyCard } from '@/pages/home/Briefing'
+import { OutreachCard } from '@/features/dashboard/Outreach'
 
 type Span = 'half' | 'full'
 interface ModuleDef {
@@ -28,6 +29,7 @@ interface ModuleDef {
 
 /** Everything the main column can show, in default order. Hide and reorder in "Customize". */
 export const DASH_MODULES: ModuleDef[] = [
+  { id: 'outreach', label: 'Outreach & money', span: 'full', render: () => <OutreachCard /> },
   { id: 'ready', label: 'Ready for you', span: 'full', render: () => <ReadyCard /> },
   { id: 'priorities', label: 'Today’s priorities', span: 'half', render: (now) => <PrioritiesCard now={now} /> },
   { id: 'focus', label: 'Focus Hub', span: 'half', render: (now) => <FocusHubCard now={now} /> },
@@ -57,7 +59,7 @@ function RiskModule({ now }: { now: Date }) {
   return <AtRiskCard risks={risks} />
 }
 
-const TOP_NEW = ['ready']
+const TOP_NEW = ['outreach', 'ready']
 
 export function useDashboardLayout() {
   const a = useApp((s) => s.settings.appearance)

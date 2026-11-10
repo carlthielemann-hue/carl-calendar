@@ -152,7 +152,7 @@ export async function assembleBatch(env: Env, opts: { notify?: boolean; now?: Da
   if (opts.notify !== false && (pending > 0 || replies > 0)) {
     const settings = await getSettings(env)
     const title = replies ? `${replies} new repl${replies === 1 ? 'y' : 'ies'} · ${pending} drafts ready` : `${pending} draft${pending === 1 ? '' : 's'} ready`
-    if (settings.digest.push) await notify(env, 'engine_digest', { title, body: 'Scriptroom — tap to review (≈ ' + Math.max(2, Math.ceil(pending * 0.7)) + ' min).', url: '/#/today' }).catch(() => {})
+    if (settings.digest.push) await notify(env, 'engine_digest', { title, body: 'Outreach batch — tap to review (≈ ' + Math.max(2, Math.ceil(pending * 0.7)) + ' min).', url: '/#/today' }).catch(() => {})
     if (settings.digest.email_to && (await gmailStatus(env)).connected) {
       await gmailSend(env, { to: settings.digest.email_to, subject: `Scriptroom: ${title}`, text: `${title}.\n\nReview: ${(await getMeta<string>(env, 'public_origin')) ?? ''}/#/today` }).catch(() => {})
     }

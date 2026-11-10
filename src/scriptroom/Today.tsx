@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, ChevronDown, Copy, ExternalLink, Flame, Mail, Settings2, X as XIcon } from 'lucide-react'
+import { Check, ChevronDown, Copy, ExternalLink, Flame, LayoutDashboard, Mail, Settings2, X as XIcon } from 'lucide-react'
 import { call, HttpError, type Item, type Today as TodayData } from './api'
 
 const eur = (n: number) => `€${Math.round(n).toLocaleString('de-DE')}`
@@ -10,7 +10,7 @@ export function Login({ onDone }: { onDone: () => void }) {
   const [err, setErr] = useState<string | null>(null)
   return (
     <div className="sr-wrap" style={{ paddingTop: '22vh' }}>
-      <div className="sr-label">Scriptroom</div>
+      <div className="sr-label">Command Center · Outreach</div>
       <h1 style={{ fontSize: 28, margin: '6px 0 18px', fontWeight: 650 }}>Sign in</h1>
       <form
         onSubmit={async (e) => {
@@ -202,7 +202,7 @@ export default function Today({ go }: { go: (h: string) => void }) {
   if (!d)
     return (
       <div className="sr-wrap">
-        <div className="sr-label">Scriptroom</div>
+        <div className="sr-label">Outreach</div>
         <div className="sr-muted" style={{ marginTop: 20 }}>
           {err ?? 'Loading…'}
         </div>
@@ -215,9 +215,12 @@ export default function Today({ go }: { go: (h: string) => void }) {
     <div className="sr-wrap" style={{ display: 'grid', gap: 14 }}>
       <Flash show={flash} />
       <header style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button className="sr-btn sm" aria-label="Back to Command Center" onClick={() => go('#/home')} style={{ padding: '6px 10px' }}>
+          <LayoutDashboard size={16} /> Command Center
+        </button>
         <div>
-          <div className="sr-label">Scriptroom</div>
-          <div style={{ fontSize: 22, fontWeight: 650, letterSpacing: '-0.01em' }}>{date}</div>
+          <div className="sr-label">Outreach</div>
+          <div style={{ fontSize: 18, fontWeight: 650, letterSpacing: '-0.01em' }}>{date}</div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           <span className={`sr-chip ${d.streak.count ? 'amber' : ''}`} title={`Best: ${d.streak.best}`}>
